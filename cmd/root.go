@@ -27,8 +27,8 @@ import (
 )
 
 type config struct {
-	Server string
-	Token  string
+	Url   string
+	Token string
 }
 
 var cfgFile string

@@ -16,17 +16,20 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 
 	"github.com/magneticio/vamp2cli/client"
 	"github.com/spf13/cobra"
 )
 
-var Username string
-var Password string
+var Type string
+var Name string
+var SourceString string
+var SourceFile string
 
-// loginCmd represents the login command
-var loginCmd = &cobra.Command{
-	Use:   "login",
+// createCmd represents the create command
+var createCmd = &cobra.Command{
+	Use:   "create",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -35,35 +38,39 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		// fmt.Println("Server: " + Server)
-		// fmt.Println("login called for " + Username + " " + Password)
-		// fmt.Println("Print: " + strings.Join(args, " "))
-		restClient := client.NewRestClient(Config.Url, Config.Token)
-		token, _ := restClient.Login(Username, Password)
-		fmt.Println("Token will be written to config: " + token)
-		Config.Token = token
-		WriteConfigFile()
+		if len(args) > 0 {
+			Type = args[0]
+		}
+		fmt.Println("create called for type " + Type + " with name " + Name)
+		b, err := ioutil.ReadFile(SourceFile) // just pass the file name
+		if err != nil {
+			fmt.Print(err)
+		}
+		Source := string(b)
+		if Type == "project" {
+			restClient := client.NewRestClient(Config.Url, Config.Token)
+			isCreated, _ := restClient.Create("projects", "project", Name, Source, "yaml")
+			if !isCreated {
+				fmt.Println("Not Created " + Type + " with name " + Name)
+			}
+		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(loginCmd)
+	rootCmd.AddCommand(createCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// loginCmd.PersistentFlags().String("foo", "", "A help for foo")
-	// loginCmd.PersistentFlags().StringVar(&Server, "server", "", "Server to connect")
+	// createCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	loginCmd.Flags().StringVarP(&Username, "user", "u", "", "Username required")
-	loginCmd.MarkFlagRequired("user")
-	loginCmd.Flags().StringVarP(&Password, "password", "p", "", "Password required")
-	loginCmd.MarkFlagRequired("password")
+	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	createCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
+	createCmd.MarkFlagRequired("name")
+	createCmd.Flags().StringVarP(&SourceFile, "file", "f", "", "Source from file")
 
-	// loginCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")
-	// viper.BindPFlag("server", loginCmd.PersistentFlags().Lookup("server"))
-	// Server = viper.GetString("server")
 }

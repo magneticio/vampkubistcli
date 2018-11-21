@@ -17,11 +17,12 @@ package client
 import (
 	"fmt"
 
+	"github.com/ghodss/yaml"
 	"gopkg.in/resty.v1"
 )
 
 type RestClient struct {
-	server   string
+	url      string
 	username string
 	password string
 	token    string
@@ -39,17 +40,17 @@ type AuthError struct {
 	/* variables */
 }
 
-func NewRestClient(server string, token string) *RestClient {
+func NewRestClient(url string, token string) *RestClient {
 	return &RestClient{
-		server: server,
-		token:  token,
+		url:   url,
+		token: token,
 	}
 }
 
 func (s *RestClient) Login(username string, password string) (string, error) {
 	(*s).username = username
 	(*s).password = password
-	url := "http://" + s.server + "/oauth/access_token"
+	url := (*s).url + "/oauth/access_token"
 	// fmt.Printf("user login with username: %v password: %v\n", username, password)
 	body := "username=" + username + "&password=" + password + "&client_id=frontend&client_secret=&grant_type=password"
 	resp, err := resty.R().
@@ -79,4 +80,48 @@ func (s *RestClient) Login(username string, password string) (string, error) {
 	*/
 
 	return (*s).token, nil
+}
+
+func (s *RestClient) Create(resourceType string, resourceName string, name string, source string, sourceType string) (bool, error) {
+	url := (*s).url + "/1.0/api/" + resourceType + "?" + resourceName + "_name=" + name
+	// fmt.Printf("user login with username: %v password: %v\n", username, password)
+	if sourceType == "yaml" {
+		json, err := yaml.YAMLToJSON([]byte(source))
+		if err != nil {
+			fmt.Printf("err: %v\n", err)
+			return false, err
+		}
+		source = string(json)
+	}
+
+	body := source
+	resp, err := resty.R().
+		// SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetAuthToken((*s).token).
+		SetBody([]byte(body)).
+		// SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
+		// SetError(&AuthError{}).    // or SetError(AuthError{}).
+		Post(url)
+
+	if err == nil {
+		fmt.Printf("\nBody: %v", resp)
+		return true, nil
+	} else {
+		fmt.Printf("\nError: %v", err)
+		return false, err
+	}
+	// explore response object
+	/*
+		fmt.Printf("\nError: %v", err)
+		fmt.Printf("\nResponse Status Code: %v", resp.StatusCode())
+		fmt.Printf("\nResponse Status: %v", resp.Status())
+		fmt.Printf("\nResponse Time: %v", resp.Time())
+		fmt.Printf("\nResponse Received At: %v", resp.ReceivedAt())
+		fmt.Printf("\nResponse Body: %v", resp) // or resp.String() or string(resp.Body())
+		fmt.Printf("\n")
+	*/
+
+	return false, nil
 }
