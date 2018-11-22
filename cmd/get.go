@@ -21,9 +21,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// deleteCmd represents the delete command
-var deleteCmd = &cobra.Command{
-	Use:   "delete",
+// getCmd represents the get command
+var getCmd = &cobra.Command{
+	Use:   "get",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -38,26 +38,26 @@ to quickly create a Cobra application.`,
 		fmt.Println("delete called for type " + Type + " with name " + Name)
 		if Type == "project" {
 			restClient := client.NewRestClient(Config.Url, Config.Token)
-			isDeleted, _ := restClient.Delete("projects", "project", Name)
-			if !isDeleted {
-				fmt.Println("Not Deleted " + Type + " with name " + Name)
+			result, err := restClient.Get("projects", "project", Name)
+			if err == nil {
+				fmt.Println(result)
 			}
 		}
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(getCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// deleteCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// getCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	deleteCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
-	deleteCmd.MarkFlagRequired("name")
+	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	getCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
+	getCmd.MarkFlagRequired("name")
 }
