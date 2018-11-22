@@ -43,7 +43,11 @@ to quickly create a Cobra application.`,
 		}
 		Source := string(b)
 		restClient := client.NewRestClient(Config.Url, Config.Token)
-		isUpdated, _ := restClient.Update(Type, Name, Source, "yaml")
+		values := make(map[string]string)
+		values["project"] = Config.Project
+		values["cluster"] = Config.Cluster
+		values["virtual_cluster"] = Config.VirtualCluster
+		isUpdated, _ := restClient.Update(Type, Name, Source, "yaml", values)
 		if !isUpdated {
 			fmt.Println("Not Updated " + Type + " with name " + Name)
 		}
