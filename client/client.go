@@ -15,6 +15,7 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/ghodss/yaml"
@@ -82,7 +83,16 @@ func (s *RestClient) Login(username string, password string) (string, error) {
 	return (*s).token, nil
 }
 
-func (s *RestClient) Create(resourceType string, resourceName string, name string, source string, sourceType string) (bool, error) {
+func getResourceType(resourceName string) (string, error) {
+	if resourceName == "project" {
+		return "projects", nil
+	}
+	return "", errors.New("no resource Type")
+
+}
+
+func (s *RestClient) Create(resourceName string, name string, source string, sourceType string) (bool, error) {
+	resourceType, _ := getResourceType(resourceName)
 	url := (*s).url + "/1.0/api/" + resourceType + "?" + resourceName + "_name=" + name
 
 	if sourceType == "yaml" {
@@ -112,21 +122,12 @@ func (s *RestClient) Create(resourceType string, resourceName string, name strin
 		fmt.Printf("\nError: %v", err)
 		return false, err
 	}
-	// explore response object
-	/*
-		fmt.Printf("\nError: %v", err)
-		fmt.Printf("\nResponse Status Code: %v", resp.StatusCode())
-		fmt.Printf("\nResponse Status: %v", resp.Status())
-		fmt.Printf("\nResponse Time: %v", resp.Time())
-		fmt.Printf("\nResponse Received At: %v", resp.ReceivedAt())
-		fmt.Printf("\nResponse Body: %v", resp) // or resp.String() or string(resp.Body())
-		fmt.Printf("\n")
-	*/
 
 	return false, nil
 }
 
-func (s *RestClient) Delete(resourceType string, resourceName string, name string) (bool, error) {
+func (s *RestClient) Delete(resourceName string, name string) (bool, error) {
+	resourceType, _ := getResourceType(resourceName)
 	url := (*s).url + "/1.0/api/" + resourceType + "?" + resourceName + "_name=" + name
 
 	// body := source
@@ -147,24 +148,14 @@ func (s *RestClient) Delete(resourceType string, resourceName string, name strin
 		fmt.Printf("\nError: %v", err)
 		return false, err
 	}
-	// explore response object
-	/*
-		fmt.Printf("\nError: %v", err)
-		fmt.Printf("\nResponse Status Code: %v", resp.StatusCode())
-		fmt.Printf("\nResponse Status: %v", resp.Status())
-		fmt.Printf("\nResponse Time: %v", resp.Time())
-		fmt.Printf("\nResponse Received At: %v", resp.ReceivedAt())
-		fmt.Printf("\nResponse Body: %v", resp) // or resp.String() or string(resp.Body())
-		fmt.Printf("\n")
-	*/
 
 	return false, nil
 }
 
-func (s *RestClient) Get(resourceType string, resourceName string, name string) (string, error) {
+func (s *RestClient) Get(resourceName string, name string) (string, error) {
+	resourceType, _ := getResourceType(resourceName)
 	url := (*s).url + "/1.0/api/" + resourceType + "?" + resourceName + "_name=" + name
 
-	// body := source
 	resp, err := resty.R().
 		// SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
 		SetHeader("Content-Type", "application/json").
@@ -176,7 +167,7 @@ func (s *RestClient) Get(resourceType string, resourceName string, name string) 
 		Get(url)
 
 	if err == nil {
-		fmt.Printf("\nResult: %v\n", resp)
+		// fmt.Printf("\nResult: %v\n", resp)
 		yaml, err_2 := yaml.JSONToYAML(resp.Body())
 		if err_2 != nil {
 			fmt.Printf("err: %v\n", err_2)
@@ -188,16 +179,6 @@ func (s *RestClient) Get(resourceType string, resourceName string, name string) 
 		fmt.Printf("\nError: %v", err)
 		return "", err
 	}
-	// explore response object
-	/*
-		fmt.Printf("\nError: %v", err)
-		fmt.Printf("\nResponse Status Code: %v", resp.StatusCode())
-		fmt.Printf("\nResponse Status: %v", resp.Status())
-		fmt.Printf("\nResponse Time: %v", resp.Time())
-		fmt.Printf("\nResponse Received At: %v", resp.ReceivedAt())
-		fmt.Printf("\nResponse Body: %v", resp) // or resp.String() or string(resp.Body())
-		fmt.Printf("\n")
-	*/
 
 	return "", nil
 }

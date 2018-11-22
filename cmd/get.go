@@ -35,13 +35,11 @@ to quickly create a Cobra application.`,
 		if len(args) > 0 {
 			Type = args[0]
 		}
-		fmt.Println("get called for type " + Type + " with name " + Name)
-		if Type == "project" {
-			restClient := client.NewRestClient(Config.Url, Config.Token)
-			result, err := restClient.Get("projects", "project", Name)
-			if err == nil {
-				fmt.Println(result)
-			}
+		// fmt.Println("get called for type " + Type + " with name " + Name)
+		restClient := client.NewRestClient(Config.Url, Config.Token)
+		result, err := restClient.Get(Type, Name)
+		if err == nil {
+			fmt.Printf(result)
 		}
 	},
 }

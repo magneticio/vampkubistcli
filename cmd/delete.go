@@ -35,13 +35,11 @@ to quickly create a Cobra application.`,
 		if len(args) > 0 {
 			Type = args[0]
 		}
-		fmt.Println("delete called for type " + Type + " with name " + Name)
-		if Type == "project" {
-			restClient := client.NewRestClient(Config.Url, Config.Token)
-			isDeleted, _ := restClient.Delete("projects", "project", Name)
-			if !isDeleted {
-				fmt.Println("Not Deleted " + Type + " with name " + Name)
-			}
+		// fmt.Println("delete called for type " + Type + " with name " + Name)
+		restClient := client.NewRestClient(Config.Url, Config.Token)
+		isDeleted, _ := restClient.Delete(Type, Name)
+		if !isDeleted {
+			fmt.Println("Not Deleted " + Type + " with name " + Name)
 		}
 	},
 }

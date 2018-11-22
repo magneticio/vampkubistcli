@@ -36,18 +36,16 @@ to quickly create a Cobra application.`,
 		if len(args) > 0 {
 			Type = args[0]
 		}
-		fmt.Println("create called for type " + Type + " with name " + Name)
+		// fmt.Println("create called for type " + Type + " with name " + Name)
 		b, err := ioutil.ReadFile(SourceFile) // just pass the file name
 		if err != nil {
 			fmt.Print(err)
 		}
 		Source := string(b)
-		if Type == "project" {
-			restClient := client.NewRestClient(Config.Url, Config.Token)
-			isCreated, _ := restClient.Create("projects", "project", Name, Source, "yaml")
-			if !isCreated {
-				fmt.Println("Not Created " + Type + " with name " + Name)
-			}
+		restClient := client.NewRestClient(Config.Url, Config.Token)
+		isCreated, _ := restClient.Create(Type, Name, Source, "yaml")
+		if !isCreated {
+			fmt.Println("Not Created " + Type + " with name " + Name)
 		}
 	},
 }
