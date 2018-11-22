@@ -88,12 +88,44 @@ func getResourceType(resourceName string) (string, error) {
 		return "projects", nil
 	}
 	return "", errors.New("no resource Type")
-
 }
 
-func (s *RestClient) Create(resourceName string, name string, source string, sourceType string) (bool, error) {
-	resourceType, _ := getResourceType(resourceName)
-	url := (*s).url + "/1.0/api/" + resourceType + "?" + resourceName + "_name=" + name
+func getUrlForResource(base string, resourceName string, name string, values map[string]string) (string, error) {
+	switch resourceName {
+	case "project":
+		return base + "/1.0/api/" + "projects" + "?" + resourceName + "_name=" + name, nil
+	case "cluster":
+		project := values["project"]
+		url := base + "/1.0/api/" + "clusters" +
+			"?" + "project_name=" + project +
+			"&" + resourceName + "_name=" + name
+		return url, nil
+	case "virtual_cluster":
+		project := values["project"]
+		cluster := values["cluster"]
+		url := base + "/1.0/api/" + "virtual-clusters" +
+			"?" + "project_name=" + project +
+			"&" + "cluster_name=" + cluster +
+			"&" + resourceName + "_name=" + name
+		return url, nil
+	}
+	project := values["project"]
+	cluster := values["cluster"]
+	virtualCluster := values["virtual_cluster"]
+	url := base + "/1.0/api/" + resourceName + "s" +
+		"?" + "project_name=" + project +
+		"&" + "cluster_name=" + cluster +
+		"&" + "virtual_cluster_name=" + virtualCluster +
+		"&" + resourceName + "_name=" + name
+	return url, nil
+	// return "", errors.New("no resource Type")
+}
+
+func (s *RestClient) Create(resourceName string, name string, source string, sourceType string, values map[string]string) (bool, error) {
+	// resourceType, _ := getResourceType(resourceName)
+	// url := (*s).url + "/1.0/api/" + resourceType + "?" + resourceName + "_name=" + name
+	url, _ := getUrlForResource((*s).url, resourceName, name, values)
+	// fmt.Printf("url: %v\n", url)
 
 	if sourceType == "yaml" {
 		json, err := yaml.YAMLToJSON([]byte(source))

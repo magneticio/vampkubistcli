@@ -67,9 +67,9 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	loginCmd.Flags().StringVarP(&Url, "url", "", "", "Url required")
-	loginCmd.Flags().StringVarP(&Username, "user", "u", "", "Username required")
+	loginCmd.Flags().StringVarP(&Username, "user", "", "", "Username required")
 	loginCmd.MarkFlagRequired("user")
-	loginCmd.Flags().StringVarP(&Password, "password", "p", "", "Password required")
+	loginCmd.Flags().StringVarP(&Password, "password", "", "", "Password required")
 	loginCmd.MarkFlagRequired("password")
 
 	// loginCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")

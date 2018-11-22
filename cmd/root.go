@@ -28,12 +28,18 @@ import (
 )
 
 type config struct {
-	Url   string
-	Token string
+	Url            string
+	Token          string
+	Project        string
+	Cluster        string
+	VirtualCluster string
 }
 
 var cfgFile string
 var Config config
+var Project string
+var Cluster string
+var VirtualCluster string
 
 var Type string
 var Name string
@@ -71,6 +77,9 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.vamp2cli.yaml)")
+	rootCmd.PersistentFlags().StringVar(&Project, "project", "", "active project")
+	rootCmd.PersistentFlags().StringVar(&Cluster, "cluster", "", "active cluster")
+	rootCmd.PersistentFlags().StringVar(&VirtualCluster, "virtualcluster", "", "active virtual cluster")
 	// rootCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")
 	// viper.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server"))
 	// Server = viper.Get("server").(string)
@@ -92,6 +101,16 @@ func ReadConfigFile() error {
 		fmt.Println("error: %v", err_2)
 		return err_2
 	}
+	if Project != "" {
+		Config.Project = Project
+	}
+	if Cluster != "" {
+		Config.Cluster = Cluster
+	}
+	if VirtualCluster != "" {
+		Config.VirtualCluster = VirtualCluster
+	}
+	// fmt.Printf("Current config: %v \n", Config)
 	return nil
 }
 
@@ -120,6 +139,8 @@ func WriteConfigFile() error {
 		// Solves the problem if there is no file viper.ConfigFileUsed() return empty
 		os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0644)
 	}
+
+	// fmt.Printf("write config to file: %v , config: %v\n", filename, Config)
 	err_1 := ioutil.WriteFile(filename, bs, 0644)
 	if err_1 != nil {
 		return err_1
@@ -151,5 +172,6 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		// fmt.Println("Using config file:", viper.ConfigFileUsed())
 		ReadConfigFile()
+		WriteConfigFile()
 	}
 }

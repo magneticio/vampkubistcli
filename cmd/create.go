@@ -43,7 +43,11 @@ to quickly create a Cobra application.`,
 		}
 		Source := string(b)
 		restClient := client.NewRestClient(Config.Url, Config.Token)
-		isCreated, _ := restClient.Create(Type, Name, Source, "yaml")
+		values := make(map[string]string)
+		values["project"] = Config.Project
+		values["cluster"] = Config.Cluster
+		values["virtual_cluster"] = Config.VirtualCluster
+		isCreated, _ := restClient.Create(Type, Name, Source, "yaml", values)
 		if !isCreated {
 			fmt.Println("Not Created " + Type + " with name " + Name)
 		}
