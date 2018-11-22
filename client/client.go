@@ -126,6 +126,41 @@ func (s *RestClient) Create(resourceName string, name string, source string, sou
 	return false, nil
 }
 
+func (s *RestClient) Update(resourceName string, name string, source string, sourceType string) (bool, error) {
+	resourceType, _ := getResourceType(resourceName)
+	url := (*s).url + "/1.0/api/" + resourceType + "?" + resourceName + "_name=" + name
+
+	if sourceType == "yaml" {
+		json, err := yaml.YAMLToJSON([]byte(source))
+		if err != nil {
+			fmt.Printf("err: %v\n", err)
+			return false, err
+		}
+		source = string(json)
+	}
+
+	body := source
+	resp, err := resty.R().
+		// SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetAuthToken((*s).token).
+		SetBody([]byte(body)).
+		// SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
+		// SetError(&AuthError{}).    // or SetError(AuthError{}).
+		Put(url)
+
+	if err == nil {
+		fmt.Printf("\nResult: %v\n", resp)
+		return true, nil
+	} else {
+		fmt.Printf("\nError: %v", err)
+		return false, err
+	}
+
+	return false, nil
+}
+
 func (s *RestClient) Delete(resourceName string, name string) (bool, error) {
 	resourceType, _ := getResourceType(resourceName)
 	url := (*s).url + "/1.0/api/" + resourceType + "?" + resourceName + "_name=" + name
