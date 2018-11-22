@@ -84,7 +84,7 @@ func (s *RestClient) Login(username string, password string) (string, error) {
 
 func (s *RestClient) Create(resourceType string, resourceName string, name string, source string, sourceType string) (bool, error) {
 	url := (*s).url + "/1.0/api/" + resourceType + "?" + resourceName + "_name=" + name
-	// fmt.Printf("user login with username: %v password: %v\n", username, password)
+
 	if sourceType == "yaml" {
 		json, err := yaml.YAMLToJSON([]byte(source))
 		if err != nil {
@@ -106,7 +106,42 @@ func (s *RestClient) Create(resourceType string, resourceName string, name strin
 		Post(url)
 
 	if err == nil {
-		fmt.Printf("\nBody: %v", resp)
+		fmt.Printf("\nResult: %v\n", resp)
+		return true, nil
+	} else {
+		fmt.Printf("\nError: %v", err)
+		return false, err
+	}
+	// explore response object
+	/*
+		fmt.Printf("\nError: %v", err)
+		fmt.Printf("\nResponse Status Code: %v", resp.StatusCode())
+		fmt.Printf("\nResponse Status: %v", resp.Status())
+		fmt.Printf("\nResponse Time: %v", resp.Time())
+		fmt.Printf("\nResponse Received At: %v", resp.ReceivedAt())
+		fmt.Printf("\nResponse Body: %v", resp) // or resp.String() or string(resp.Body())
+		fmt.Printf("\n")
+	*/
+
+	return false, nil
+}
+
+func (s *RestClient) Delete(resourceType string, resourceName string, name string) (bool, error) {
+	url := (*s).url + "/1.0/api/" + resourceType + "?" + resourceName + "_name=" + name
+
+	// body := source
+	resp, err := resty.R().
+		// SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetAuthToken((*s).token).
+		// SetBody([]byte(body)).
+		// SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
+		// SetError(&AuthError{}).    // or SetError(AuthError{}).
+		Delete(url)
+
+	if err == nil {
+		fmt.Printf("\nResult: %v\n", resp)
 		return true, nil
 	} else {
 		fmt.Printf("\nError: %v", err)

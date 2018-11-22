@@ -35,6 +35,11 @@ type config struct {
 var cfgFile string
 var Config config
 
+var Type string
+var Name string
+var SourceString string
+var SourceFile string
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vamp2cli",
