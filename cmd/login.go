@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var Url string
 var Username string
 var Password string
 
@@ -38,6 +39,13 @@ to quickly create a Cobra application.`,
 		// fmt.Println("Server: " + Server)
 		// fmt.Println("login called for " + Username + " " + Password)
 		// fmt.Println("Print: " + strings.Join(args, " "))
+		if Url != "" {
+			Config.Url = Url
+		}
+		if Config.Url == "" {
+			fmt.Println("A Vamp Service url should be provided by url flag")
+			return
+		}
 		restClient := client.NewRestClient(Config.Url, Config.Token)
 		token, _ := restClient.Login(Username, Password)
 		fmt.Println("Token will be written to config: " + token)
@@ -58,6 +66,7 @@ func init() {
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
+	loginCmd.Flags().StringVarP(&Url, "url", "", "", "Url required")
 	loginCmd.Flags().StringVarP(&Username, "user", "u", "", "Username required")
 	loginCmd.MarkFlagRequired("user")
 	loginCmd.Flags().StringVarP(&Password, "password", "p", "", "Password required")

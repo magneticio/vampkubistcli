@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -97,6 +98,23 @@ func WriteConfigFile() error {
 	}
 	// return string(bs)
 	filename := viper.ConfigFileUsed()
+	if filename == "" {
+
+		if cfgFile != "" {
+			// Use config file from the flag.
+			filename = cfgFile
+		} else {
+			// Find home directory.
+			home, err := homedir.Dir()
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			filename = filepath.FromSlash(home + "/" + ".vamp2cli.yaml")
+		}
+		// Solves the problem if there is no file viper.ConfigFileUsed() return empty
+		os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0644)
+	}
 	err_1 := ioutil.WriteFile(filename, bs, 0644)
 	if err_1 != nil {
 		return err_1
@@ -117,6 +135,7 @@ func initConfig() {
 			os.Exit(1)
 		}
 		// Search config in home directory with name ".vamp2cli" (without extension).
+
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".vamp2cli")
 	}
