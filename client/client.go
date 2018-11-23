@@ -130,8 +130,6 @@ func (s *RestClient) Update(resourceName string, name string, source string, sou
 }
 
 func (s *RestClient) Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error) {
-	// resourceType, _ := getResourceType(resourceName)
-	// url := (*s).url + "/1.0/api/" + resourceType + "?" + resourceName + "_name=" + name
 	url, _ := getUrlForResource((*s).url, resourceName, name, values)
 	// fmt.Printf("url: %v\n", url)
 
@@ -175,9 +173,8 @@ func (s *RestClient) Apply(resourceName string, name string, source string, sour
 	return false, nil
 }
 
-func (s *RestClient) Delete(resourceName string, name string) (bool, error) {
-	resourceType, _ := getResourceType(resourceName)
-	url := (*s).url + "/1.0/api/" + resourceType + "?" + resourceName + "_name=" + name
+func (s *RestClient) Delete(resourceName string, name string, values map[string]string) (bool, error) {
+	url, _ := getUrlForResource((*s).url, resourceName, name, values)
 
 	// body := source
 	resp, err := resty.R().
@@ -201,9 +198,8 @@ func (s *RestClient) Delete(resourceName string, name string) (bool, error) {
 	return false, nil
 }
 
-func (s *RestClient) Get(resourceName string, name string) (string, error) {
-	resourceType, _ := getResourceType(resourceName)
-	url := (*s).url + "/1.0/api/" + resourceType + "?" + resourceName + "_name=" + name
+func (s *RestClient) Get(resourceName string, name string, values map[string]string) (string, error) {
+	url, _ := getUrlForResource((*s).url, resourceName, name, values)
 
 	resp, err := resty.R().
 		// SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").

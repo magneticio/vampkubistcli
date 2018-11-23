@@ -37,7 +37,11 @@ to quickly create a Cobra application.`,
 		}
 		// fmt.Println("delete called for type " + Type + " with name " + Name)
 		restClient := client.NewRestClient(Config.Url, Config.Token)
-		isDeleted, _ := restClient.Delete(Type, Name)
+		values := make(map[string]string)
+		values["project"] = Config.Project
+		values["cluster"] = Config.Cluster
+		values["virtual_cluster"] = Config.VirtualCluster
+		isDeleted, _ := restClient.Delete(Type, Name, values)
 		if !isDeleted {
 			fmt.Println("Not Deleted " + Type + " with name " + Name)
 		}
