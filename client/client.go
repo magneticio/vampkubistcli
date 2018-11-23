@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"gopkg.in/resty.v1"
@@ -105,16 +106,16 @@ func getUrlForResource(base string, resourceName string, subCommand string, name
 		subPath = "/" + subCommand
 	}
 	if name != "" {
-		namedParameter = resourceName + "_name=" + name
+		namedParameter = "&" + resourceName + "_name=" + name
 	}
 	switch resourceName {
 	case "project":
-		return base + "/1.0/api/" + "projects" + subPath + "?" + namedParameter, nil
+		return base + "/1.0/api/" + "projects" + subPath + "?time=-1" + namedParameter, nil
 	case "cluster":
 		project := values["project"]
 		url := base + "/1.0/api/" + "clusters" + subPath +
 			"?" + "project_name=" + project +
-			"&" + namedParameter
+			namedParameter
 		return url, nil
 	case "virtual_cluster":
 		project := values["project"]
@@ -122,7 +123,7 @@ func getUrlForResource(base string, resourceName string, subCommand string, name
 		url := base + "/1.0/api/" + "virtual-clusters" + subPath +
 			"?" + "project_name=" + project +
 			"&" + "cluster_name=" + cluster +
-			"&" + namedParameter
+			namedParameter
 		return url, nil
 	case "virtual_service":
 		project := values["project"]
@@ -130,17 +131,17 @@ func getUrlForResource(base string, resourceName string, subCommand string, name
 		url := base + "/1.0/api/" + "virtual-services" + subPath +
 			"?" + "project_name=" + project +
 			"&" + "cluster_name=" + cluster +
-			"&" + namedParameter
+			namedParameter
 		return url, nil
 	}
 	project := values["project"]
 	cluster := values["cluster"]
 	virtualCluster := values["virtual_cluster"]
-	url := base + "/1.0/api/" + resourceName + "s" + subPath +
+	url := base + "/1.0/api/" + strings.Replace(resourceName, "_", "-", -1) + "s" + subPath +
 		"?" + "project_name=" + project +
 		"&" + "cluster_name=" + cluster +
 		"&" + "virtual_cluster_name=" + virtualCluster +
-		"&" + namedParameter
+		namedParameter
 	return url, nil
 	// return "", errors.New("no resource Type")
 }
