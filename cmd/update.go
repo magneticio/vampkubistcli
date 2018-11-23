@@ -39,11 +39,14 @@ to quickly create a Cobra application.`,
 		Type = args[0]
 		Name = args[1]
 		// fmt.Println("create called for type " + Type + " with name " + Name)
-		b, err := ioutil.ReadFile(SourceFile) // just pass the file name
-		if err != nil {
-			fmt.Print(err)
+		Source := SourceString
+		if Source == "" {
+			b, err := ioutil.ReadFile(SourceFile) // just pass the file name
+			if err != nil {
+				fmt.Print(err)
+			}
+			Source = string(b)
 		}
-		Source := string(b)
 		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
 		values := make(map[string]string)
 		values["project"] = Config.Project
@@ -70,6 +73,7 @@ func init() {
 	// updateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	// updateCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
 	// updateCmd.MarkFlagRequired("name")
+	updateCmd.Flags().StringVarP(&SourceString, "string", "s", "", "Source from string")
 	updateCmd.Flags().StringVarP(&SourceFile, "file", "f", "", "Source from file")
 	updateCmd.Flags().StringVarP(&SourceFileType, "input", "i", "yaml", "Source file type yaml or json")
 }
