@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Simple bool
+var Detailed bool
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
@@ -43,7 +43,7 @@ to quickly create a Cobra application.`,
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
-		result, err := restClient.List(Type, OutputType, values, Simple)
+		result, err := restClient.List(Type, OutputType, values, !Detailed)
 		if err == nil {
 			fmt.Printf(result)
 		}
@@ -63,5 +63,5 @@ func init() {
 	// is called directly, e.g.:
 	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	listCmd.Flags().StringVarP(&OutputType, "output", "o", "yaml", "Output format yaml or json")
-	listCmd.Flags().BoolVarP(&Simple, "simple", "", false, "list just names")
+	listCmd.Flags().BoolVarP(&Detailed, "detailed", "", false, "list detailed info")
 }
