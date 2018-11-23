@@ -44,6 +44,10 @@ type AuthError struct {
 	/* variables */
 }
 
+type Named struct {
+	Name string `json:"name"`
+}
+
 func NewRestClient(url string, token string, isDebug bool) *RestClient {
 	resty.SetDebug(isDebug)
 	return &RestClient{
@@ -259,7 +263,7 @@ func (s *RestClient) Get(resourceName string, name string, outputFormat string, 
 	return "", nil
 }
 
-func (s *RestClient) List(resourceName string, outputFormat string, values map[string]string) (string, error) {
+func (s *RestClient) List(resourceName string, outputFormat string, values map[string]string, simple bool) (string, error) {
 	url, _ := getUrlForResource((*s).url, resourceName, "list", "", values)
 
 	resp, err := resty.R().
@@ -274,9 +278,22 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 
 	if err == nil {
 		// fmt.Printf("\nResult: %v\n", resp)
+		responseBody := resp.Body()
+		if simple {
+			var r []Named
+			err := json.Unmarshal([]byte(responseBody), &r)
+			if err != nil {
+				fmt.Printf("err was %v", err)
+			}
+			responseBody, err = json.Marshal(r)
+			if err != nil {
+				fmt.Printf("err was %v", err)
+			}
+		}
+
 		source := ""
 		if outputFormat == "yaml" {
-			yaml, err_2 := yaml.JSONToYAML(resp.Body())
+			yaml, err_2 := yaml.JSONToYAML(responseBody)
 			if err_2 != nil {
 				fmt.Printf("err: %v\n", err_2)
 				return "", err_2
@@ -284,7 +301,7 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 			source = string(yaml)
 		} else {
 			var prettyJSON bytes.Buffer
-			error := json.Indent(&prettyJSON, resp.Body(), "", "    ")
+			error := json.Indent(&prettyJSON, responseBody, "", "    ")
 			if error != nil {
 				log.Println("JSON parse error: ", error)
 				return "", error

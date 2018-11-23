@@ -21,6 +21,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var Simple bool
+
 // listCmd represents the list command
 var listCmd = &cobra.Command{
 	Use:   "list",
@@ -41,7 +43,7 @@ to quickly create a Cobra application.`,
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
-		result, err := restClient.List(Type, OutputType, values)
+		result, err := restClient.List(Type, OutputType, values, Simple)
 		if err == nil {
 			fmt.Printf(result)
 		}
@@ -60,4 +62,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	listCmd.Flags().StringVarP(&OutputType, "output", "o", "yaml", "Output format yaml or json")
+	listCmd.Flags().BoolVarP(&Simple, "simple", "", false, "list just names")
 }
