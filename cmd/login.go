@@ -46,7 +46,7 @@ to quickly create a Cobra application.`,
 			fmt.Println("A Vamp Service url should be provided by url flag")
 			return
 		}
-		restClient := client.NewRestClient(Config.Url, Config.Token)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
 		token, _ := restClient.Login(Username, Password)
 		fmt.Println("Token will be written to config: " + token)
 		Config.Token = token

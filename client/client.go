@@ -44,7 +44,8 @@ type AuthError struct {
 	/* variables */
 }
 
-func NewRestClient(url string, token string) *RestClient {
+func NewRestClient(url string, token string, isDebug bool) *RestClient {
+	resty.SetDebug(isDebug)
 	return &RestClient{
 		url:   url,
 		token: token,
@@ -93,41 +94,49 @@ func getResourceType(resourceName string) (string, error) {
 	return "", errors.New("no resource Type")
 }
 
-func getUrlForResource(base string, resourceName string, name string, values map[string]string) (string, error) {
+func getUrlForResource(base string, resourceName string, subCommand string, name string, values map[string]string) (string, error) {
+	subPath := ""
+	namedParameter := ""
+	if subCommand != "" {
+		subPath = "/" + subCommand
+	}
+	if name != "" {
+		namedParameter = resourceName + "_name=" + name
+	}
 	switch resourceName {
 	case "project":
-		return base + "/1.0/api/" + "projects" + "?" + resourceName + "_name=" + name, nil
+		return base + "/1.0/api/" + "projects" + subPath + "?" + namedParameter, nil
 	case "cluster":
 		project := values["project"]
-		url := base + "/1.0/api/" + "clusters" +
+		url := base + "/1.0/api/" + "clusters" + subPath +
 			"?" + "project_name=" + project +
-			"&" + resourceName + "_name=" + name
+			"&" + namedParameter
 		return url, nil
 	case "virtual_cluster":
 		project := values["project"]
 		cluster := values["cluster"]
-		url := base + "/1.0/api/" + "virtual-clusters" +
+		url := base + "/1.0/api/" + "virtual-clusters" + subPath +
 			"?" + "project_name=" + project +
 			"&" + "cluster_name=" + cluster +
-			"&" + resourceName + "_name=" + name
+			"&" + namedParameter
 		return url, nil
 	case "virtual_service":
 		project := values["project"]
 		cluster := values["cluster"]
-		url := base + "/1.0/api/" + "virtual-services" +
+		url := base + "/1.0/api/" + "virtual-services" + subPath +
 			"?" + "project_name=" + project +
 			"&" + "cluster_name=" + cluster +
-			"&" + resourceName + "_name=" + name
+			"&" + namedParameter
 		return url, nil
 	}
 	project := values["project"]
 	cluster := values["cluster"]
 	virtualCluster := values["virtual_cluster"]
-	url := base + "/1.0/api/" + resourceName + "s" +
+	url := base + "/1.0/api/" + resourceName + "s" + subPath +
 		"?" + "project_name=" + project +
 		"&" + "cluster_name=" + cluster +
 		"&" + "virtual_cluster_name=" + virtualCluster +
-		"&" + resourceName + "_name=" + name
+		"&" + namedParameter
 	return url, nil
 	// return "", errors.New("no resource Type")
 }
@@ -141,7 +150,7 @@ func (s *RestClient) Update(resourceName string, name string, source string, sou
 }
 
 func (s *RestClient) Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error) {
-	url, _ := getUrlForResource((*s).url, resourceName, name, values)
+	url, _ := getUrlForResource((*s).url, resourceName, "", name, values)
 	// fmt.Printf("url: %v\n", url)
 
 	if sourceType == "yaml" {
@@ -185,7 +194,7 @@ func (s *RestClient) Apply(resourceName string, name string, source string, sour
 }
 
 func (s *RestClient) Delete(resourceName string, name string, values map[string]string) (bool, error) {
-	url, _ := getUrlForResource((*s).url, resourceName, name, values)
+	url, _ := getUrlForResource((*s).url, resourceName, "", name, values)
 
 	// body := source
 	resp, err := resty.R().
@@ -210,7 +219,48 @@ func (s *RestClient) Delete(resourceName string, name string, values map[string]
 }
 
 func (s *RestClient) Get(resourceName string, name string, outputFormat string, values map[string]string) (string, error) {
-	url, _ := getUrlForResource((*s).url, resourceName, name, values)
+	url, _ := getUrlForResource((*s).url, resourceName, "", name, values)
+
+	resp, err := resty.R().
+		// SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetAuthToken((*s).token).
+		// SetBody([]byte(body)).
+		// SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
+		// SetError(&AuthError{}).    // or SetError(AuthError{}).
+		Get(url)
+
+	if err == nil {
+		// fmt.Printf("\nResult: %v\n", resp)
+		source := ""
+		if outputFormat == "yaml" {
+			yaml, err_2 := yaml.JSONToYAML(resp.Body())
+			if err_2 != nil {
+				fmt.Printf("err: %v\n", err_2)
+				return "", err_2
+			}
+			source = string(yaml)
+		} else {
+			var prettyJSON bytes.Buffer
+			error := json.Indent(&prettyJSON, resp.Body(), "", "    ")
+			if error != nil {
+				log.Println("JSON parse error: ", error)
+				return "", error
+			}
+			source = string(prettyJSON.Bytes())
+		}
+		return source, nil
+	} else {
+		fmt.Printf("\nError: %v", err)
+		return "", err
+	}
+
+	return "", nil
+}
+
+func (s *RestClient) List(resourceName string, outputFormat string, values map[string]string) (string, error) {
+	url, _ := getUrlForResource((*s).url, resourceName, "list", "", values)
 
 	resp, err := resty.R().
 		// SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").

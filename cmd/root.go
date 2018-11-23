@@ -47,6 +47,7 @@ var SourceString string
 var SourceFile string
 var SourceFileType string
 var OutputType string
+var Debug bool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -82,6 +83,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&Project, "project", "p", "", "active project")
 	rootCmd.PersistentFlags().StringVarP(&Cluster, "cluster", "c", "", "active cluster")
 	rootCmd.PersistentFlags().StringVarP(&VirtualCluster, "virtualcluster", "v", "", "active virtual cluster")
+
+	rootCmd.PersistentFlags().BoolVarP(&Debug, "debug", "", false, "debug enable on client")
 	// rootCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")
 	// viper.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server"))
 	// Server = viper.Get("server").(string)

@@ -36,7 +36,7 @@ to quickly create a Cobra application.`,
 			Type = args[0]
 		}
 		// fmt.Println("get called for type " + Type + " with name " + Name)
-		restClient := client.NewRestClient(Config.Url, Config.Token)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
 		values := make(map[string]string)
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster

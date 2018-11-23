@@ -42,7 +42,7 @@ to quickly create a Cobra application.`,
 			fmt.Print(err)
 		}
 		Source := string(b)
-		restClient := client.NewRestClient(Config.Url, Config.Token)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
 		values := make(map[string]string)
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster
