@@ -108,6 +108,14 @@ func getUrlForResource(base string, resourceName string, name string, values map
 			"&" + "cluster_name=" + cluster +
 			"&" + resourceName + "_name=" + name
 		return url, nil
+	case "virtual_service":
+		project := values["project"]
+		cluster := values["cluster"]
+		url := base + "/1.0/api/" + "virtual-services" +
+			"?" + "project_name=" + project +
+			"&" + "cluster_name=" + cluster +
+			"&" + resourceName + "_name=" + name
+		return url, nil
 	}
 	project := values["project"]
 	cluster := values["cluster"]

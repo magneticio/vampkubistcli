@@ -77,9 +77,9 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.vamp2cli.yaml)")
-	rootCmd.PersistentFlags().StringVar(&Project, "project", "", "active project")
-	rootCmd.PersistentFlags().StringVar(&Cluster, "cluster", "", "active cluster")
-	rootCmd.PersistentFlags().StringVar(&VirtualCluster, "virtualcluster", "", "active virtual cluster")
+	rootCmd.PersistentFlags().StringVarP(&Project, "project", "p", "", "active project")
+	rootCmd.PersistentFlags().StringVarP(&Cluster, "cluster", "c", "", "active cluster")
+	rootCmd.PersistentFlags().StringVarP(&VirtualCluster, "virtualcluster", "v", "", "active virtual cluster")
 	// rootCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")
 	// viper.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server"))
 	// Server = viper.Get("server").(string)
@@ -172,6 +172,5 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		// fmt.Println("Using config file:", viper.ConfigFileUsed())
 		ReadConfigFile()
-		WriteConfigFile()
 	}
 }
