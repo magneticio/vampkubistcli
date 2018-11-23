@@ -15,8 +15,11 @@
 package client
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/ghodss/yaml"
 	"gopkg.in/resty.v1"
@@ -206,7 +209,7 @@ func (s *RestClient) Delete(resourceName string, name string, values map[string]
 	return false, nil
 }
 
-func (s *RestClient) Get(resourceName string, name string, values map[string]string) (string, error) {
+func (s *RestClient) Get(resourceName string, name string, outputFormat string, values map[string]string) (string, error) {
 	url, _ := getUrlForResource((*s).url, resourceName, name, values)
 
 	resp, err := resty.R().
@@ -221,12 +224,23 @@ func (s *RestClient) Get(resourceName string, name string, values map[string]str
 
 	if err == nil {
 		// fmt.Printf("\nResult: %v\n", resp)
-		yaml, err_2 := yaml.JSONToYAML(resp.Body())
-		if err_2 != nil {
-			fmt.Printf("err: %v\n", err_2)
-			return "", err_2
+		source := ""
+		if outputFormat == "yaml" {
+			yaml, err_2 := yaml.JSONToYAML(resp.Body())
+			if err_2 != nil {
+				fmt.Printf("err: %v\n", err_2)
+				return "", err_2
+			}
+			source = string(yaml)
+		} else {
+			var prettyJSON bytes.Buffer
+			error := json.Indent(&prettyJSON, resp.Body(), "", "    ")
+			if error != nil {
+				log.Println("JSON parse error: ", error)
+				return "", error
+			}
+			source = string(prettyJSON.Bytes())
 		}
-		source := string(yaml)
 		return source, nil
 	} else {
 		fmt.Printf("\nError: %v", err)

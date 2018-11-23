@@ -41,7 +41,7 @@ to quickly create a Cobra application.`,
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
-		result, err := restClient.Get(Type, Name, values)
+		result, err := restClient.Get(Type, Name, OutputType, values)
 		if err == nil {
 			fmt.Printf(result)
 		}
@@ -62,4 +62,5 @@ func init() {
 	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	getCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
 	getCmd.MarkFlagRequired("name")
+	getCmd.Flags().StringVarP(&OutputType, "output", "o", "yaml", "Output format yaml or json")
 }

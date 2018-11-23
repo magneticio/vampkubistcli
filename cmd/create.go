@@ -47,7 +47,7 @@ to quickly create a Cobra application.`,
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
-		isCreated, _ := restClient.Create(Type, Name, Source, "yaml", values)
+		isCreated, _ := restClient.Create(Type, Name, Source, SourceFileType, values)
 		if !isCreated {
 			fmt.Println("Not Created " + Type + " with name " + Name)
 		}
@@ -69,5 +69,6 @@ func init() {
 	createCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
 	createCmd.MarkFlagRequired("name")
 	createCmd.Flags().StringVarP(&SourceFile, "file", "f", "", "Source from file")
+	createCmd.Flags().StringVarP(&SourceFileType, "input", "i", "yaml", "Source file type yaml or json")
 
 }

@@ -45,6 +45,8 @@ var Type string
 var Name string
 var SourceString string
 var SourceFile string
+var SourceFileType string
+var OutputType string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
