@@ -25,13 +25,13 @@ import (
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Creates a resource",
+	Long: `To create a resource
+Run as vamp2cli create resourceType ResourceName
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Example:
+    vamp2cli create project myproject
+    vamp2cli create -p myproject project`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 2 {
 			return
