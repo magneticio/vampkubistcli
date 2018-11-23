@@ -32,9 +32,11 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) > 0 {
-			Type = args[0]
+		if len(args) < 2 {
+			return
 		}
+		Type = args[0]
+		Name = args[1]
 		// fmt.Println("delete called for type " + Type + " with name " + Name)
 		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
 		values := make(map[string]string)
@@ -60,6 +62,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	deleteCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
-	deleteCmd.MarkFlagRequired("name")
+	// deleteCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
+	// deleteCmd.MarkFlagRequired("name")
 }

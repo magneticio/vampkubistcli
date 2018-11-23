@@ -33,9 +33,11 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) > 0 {
-			Type = args[0]
+		if len(args) < 2 {
+			return
 		}
+		Type = args[0]
+		Name = args[1]
 		// fmt.Println("create called for type " + Type + " with name " + Name)
 		b, err := ioutil.ReadFile(SourceFile) // just pass the file name
 		if err != nil {
@@ -66,8 +68,8 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// updateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	updateCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
-	updateCmd.MarkFlagRequired("name")
+	// updateCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
+	// updateCmd.MarkFlagRequired("name")
 	updateCmd.Flags().StringVarP(&SourceFile, "file", "f", "", "Source from file")
 	updateCmd.Flags().StringVarP(&SourceFileType, "input", "i", "yaml", "Source file type yaml or json")
 }
