@@ -98,12 +98,12 @@ func ReadConfigFile() error {
 	c := viper.AllSettings()
 	bs, err := yaml.Marshal(c)
 	if err != nil {
-		fmt.Println("unable to marshal config to YAML: %v", err)
+		fmt.Printf("unable to marshal config to YAML: %v\n", err)
 		return err
 	}
 	err_2 := yaml.Unmarshal(bs, &Config)
 	if err_2 != nil {
-		fmt.Println("error: %v", err_2)
+		fmt.Printf("error: %v\n", err_2)
 		return err_2
 	}
 	if Project != "" {
@@ -122,7 +122,7 @@ func ReadConfigFile() error {
 func WriteConfigFile() error {
 	bs, err := yaml.Marshal(Config)
 	if err != nil {
-		fmt.Println("unable to marshal config to YAML: %v", err)
+		fmt.Printf("unable to marshal config to YAML: %v\n", err)
 		return err
 	}
 	// return string(bs)
