@@ -317,3 +317,40 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 
 	return "", nil
 }
+
+func (s *RestClient) Convert(inputFormat string, outputFormat string, input string) (string, error) {
+	if inputFormat == outputFormat {
+		return input, nil
+	}
+
+	inputSource := []byte(input)
+	if inputFormat == "yaml" {
+		json, err := yaml.YAMLToJSON(inputSource)
+		if err != nil {
+			fmt.Printf("err: %v\n", err)
+			return "", err
+		}
+		inputSource = json
+	}
+
+	// convert everything to json as byte
+
+	outputSourceString := ""
+	if outputFormat == "yaml" {
+		yaml, errYaml := yaml.JSONToYAML(inputSource)
+		if errYaml != nil {
+			fmt.Printf("YAML conversion error: %v\n", errYaml)
+			return "", errYaml
+		}
+		outputSourceString = string(yaml)
+	} else {
+		var prettyJSON bytes.Buffer
+		indentError := json.Indent(&prettyJSON, inputSource, "", "    ")
+		if indentError != nil {
+			log.Println("JSON parse error: ", indentError)
+			return "", indentError
+		}
+		outputSourceString = string(prettyJSON.Bytes())
+	}
+	return outputSourceString, nil
+}
