@@ -43,6 +43,7 @@ to quickly create a Cobra application.`,
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
+		values["application"] = Application
 		isDeleted, _ := restClient.Delete(Type, Name, values)
 		if !isDeleted {
 			fmt.Println("Not Deleted " + Type + " with name " + Name)

@@ -52,6 +52,7 @@ to quickly create a Cobra application.`,
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
+		values["application"] = Application
 		isUpdated, _ := restClient.Update(Type, Name, Source, SourceFileType, values)
 		if !isUpdated {
 			fmt.Println("Not Updated " + Type + " with name " + Name)

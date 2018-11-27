@@ -40,6 +40,7 @@ var Config config
 var Project string
 var Cluster string
 var VirtualCluster string
+var Application string
 
 var Type string
 var Name string
@@ -83,6 +84,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&Project, "project", "p", "", "active project")
 	rootCmd.PersistentFlags().StringVarP(&Cluster, "cluster", "c", "", "active cluster")
 	rootCmd.PersistentFlags().StringVarP(&VirtualCluster, "virtualcluster", "v", "", "active virtual cluster")
+	rootCmd.PersistentFlags().StringVarP(&Application, "application", "a", "", "application name for deployments")
 
 	rootCmd.PersistentFlags().BoolVarP(&Debug, "debug", "", false, "debug enable on client")
 	// rootCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")

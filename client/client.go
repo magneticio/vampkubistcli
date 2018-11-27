@@ -108,6 +108,11 @@ func getUrlForResource(base string, resourceName string, subCommand string, name
 	if name != "" {
 		namedParameter = "&" + resourceName + "_name=" + name
 	}
+	applicationParameter := ""
+	application := values["application"]
+	if application != "" {
+		applicationParameter = "&" + "application_name=" + application
+	}
 	switch resourceName {
 	case "project":
 		return base + "/1.0/api/" + "projects" + subPath + "?time=-1" + namedParameter, nil
@@ -141,6 +146,7 @@ func getUrlForResource(base string, resourceName string, subCommand string, name
 		"?" + "project_name=" + project +
 		"&" + "cluster_name=" + cluster +
 		"&" + "virtual_cluster_name=" + virtualCluster +
+		applicationParameter +
 		namedParameter
 	return url, nil
 	// return "", errors.New("no resource Type")
@@ -284,11 +290,13 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 			var r []Named
 			err := json.Unmarshal([]byte(responseBody), &r)
 			if err != nil {
-				fmt.Printf("err was %v", err)
+				fmt.Printf("Error: %v\n", string(responseBody))
+				return "", errors.New(string(responseBody))
 			}
 			responseBody, err = json.Marshal(r)
 			if err != nil {
-				fmt.Printf("err was %v", err)
+				fmt.Printf("Error: %v", err)
+				return "", err
 			}
 		}
 

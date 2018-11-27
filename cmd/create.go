@@ -52,6 +52,7 @@ Example:
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
+		values["application"] = Application
 		isCreated, _ := restClient.Create(Type, Name, Source, SourceFileType, values)
 		if !isCreated {
 			fmt.Println("Not Created " + Type + " with name " + Name)

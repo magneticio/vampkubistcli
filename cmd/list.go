@@ -43,6 +43,7 @@ to quickly create a Cobra application.`,
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
+		values["application"] = Application
 		result, err := restClient.List(Type, OutputType, values, !Detailed)
 		if err == nil {
 			fmt.Printf(result)
