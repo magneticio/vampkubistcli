@@ -74,10 +74,17 @@ func BootstrapVampService() (string, string, string, error) {
 	     apiGroup: rbac.authorization.k8s.io
 	*/
 
+	/*
+		clusterRoleBindingSpec := &rbacv1.ClusterRoleBinding{
+			ObjectMeta: metav1.ObjectMeta{Name: ns + "-sa-cluster-admin-binding"},
+			Subjects:   []rbacv1.Subject{rbacv1.Subject{Kind: "ServiceAccount", Name: "default", Namespace: ns}},
+			RoleRef:    rbacv1.RoleRef{Kind: "ClusterRole", Name: "cluster-admin", APIGroup: ""},
+		}
+	*/
 	clusterRoleBindingSpec := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{Name: ns + "-sa-cluster-admin-binding"},
-		Subjects:   []rbacv1.Subject{rbacv1.Subject{Kind: "ServiceAccount", Name: "default", Namespace: ns}},
-		RoleRef:    rbacv1.RoleRef{Kind: "ClusterRole", Name: "cluster-admin", APIGroup: ""},
+		Subjects:   []rbacv1.Subject{rbacv1.Subject{Kind: "User", Name: "system:serviceaccount:" + ns + ":default", APIGroup: "rbac.authorization.k8s.io"}},
+		RoleRef:    rbacv1.RoleRef{Kind: "ClusterRole", Name: "cluster-admin", APIGroup: "rbac.authorization.k8s.io"},
 	}
 	_, err_c := clientset.RbacV1().ClusterRoleBindings().Create(clusterRoleBindingSpec)
 

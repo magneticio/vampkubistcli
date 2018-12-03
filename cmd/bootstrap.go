@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	b64 "encoding/base64"
+
 	"github.com/magneticio/vamp2cli/client"
 	"github.com/magneticio/vamp2cli/kubernetes"
 	"github.com/spf13/cobra"
@@ -47,8 +49,8 @@ to quickly create a Cobra application.`,
 			}
 			metadataMap := make(map[string]string)
 			metadataMap["url"] = url
-			metadataMap["cacertdata"] = crt
-			metadataMap["serviceaccount_token"] = token
+			metadataMap["cacertdata"] = b64.StdEncoding.EncodeToString([]byte(crt))
+			metadataMap["serviceaccount_token"] = b64.StdEncoding.EncodeToString([]byte(token))
 			metadata := &client.Metadata{Metadata: metadataMap}
 			SourceRaw, err_marshall := json.Marshal(metadata)
 			if err_marshall != nil {
