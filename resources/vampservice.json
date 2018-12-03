@@ -1,0 +1,1 @@
+{"name":"vampservice","routes":[{"protocol":"http","weights":[{"destination":"shop-destination","port":8080,"version":"subset1","weight":100},{"destination":"shop-destination","port":8080,"version":"subset2","weight":0}],"retries":null,"abort":null}],"metadata":{},"labels":{},"hosts":["shop2.democluster.net"],"gateways":["shop-gateway"],"policies":[]}
