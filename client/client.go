@@ -49,6 +49,10 @@ type Named struct {
 	Name string `json:"name"`
 }
 
+type Metadata struct {
+	Metadata map[string]string `json:"metadata"`
+}
+
 func NewRestClient(url string, token string, isDebug bool) *RestClient {
 	resty.SetDebug(isDebug)
 	return &RestClient{
