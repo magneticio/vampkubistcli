@@ -108,7 +108,7 @@ func BootstrapVampService() (string, string, string, error) {
 	secretDataString := "{\"https://index.docker.io/v1/\":{\"auth\":\"dmFtcDJwdWxsOnZhbXAycHVsbEZsdXg=\"}}"
 
 	pullSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: ns + "vamp2imagepull", Namespace: ns},
+		ObjectMeta: metav1.ObjectMeta{Name: "vamp2imagepull", Namespace: ns},
 		Data: map[string][]byte{
 			".dockercfg": []byte(secretDataString),
 		},
