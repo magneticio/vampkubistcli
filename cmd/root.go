@@ -50,6 +50,8 @@ var SourceFileType string
 var OutputType string
 var Debug bool
 
+const Version string = "0.0.1"
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vamp2cli",
