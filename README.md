@@ -23,3 +23,10 @@ For mac run:
 ```
 ./bin/vamp2cli-darwin-amd64 --help
 ```
+
+Copy the binary for you platform to the user binaries folder for general usage, for MacOS:
+
+```
+cp vamp2cli-darwin-amd64 /usr/local/bin/vamp2cli
+chmod +x /usr/local/bin/vamp2cli
+```
