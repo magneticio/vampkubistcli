@@ -1,0 +1,21 @@
+gateways:
+- shop-gateway
+hosts:
+- 35.225.71.122
+routes:
+- condition: uri prefix "/v1"
+  rewrite: "/"
+  protocol: http
+  weights:
+  - destination: shop-destination
+    port: 8080
+    version: subset1
+    weight: 100
+- condition: uri prefix "/v2"
+  rewrite: "/"
+  protocol: http
+  weights:
+  - destination: shop-destination
+    port: 8080
+    version: subset2
+    weight: 100
