@@ -190,9 +190,16 @@ It is easier to get with a grep command:
 ```
 vamp2cli get gateway shop-gateway | grep ip
 ```
-Copy paste the IP address of the gateway in the vamp service configuration under the hosts, the resource file It is "1.2.3.4" by default.
+Copy paste the IP address of the gateway in the vamp service configuration under the hosts,
+the resource file It is "1.2.3.4" by default.
 
-Create a Vamp Service with 50%-50% traffic
+Create a Vamp Service with 100% traffic on version1
 ```
 vamp2cli create vamp_service shop-vamp-service -f ./resources/vampservice.yaml
+```
+
+Now with this canary release, the second version is released in time based manner,
+there is an error in the responses it automatically rolls back and retries until successful.
+```
+vamp2cli create canary_release shop-release -f ./resources/canaryrelease.yaml
 ```

@@ -1,15 +1,11 @@
 gateways:
 - shop-gateway
 hosts:
-- "1.2.3.4"
+- "35.225.71.122"
 routes:
 - protocol: http
   weights:
   - destination: shop-destination
     port: 8080
     version: subset1
-    weight: 50
-  - destination: shop-destination
-    port: 8080
-    version: subset2
-    weight: 50
+    weight: 100

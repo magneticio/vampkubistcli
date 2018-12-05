@@ -8,6 +8,3 @@ subsets:
   subset1:
     labels:
       version: version1
-  subset2:
-    labels:
-      version: version2
