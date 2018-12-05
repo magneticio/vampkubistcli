@@ -149,9 +149,9 @@ Again while working on the same cluster it is recommended to set it as default b
 vamp2cli set -c mycluster
 ```
 
-Now it is time to deploy an example application with two versions:
+Now it is time to deploy an example application with one version:
 ```
-kubectl apply -f ./resources/demo-application.yaml
+kubectl apply -f ./resources/demo-application-version1.yaml
 ```
 
 This will create a namespace called vamp-demo and deploy two deployments. There are two ways of importing a namespace to vamp
@@ -164,6 +164,14 @@ vamp2cli create virtual_cluster vamp-demo -f ./resources/virtualcluster.yaml
 
 This will re-label the namespace with required settings if the namespace exits. It will not create the namespace, as it is expected to be created by a deployment pipeline.
 
+```
+kubectl get ns vamp-demo -o yaml
+```
+
+set virtual cluster for ease of use:
+```
+vamp2cli set -v vamp-demo
+```
 
 To expose the application to outside, you will need a gateway:
 
@@ -198,8 +206,46 @@ Create a Vamp Service with 100% traffic on version1
 vamp2cli create vamp_service shop-vamp-service -f ./resources/vampservice.yaml
 ```
 
-Now with this canary release, the second version is released in time based manner,
-there is an error in the responses it automatically rolls back and retries until successful.
+Now your application is released to public, copy paste the ip of your gateway to your favourite browser. Now you should be able to see the blue e-commerce page. This is the first version.
+
+Let's deploy the second version of the e-commerce website with kubectl
+```
+kubectl apply -f ./resources/demo-application-version2.yaml
+```
+
+Now with this canary release, the second version will be released in time based manner,
+If there is an error in the responses, it will automatically roll back and retry until successful.
+
+You can create a canary release with configuration file or you can use the release command.
+
+Create with configuration:
 ```
 vamp2cli create canary_release shop-release -f ./resources/canaryrelease.yaml
 ```
+
+Release command:
+```
+vamp2cli release shop-vamp-service --destination shop-destination --subset subset2 -l version=version2
+```
+
+Check your browser and refresh frequently to see the second version is available.
+
+You can also check the percentage changes with:
+```
+vamp2cli get vamp_service shop-vamp-service
+```
+
+It will take some time to release totally and you can not see the first version anymore.
+
+But now you decided, a url based access to these version are more useful for you, then you can set up conditional routes.
+
+Update the hosts field the IP address of gateway in ./resources/conditionalvampservice.yaml then update the vamp service:
+
+```
+vamp2cli update vamp_service shop-vamp-service -f ./resources/conditionalvampservice.yaml
+```
+
+Now you can see that first version is available under url:
+http://IP_OF_GATEWAY/v1
+and second version is under
+http://IP_OF_GATEWAY/v2
