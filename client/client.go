@@ -53,6 +53,13 @@ type Metadata struct {
 	Metadata map[string]string `json:"metadata"`
 }
 
+type CanaryRelease struct {
+	VampService  string            `json:"vampService"`
+	Destination  string            `json:"destination"`
+	Subset       string            `json:"subset"`
+	SubsetLabels map[string]string `json:"subsetLabels"`
+}
+
 func NewRestClient(url string, token string, isDebug bool) *RestClient {
 	resty.SetDebug(isDebug)
 	return &RestClient{
