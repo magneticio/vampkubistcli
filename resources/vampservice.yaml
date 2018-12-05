@@ -1,15 +1,15 @@
 gateways:
 - shop-gateway
 hosts:
-- shop2.democluster.net
+- "1.2.3.4"
 routes:
 - protocol: http
   weights:
-  - destination: destinationshop
+  - destination: shop-destination
     port: 8080
     version: subset1
-    weight: 40
-  - destination: destinationshop
+    weight: 50
+  - destination: shop-destination
     port: 8080
     version: subset2
-    weight: 60
+    weight: 50

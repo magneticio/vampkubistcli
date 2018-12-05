@@ -89,7 +89,7 @@ vamp2cli get project myproject -o json
 Let's update the project configuration with an updated file.
 
 ```
-vamp2cli update project myproject -f ./resources/project_updated.yaml
+vamp2cli update project myproject -f ./resources/project_update.yaml
 ```
 
 Run get project again to see the changes:
@@ -151,16 +151,48 @@ vamp2cli set -c mycluster
 
 Now it is time to deploy an example application with two versions:
 ```
-kubectl apply -f resources/demo-application.yaml
+kubectl apply -f ./resources/demo-application.yaml
 ```
 
 This will create a namespace called vamp-demo and deploy two deployments. There are two ways of importing a namespace to vamp
 - label the namespace with "vamp-enable" : "true"
 - Create a virtual cluster through vamp
 
-
 ```
-vamp2cli create virtual_cluster vamp-demo -i json -s "{}"
+vamp2cli create virtual_cluster vamp-demo -f ./resources/virtualcluster.yaml
 ```
 
 This will re-label the namespace with required settings if the namespace exits. It will not create the namespace, as it is expected to be created by a deployment pipeline.
+
+
+To expose the application to outside, you will need a gateway:
+
+```
+vamp2cli create gateway shop-gateway -f ./resources/gateway.yaml
+```
+
+Create a destination
+
+```
+vamp2cli create destination shop-destination -f ./resources/destination.yaml
+```
+
+Final step is creating the VampSerivice.
+An http load balanced VampService requires the hostnames.
+In this example hostname is the IP address, IP address of the gateway is easy to get with get command:
+
+```
+vamp2cli get gateway shop-gateway
+```
+IP is under status > ip,
+
+It is easier to get with a grep command:
+```
+vamp2cli get gateway shop-gateway | grep ip
+```
+Copy paste the IP address of the gateway in the vamp service configuration under the hosts, the resource file It is 1.2.3.4 by default.
+
+Create a Vamp Service with 50%-50% traffic
+```
+vamp2cli create vamp_service shop-vamp-service -f ./resources/vampservice.yaml
+```
