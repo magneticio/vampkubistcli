@@ -190,7 +190,7 @@ It is easier to get with a grep command:
 ```
 vamp2cli get gateway shop-gateway | grep ip
 ```
-Copy paste the IP address of the gateway in the vamp service configuration under the hosts, the resource file It is 1.2.3.4 by default.
+Copy paste the IP address of the gateway in the vamp service configuration under the hosts, the resource file It is "1.2.3.4" by default.
 
 Create a Vamp Service with 50%-50% traffic
 ```
