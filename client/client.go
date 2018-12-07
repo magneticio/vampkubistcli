@@ -26,6 +26,37 @@ import (
 	"gopkg.in/resty.v1"
 )
 
+/*
+For user friendliness, a resource map is used to map resource types
+*/
+// GO doesn't allow const maps so this is a var
+var resourceMap map[string]string = map[string]string{
+	"project":          "project",
+	"projects":         "project",
+	"cluster":          "cluster",
+	"clusters":         "cluster",
+	"virtual_cluster":  "virtual_cluster",
+	"virtual_clusters": "virtual_cluster",
+	"virtualcluster":   "virtual_cluster",
+	"virtualclusters":  "virtual_cluster",
+	"gateway":          "gateway",
+	"gateways":         "gateway",
+	"vamp_service":     "vamp_service",
+	"vamp_services":    "vamp_service",
+	"vampservice":      "vamp_service",
+	"vampservices":     "vamp_service",
+	"destination":      "destination",
+	"destinations":     "destination",
+	"canary_release":   "canary_release",
+	"canary_releases":  "canary_release",
+	"canaryrelease":    "canary_release",
+	"canaryreleases":   "canary_release",
+	"service":          "service",
+	"services":         "service",
+	"deployment":       "deployment",
+	"deployments":      "deployment",
+}
+
 type RestClient struct {
 	url      string
 	username string
@@ -65,6 +96,22 @@ func NewRestClient(url string, token string, isDebug bool) *RestClient {
 	return &RestClient{
 		url:   url,
 		token: token,
+	}
+}
+
+/*
+This is added for user friendliness.
+If a user uses a plural name or misses an underscore,
+api will still able to work
+*/
+func resourceTypeConversion(resource string) string {
+	// everything is lower case in the api
+	// only _ is used in rest api
+	resourceString := strings.Replace(strings.ToLower(resource), "-", "_", -1)
+	if val, ok := resourceMap[resourceString]; ok {
+		return val
+	} else {
+		return resourceString
 	}
 }
 
@@ -111,6 +158,7 @@ func getResourceType(resourceName string) (string, error) {
 }
 
 func getUrlForResource(base string, resourceName string, subCommand string, name string, values map[string]string) (string, error) {
+	resourceName = resourceTypeConversion(resourceName)
 	subPath := ""
 	namedParameter := ""
 	if subCommand != "" {
