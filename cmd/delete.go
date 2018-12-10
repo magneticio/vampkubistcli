@@ -24,13 +24,13 @@ import (
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Deletes a resource",
+	Long: `To delete a resource
+Run as vamp2cli delete resourceType ResourceName
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Example:
+    vamp2cli delete project myproject
+    vamp2cli delete -p myproject cluster mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 2 {
 			return

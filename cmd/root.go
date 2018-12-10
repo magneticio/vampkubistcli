@@ -55,13 +55,15 @@ const Version string = "0.0.1"
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vamp2cli",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "A command line client for vamp2",
+	Long: `A command line client for vamp2:
+  Usage usually follows:
+  vamp2cli create resourceType resourceName -f filepath.yaml
+  vamp2cli update resourceType resourceName -f filepath.yaml
+  vamp2cli delete resourceType resourceName
+  eg.:
+  vamp2cli create project myproject -f ./project.yaml
+  `,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },

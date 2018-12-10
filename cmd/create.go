@@ -30,8 +30,8 @@ var createCmd = &cobra.Command{
 Run as vamp2cli create resourceType ResourceName
 
 Example:
-    vamp2cli create project myproject
-    vamp2cli create -p myproject project`,
+    vamp2cli create project myproject -f project.yaml
+    vamp2cli create -p myproject cluster mycluster -f cluster.yaml`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 2 {
 			return

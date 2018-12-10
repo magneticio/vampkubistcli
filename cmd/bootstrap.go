@@ -28,13 +28,15 @@ import (
 // bootstrapCmd represents the bootstrap command
 var bootstrapCmd = &cobra.Command{
 	Use:   "bootstrap",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "bootstrap a resource if it is applicable",
+	Long: `Bootstrap is currently only supported for clusters
+    When you want to bootstrap a new cluster with vamp.
+    Make sure kube config setup and active locally.
+    Then run:
+    vamp2cli bootstrap cluster mycluster
+    This will automacially read configuration and create vamp user in your cluster and
+    make required set up in vamp. You can access the cluster with name mycluster.
+  `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 2 {
 			return
