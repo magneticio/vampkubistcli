@@ -24,13 +24,16 @@ import (
 // getCmd represents the get command
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Get a resource as yaml or json",
+	Long: `To get a resource
+Run as vamp2cli get resourceType ResourceName
+Get show resource as yaml by defualt
+By adding -o json, output can be converted to json
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Example:
+    vamp2cli get project myproject
+    vamp2cli get -p myproject cluster mycluster
+    vamp2cli get -p myproject cluster mycluster -o json`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 2 {
 			return

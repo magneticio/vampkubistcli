@@ -90,7 +90,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&VirtualCluster, "virtualcluster", "v", "", "active virtual cluster")
 	rootCmd.PersistentFlags().StringVarP(&Application, "application", "a", "", "application name for deployments")
 
-	rootCmd.PersistentFlags().BoolVarP(&Debug, "debug", "", false, "debug enable on client")
+	rootCmd.PersistentFlags().BoolVarP(&Debug, "debug", "", false, "enable debug on client")
 	// rootCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")
 	// viper.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server"))
 	// Server = viper.Get("server").(string)
