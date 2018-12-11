@@ -174,7 +174,7 @@ This will create a namespace called vamp-demo and deploy two deployments. There 
 - Create a virtual cluster through vamp
 
 ```
-vamp2cli create virtual_cluster vamp-demo -f https://github.com/magneticio/demo-resources/blob/master/resources/virtualcluster.yaml
+vamp2cli create virtual_cluster vamp-demo -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/virtualcluster.yaml
 ```
 
 This will re-label the namespace with required settings if the namespace exits. It will not create the namespace, as it is expected to be created by a deployment pipeline.
@@ -191,7 +191,7 @@ vamp2cli set -v vamp-demo
 To expose the application to outside, you will need a gateway:
 
 ```
-vamp2cli create gateway shop-gateway -f https://github.com/magneticio/demo-resources/blob/master/resources/gateway.yaml
+vamp2cli create gateway shop-gateway -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/gateway.yaml
 ```
 
 Create a destination
@@ -260,7 +260,7 @@ But now you decided, a url based access to these version are more useful for you
 Update the hosts field the IP address of gateway in ./resources/conditionalvampservice.yaml then update the vamp service:
 
 ```
-vamp2cli update vamp_service shop-vamp-service -f https://github.com/magneticio/demo-resources/blob/master/resources/conditionalvampservice_template.yaml --host IP_OF_GATEWAY
+vamp2cli update vamp_service shop-vamp-service -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/conditionalvampservice.yaml --host IP_OF_GATEWAY
 ```
 
 Now you can see that first version is available under url:
