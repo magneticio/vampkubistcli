@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/magneticio/vamp2cli/client"
@@ -34,9 +35,9 @@ Example:
     vamp2cli get project myproject
     vamp2cli get -p myproject cluster mycluster
     vamp2cli get -p myproject cluster mycluster -o json`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
-			return
+			return errors.New("Not Enough Arguments")
 		}
 		Type = args[0]
 		Name = args[1]
@@ -50,7 +51,9 @@ Example:
 		result, err := restClient.Get(Type, Name, OutputType, values)
 		if err == nil {
 			fmt.Printf(result)
+			return nil
 		}
+		return err
 	},
 }
 

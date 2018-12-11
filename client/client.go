@@ -250,7 +250,7 @@ func (s *RestClient) Apply(resourceName string, name string, source string, sour
 	if sourceType == "yaml" {
 		json, err := yaml.YAMLToJSON([]byte(source))
 		if err != nil {
-			fmt.Printf("err: %v\n", err)
+			// fmt.Printf("err: %v\n", err)
 			return false, err
 		}
 		source = string(json)
@@ -277,10 +277,10 @@ func (s *RestClient) Apply(resourceName string, name string, source string, sour
 	}
 
 	if err == nil {
-		fmt.Printf("\nResult: %v\n", resp)
+		fmt.Printf("\n%v\n", resp)
 		return true, nil
 	} else {
-		fmt.Printf("\nError: %v", err)
+		// fmt.Printf("\nError: %v", err)
 		return false, err
 	}
 
@@ -305,7 +305,7 @@ func (s *RestClient) Delete(resourceName string, name string, values map[string]
 		fmt.Printf("\nResult: %v\n", resp)
 		return true, nil
 	} else {
-		fmt.Printf("\nError: %v", err)
+		// fmt.Printf("\nError: %v", err)
 		return false, err
 	}
 
@@ -331,7 +331,7 @@ func (s *RestClient) Get(resourceName string, name string, outputFormat string, 
 		if outputFormat == "yaml" {
 			yaml, err_2 := yaml.JSONToYAML(resp.Body())
 			if err_2 != nil {
-				fmt.Printf("err: %v\n", err_2)
+				// fmt.Printf("err: %v\n", err_2)
 				return "", err_2
 			}
 			source = string(yaml)
@@ -346,7 +346,7 @@ func (s *RestClient) Get(resourceName string, name string, outputFormat string, 
 		}
 		return source, nil
 	} else {
-		fmt.Printf("\nError: %v", err)
+		// fmt.Printf("\nError: %v", err)
 		return "", err
 	}
 

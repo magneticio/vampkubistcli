@@ -15,7 +15,7 @@
 package cmd
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/magneticio/vamp2cli/client"
 	"github.com/spf13/cobra"
@@ -31,9 +31,9 @@ Run as vamp2cli delete resourceType ResourceName
 Example:
     vamp2cli delete project myproject
     vamp2cli delete -p myproject cluster mycluster`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
-			return
+			return errors.New("Not Enough Arguments")
 		}
 		Type = args[0]
 		Name = args[1]
@@ -44,10 +44,12 @@ Example:
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		isDeleted, _ := restClient.Delete(Type, Name, values)
+		isDeleted, err_delete := restClient.Delete(Type, Name, values)
 		if !isDeleted {
-			fmt.Println("Not Deleted " + Type + " with name " + Name)
+			// fmt.Println("Not Deleted " + Type + " with name " + Name)
+			return err_delete
 		}
+		return nil
 	},
 }
 

@@ -30,7 +30,7 @@ func UseSourceUrl(resourceUrl string) (string, error) {
 		return source, nil
 	}
 	scheme := strings.ToLower(u.Scheme)
-	fmt.Println("scheme: " + scheme)
+	// fmt.Println("scheme: " + scheme)
 	if scheme == "http" || scheme == "https" {
 		resp, err := http.Get(resourceUrl)
 		if err != nil {
@@ -42,7 +42,7 @@ func UseSourceUrl(resourceUrl string) (string, error) {
 			return "", err
 		}
 		source := string(contents)
-		fmt.Println(source)
+		// fmt.Println(source)
 		return source, nil
 	}
 	return "", errors.New("Not Supported protocol :" + scheme)

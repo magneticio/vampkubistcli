@@ -77,9 +77,9 @@ Example:
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		isCreated, _ := restClient.Create(Type, Name, Source, SourceFileType, values)
+		isCreated, err_create := restClient.Create(Type, Name, Source, SourceFileType, values)
 		if !isCreated {
-			return errors.New("Not Created " + Type + " with name " + Name)
+			return err_create
 		}
 		return nil
 	},

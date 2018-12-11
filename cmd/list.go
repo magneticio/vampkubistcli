@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/magneticio/vamp2cli/client"
@@ -33,9 +34,11 @@ Run as vamp2cli list resourceType
 Example:
     vamp2cli list project
     vamp2cli list -p myproject cluster`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
 			Type = args[0]
+		} else {
+			return errors.New("Not Enough Arguments")
 		}
 		// fmt.Println("get called for type " + Type + " with name " + Name)
 		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
@@ -47,7 +50,9 @@ Example:
 		result, err := restClient.List(Type, OutputType, values, !Detailed)
 		if err == nil {
 			fmt.Printf(result)
+			return nil
 		}
+		return err
 	},
 }
 

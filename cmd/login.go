@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/magneticio/vamp2cli/client"
@@ -35,7 +36,7 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		// fmt.Println("Server: " + Server)
 		// fmt.Println("login called for " + Username + " " + Password)
 		// fmt.Println("Print: " + strings.Join(args, " "))
@@ -43,14 +44,18 @@ to quickly create a Cobra application.`,
 			Config.Url = Url
 		}
 		if Config.Url == "" {
-			fmt.Println("A Vamp Service url should be provided by url flag")
-			return
+			// fmt.Println("A Vamp Service url should be provided by url flag")
+			return errors.New("A Vamp Service url should be provided by url flag")
 		}
 		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
-		token, _ := restClient.Login(Username, Password)
+		token, err := restClient.Login(Username, Password)
+		if err != nil {
+			return err
+		}
 		fmt.Println("Token will be written to config: " + token)
 		Config.Token = token
 		WriteConfigFile()
+		return nil
 	},
 }
 

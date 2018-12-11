@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 
 	"github.com/magneticio/vamp2cli/util"
 	"github.com/spf13/cobra"
@@ -32,19 +31,22 @@ var convertCmd = &cobra.Command{
     vamp2cli convert -i json -f filepath.json
     This will print yaml version of the json object.
   `,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		Source := SourceString
 		if Source == "" {
-			b, err := ioutil.ReadFile(SourceFile) // just pass the file name
+			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
-				fmt.Print(err)
+				// fmt.Print(err)
+				return err
 			}
 			Source = string(b)
 		}
 		result, err := util.Convert(SourceFileType, OutputType, Source)
 		if err == nil {
 			fmt.Printf(result)
+			return nil
 		}
+		return err
 	},
 }
 

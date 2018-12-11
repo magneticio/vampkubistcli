@@ -16,7 +16,7 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 
 	b64 "encoding/base64"
 
@@ -37,9 +37,9 @@ var bootstrapCmd = &cobra.Command{
     This will automacially read configuration and create vamp user in your cluster and
     make required set up in vamp. You can access the cluster with name mycluster.
   `,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
-			return
+			return errors.New("Not Enough Arguments")
 		}
 		Type = args[0]
 		Name = args[1]
@@ -47,7 +47,8 @@ var bootstrapCmd = &cobra.Command{
 		if Type == "cluster" {
 			url, crt, token, err := kubeclient.BootstrapVampService()
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
+				// fmt.Printf("Error: %v\n", err)
+				return err
 			}
 			metadataMap := make(map[string]string)
 			metadataMap["url"] = url
@@ -56,7 +57,8 @@ var bootstrapCmd = &cobra.Command{
 			metadata := &client.Metadata{Metadata: metadataMap}
 			SourceRaw, err_marshall := json.Marshal(metadata)
 			if err_marshall != nil {
-				fmt.Printf("Error: %v", err_marshall)
+				// fmt.Printf("Error: %v", err_marshall)
+				return err_marshall
 			}
 			Source := string(SourceRaw)
 			// fmt.Printf("Source: %v", Source)
@@ -67,11 +69,14 @@ var bootstrapCmd = &cobra.Command{
 			values["cluster"] = Config.Cluster
 			values["virtual_cluster"] = Config.VirtualCluster
 			values["application"] = Application
-			isCreated, _ := restClient.Create(Type, Name, Source, SourceFileType, values)
+			isCreated, err_create := restClient.Create(Type, Name, Source, SourceFileType, values)
 			if !isCreated {
-				fmt.Println("Not Created " + Type + " with name " + Name)
+				// fmt.Println("Not Created " + Type + " with name " + Name)
+				return err_create
 			}
+			return nil
 		}
+		return errors.New("Unsupported Type")
 	},
 }
 

@@ -146,6 +146,11 @@ with kubectl you can check the namespaces of vamp-system and istio-system and lo
 
 Vamp will run a job in vamp-system namespace to make sure that everything is properly installed and continue running this job until it is finished. Make sure that you have enough resources and there are no pending pods or pods in Crash Loop.
 
+If you have watch command installed, I recommended running following watch command to see instalment in action:
+```
+watch kubectl get pods --all-namespaces
+```
+
 Run kubectl command to see if there are pending pods, which is a common issue when there is not enough resources:
 
 ```

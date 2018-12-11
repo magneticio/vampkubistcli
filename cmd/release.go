@@ -16,7 +16,7 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 
 	"github.com/magneticio/vamp2cli/client"
 	"github.com/spf13/cobra"
@@ -32,14 +32,14 @@ var releaseCmd = &cobra.Command{
 	Short: "Release a new subset with labels",
 	Long: `eg.:
 vamp2cli release shop-vamp-service --destination shop-destination --subset subset2 -l version=version2`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			return
+			return errors.New("Not Enough Arguments")
 		}
 		Type := "canary_release"
 		VampService := args[0]
 		Name := VampService + "-" + Destination + "-" + Subset
-		fmt.Printf("%v %v %v\n", Type, Name, SubsetLabels)
+		// fmt.Printf("%v %v %v\n", Type, Name, SubsetLabels)
 		canaryRelease := client.CanaryRelease{
 			VampService:  VampService,
 			Destination:  Destination,
@@ -48,7 +48,8 @@ vamp2cli release shop-vamp-service --destination shop-destination --subset subse
 		}
 		SourceRaw, err_marshall := json.Marshal(canaryRelease)
 		if err_marshall != nil {
-			fmt.Printf("Error: %v", err_marshall)
+			// fmt.Printf("Error: %v", err_marshall)
+			return err_marshall
 		}
 		Source := string(SourceRaw)
 		// fmt.Printf("Source: %v", Source)
@@ -59,10 +60,12 @@ vamp2cli release shop-vamp-service --destination shop-destination --subset subse
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		isCreated, _ := restClient.Create(Type, Name, Source, SourceFileType, values)
+		isCreated, err_create := restClient.Create(Type, Name, Source, SourceFileType, values)
 		if !isCreated {
-			fmt.Println("Not Created " + Type + " with name " + Name)
+			// fmt.Println("Not Created " + Type + " with name " + Name)
+			return err_create
 		}
+		return nil
 	},
 }
 

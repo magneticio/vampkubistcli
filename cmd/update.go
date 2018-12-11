@@ -17,7 +17,6 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/magneticio/vamp2cli/client"
 	"github.com/magneticio/vamp2cli/util"
@@ -45,7 +44,8 @@ Example:
 		if Source == "" {
 			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
-				fmt.Print(err)
+				// fmt.Print(err)
+				return err
 			}
 			Source = string(b)
 		}
@@ -75,9 +75,9 @@ Example:
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		isUpdated, _ := restClient.Update(Type, Name, Source, SourceFileType, values)
+		isUpdated, err_update := restClient.Update(Type, Name, Source, SourceFileType, values)
 		if !isUpdated {
-			return errors.New("Not Updated " + Type + " with name " + Name)
+			return err_update
 		}
 		return nil
 	},
