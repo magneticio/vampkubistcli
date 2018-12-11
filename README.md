@@ -36,6 +36,8 @@ Check if it is running with:
 vamp2cli version
 ```
 
+This documentation is for version 0.0.2
+
 First you need to login to the vamp application:
 You will need
   - the url of your cluster eg.: http://1.2.3.4:8888
