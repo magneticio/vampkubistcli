@@ -51,7 +51,7 @@ var OutputType string
 var Debug bool
 var Hosts []string
 
-const Version string = "0.0.1"
+const Version string = "0.0.2"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
