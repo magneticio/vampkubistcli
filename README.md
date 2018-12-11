@@ -53,6 +53,11 @@ vamp2cli --url http://1.2.3.4:8888 --user username --password password
 
 For managing all the resources, there is a umbrella concept called project, project name should be unique inside a vamp application. So start by creating a Project.
 
+Please list projects first and choose a new one:
+```
+vamp2cli list project
+```
+
 This command will let you create an empty project
 ```
 vamp2cli create project myproject -i json -s "{}"
@@ -214,7 +219,9 @@ It is easier to get with a grep command:
 vamp2cli get gateway shop-gateway | grep ip
 ```
 
-I will reference this ip as IP_OF_GATEWAY in the rest og the documentation.
+I will reference this ip as IP_OF_GATEWAY in the rest of the documentation.
+
+Please note that this may take some time depending on the provider.
 
 You need to copy paste the IP address of the gateway in the vamp service configuration under the hosts as an array.
 Since this is harder to do in remote resources, there is an easier way to add hosts on the fly with a host parameter.
@@ -257,10 +264,17 @@ It will take some time to release totally and you can not see the first version 
 
 But now you decided, a url based access to these version are more useful for you, then you can set up conditional routes.
 
+Before going forward delete current canary release
+```
+vamp2cli list canary_release
+vamp2cli delete canary_release shop-vamp-service-shop-destination-subset2
+```
+
+
 Update the hosts field the IP address of gateway in ./resources/conditionalvampservice.yaml then update the vamp service:
 
 ```
-vamp2cli update vamp_service shop-vamp-service -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/conditionalvampservice.yaml --host IP_OF_GATEWAY
+vamp2cli update vamp_service shop-vamp-service -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/conditionalvampservice_template.yaml --host IP_OF_GATEWAY
 ```
 
 Now you can see that first version is available under url:

@@ -17,6 +17,7 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/magneticio/vamp2cli/client"
 	"github.com/magneticio/vamp2cli/util"
@@ -66,7 +67,7 @@ Example:
 				return err
 			}
 			Source = string(SourceRaw)
-
+			fmt.Println(Source)
 			SourceFileType = "json"
 		}
 		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
@@ -100,4 +101,6 @@ func init() {
 	updateCmd.Flags().StringVarP(&SourceString, "string", "s", "", "Source from string")
 	updateCmd.Flags().StringVarP(&SourceFile, "file", "f", "", "Source from file")
 	updateCmd.Flags().StringVarP(&SourceFileType, "input", "i", "yaml", "Source file type yaml or json")
+	updateCmd.Flags().StringSliceVarP(&Hosts, "host", "", []string{}, "host to add to vamp service, Comma separated lists are supported")
+
 }
