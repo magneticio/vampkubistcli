@@ -1,5 +1,6 @@
 gateways:
 - shop-gateway
+hosts:
 routes:
 - protocol: http
   weights:

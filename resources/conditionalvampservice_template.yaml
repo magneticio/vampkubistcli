@@ -1,7 +1,6 @@
 gateways:
 - shop-gateway
 hosts:
-- 35.241.185.250
 routes:
 - condition: uri prefix "/v1"
   rewrite: "/"

@@ -70,8 +70,16 @@ Assuming resources folder exists in your current workspace;
 Let's create a project from a yaml file currently exists in the resources folder.
 
 ```
-vamp2cli delete project myproject -f ./resources/project.yaml
+vamp2cli create project myproject -f ./resources/project.yaml
 ```
+
+If you don't have files locally you can also load them from a remote location:
+
+```
+vamp2cli create project myproject -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/project.yaml
+```
+
+Rest of the README will use remote resources.
 
 You can check the details of the created project with get method:
 
@@ -89,7 +97,7 @@ vamp2cli get project myproject -o json
 Let's update the project configuration with an updated file.
 
 ```
-vamp2cli update project myproject -f ./resources/project_update.yaml
+vamp2cli update project myproject -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/project_update.yaml
 ```
 
 Run get project again to see the changes:
@@ -151,7 +159,7 @@ vamp2cli set -c mycluster
 
 Now it is time to deploy an example application with one version:
 ```
-kubectl apply -f ./resources/demo-application-version1.yaml
+kubectl apply -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/demo-application-version1.yaml
 ```
 
 This will create a namespace called vamp-demo and deploy two deployments. There are two ways of importing a namespace to vamp
@@ -159,7 +167,7 @@ This will create a namespace called vamp-demo and deploy two deployments. There 
 - Create a virtual cluster through vamp
 
 ```
-vamp2cli create virtual_cluster vamp-demo -f ./resources/virtualcluster.yaml
+vamp2cli create virtual_cluster vamp-demo -f https://github.com/magneticio/demo-resources/blob/master/resources/virtualcluster.yaml
 ```
 
 This will re-label the namespace with required settings if the namespace exits. It will not create the namespace, as it is expected to be created by a deployment pipeline.
@@ -176,16 +184,16 @@ vamp2cli set -v vamp-demo
 To expose the application to outside, you will need a gateway:
 
 ```
-vamp2cli create gateway shop-gateway -f ./resources/gateway.yaml
+vamp2cli create gateway shop-gateway -f https://github.com/magneticio/demo-resources/blob/master/resources/gateway.yaml
 ```
 
 Create a destination
 
 ```
-vamp2cli create destination shop-destination -f ./resources/destination.yaml
+vamp2cli create destination shop-destination -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/destination.yaml
 ```
 
-Final step is creating the VampSerivice.
+Final step is creating the VampService.
 An http load balanced VampService requires the hostnames.
 In this example hostname is the IP address, IP address of the gateway is easy to get with get command:
 
@@ -198,19 +206,22 @@ It is easier to get with a grep command:
 ```
 vamp2cli get gateway shop-gateway | grep ip
 ```
-Copy paste the IP address of the gateway in the vamp service configuration under the hosts,
-the resource file It is "1.2.3.4" by default.
+
+I will reference this ip as IP_OF_GATEWAY in the rest og the documentation.
+
+You need to copy paste the IP address of the gateway in the vamp service configuration under the hosts as an array.
+Since this is harder to do in remote resources, there is an easier way to add hosts on the fly with a host parameter.
 
 Create a Vamp Service with 100% traffic on version1
 ```
-vamp2cli create vamp_service shop-vamp-service -f ./resources/vampservice.yaml
+vamp2cli create vamp_service shop-vamp-service -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/vampservice_template.yaml --host IP_OF_GATEWAY
 ```
 
-Now your application is released to public, copy paste the ip of your gateway to your favourite browser. Now you should be able to see the blue e-commerce page. This is the first version.
+Now your application is released to public, copy paste the ip of your gateway to your favourite browser (http://IP_OF_GATEWAY). Now you should be able to see the blue e-commerce page. This is the first version.
 
 Let's deploy the second version of the e-commerce website with kubectl
 ```
-kubectl apply -f ./resources/demo-application-version2.yaml
+kubectl apply -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/demo-application-version2.yaml
 ```
 
 Now with this canary release, the second version will be released in time based manner,
@@ -220,7 +231,7 @@ You can create a canary release with configuration file or you can use the relea
 
 Create with configuration:
 ```
-vamp2cli create canary_release shop-release -f ./resources/canaryrelease.yaml
+vamp2cli create canary_release shop-release -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/canaryrelease.yaml
 ```
 
 Release command:
@@ -242,7 +253,7 @@ But now you decided, a url based access to these version are more useful for you
 Update the hosts field the IP address of gateway in ./resources/conditionalvampservice.yaml then update the vamp service:
 
 ```
-vamp2cli update vamp_service shop-vamp-service -f ./resources/conditionalvampservice.yaml
+vamp2cli update vamp_service shop-vamp-service -f https://github.com/magneticio/demo-resources/blob/master/resources/conditionalvampservice_template.yaml --host IP_OF_GATEWAY
 ```
 
 Now you can see that first version is available under url:
