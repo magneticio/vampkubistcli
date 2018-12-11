@@ -16,9 +16,9 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 
 	"github.com/magneticio/vamp2cli/client"
+	"github.com/magneticio/vamp2cli/util"
 	"github.com/spf13/cobra"
 )
 
@@ -26,8 +26,8 @@ import (
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Updates a resource",
-	Long: `To create a resource
-Run as vamp2cli create resourceType ResourceName
+	Long: `To update a resource
+Run as vamp2cli update resourceType ResourceName
 
 Example:
     vamp2cli update project myproject -f project.yaml
@@ -41,7 +41,7 @@ Example:
 		// fmt.Println("create called for type " + Type + " with name " + Name)
 		Source := SourceString
 		if Source == "" {
-			b, err := ioutil.ReadFile(SourceFile) // just pass the file name
+			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
 				fmt.Print(err)
 			}

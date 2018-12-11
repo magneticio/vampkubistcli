@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/magneticio/vamp2cli/client"
+	"github.com/magneticio/vamp2cli/util"
 	"github.com/spf13/cobra"
 )
 
@@ -41,8 +41,7 @@ var convertCmd = &cobra.Command{
 			}
 			Source = string(b)
 		}
-		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
-		result, err := restClient.Convert(SourceFileType, OutputType, Source)
+		result, err := util.Convert(SourceFileType, OutputType, Source)
 		if err == nil {
 			fmt.Printf(result)
 		}

@@ -15,10 +15,11 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/magneticio/vamp2cli/client"
+	"github.com/magneticio/vamp2cli/util"
 	"github.com/spf13/cobra"
 )
 
@@ -32,18 +33,20 @@ Run as vamp2cli create resourceType ResourceName
 Example:
     vamp2cli create project myproject -f project.yaml
     vamp2cli create -p myproject cluster mycluster -f cluster.yaml`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
-			return
+			// fmt.Errorf("Not enough arguments\n")
+			return errors.New("Not enough arguments")
 		}
 		Type = args[0]
 		Name = args[1]
 		// fmt.Println("create called for type " + Type + " with name " + Name)
 		Source := SourceString
 		if Source == "" {
-			b, err := ioutil.ReadFile(SourceFile) // just pass the file name
+			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
 				fmt.Print(err)
+				return err
 			}
 			Source = string(b)
 		}
@@ -55,8 +58,9 @@ Example:
 		values["application"] = Application
 		isCreated, _ := restClient.Create(Type, Name, Source, SourceFileType, values)
 		if !isCreated {
-			fmt.Println("Not Created " + Type + " with name " + Name)
+			return errors.New("Not Created " + Type + " with name " + Name)
 		}
+		return nil
 	},
 }
 
