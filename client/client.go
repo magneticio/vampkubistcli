@@ -90,6 +90,24 @@ type Metadata struct {
 	Metadata map[string]string `json:"metadata"`
 }
 
+type VampService struct {
+	Gateways []string `json:"gateways"`
+	Hosts    []string `json:"hosts"`
+	Routes   []Route  `json:"routes"`
+}
+
+type Route struct {
+	Protocol string   `json:"protocol"`
+	Weights  []Weight `json:"weights"`
+}
+
+type Weight struct {
+	Destination string `json:"destination"`
+	Port        int64  `json:"port"`
+	Version     string `json:"version"`
+	Weight      int64  `json:"weight"`
+}
+
 type CanaryRelease struct {
 	VampService  string            `json:"vampService"`
 	Destination  string            `json:"destination"`
@@ -110,7 +128,7 @@ This is added for user friendliness.
 If a user uses a plural name or misses an underscore,
 api will still able to work
 */
-func resourceTypeConversion(resource string) string {
+func ResourceTypeConversion(resource string) string {
 	// everything is lower case in the api
 	// only _ is used in rest api
 	resourceString := strings.Replace(strings.ToLower(resource), "-", "_", -1)
@@ -164,7 +182,7 @@ func getResourceType(resourceName string) (string, error) {
 }
 
 func getUrlForResource(base string, resourceName string, subCommand string, name string, values map[string]string) (string, error) {
-	resourceName = resourceTypeConversion(resourceName)
+	resourceName = ResourceTypeConversion(resourceName)
 	subPath := ""
 	namedParameter := ""
 	if subCommand != "" {

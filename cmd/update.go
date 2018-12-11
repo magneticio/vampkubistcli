@@ -15,6 +15,8 @@
 package cmd
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/magneticio/vamp2cli/client"
@@ -32,9 +34,9 @@ Run as vamp2cli update resourceType ResourceName
 Example:
     vamp2cli update project myproject -f project.yaml
     vamp2cli update -p myproject cluster mycluster -f cluster.yaml`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
-			return
+			return errors.New("Not Enough Arguments")
 		}
 		Type = args[0]
 		Name = args[1]
@@ -47,6 +49,26 @@ Example:
 			}
 			Source = string(b)
 		}
+		// This is a specific operation for vamp_service
+		if client.ResourceTypeConversion(Type) == "vamp_service" && len(Hosts) > 0 {
+			SourceJson, err := util.Convert(SourceFileType, "json", Source)
+			if err != nil {
+				return err
+			}
+			var vampService client.VampService
+			err_json := json.Unmarshal([]byte(SourceJson), &vampService)
+			if err_json != nil {
+				return err_json
+			}
+			vampService.Hosts = append(Hosts, vampService.Hosts...)
+			SourceRaw, err := json.Marshal(vampService)
+			if err != nil {
+				return err
+			}
+			Source = string(SourceRaw)
+
+			SourceFileType = "json"
+		}
 		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
 		values := make(map[string]string)
 		values["project"] = Config.Project
@@ -55,8 +77,9 @@ Example:
 		values["application"] = Application
 		isUpdated, _ := restClient.Update(Type, Name, Source, SourceFileType, values)
 		if !isUpdated {
-			fmt.Println("Not Updated " + Type + " with name " + Name)
+			return errors.New("Not Updated " + Type + " with name " + Name)
 		}
+		return nil
 	},
 }
 

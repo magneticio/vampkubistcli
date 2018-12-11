@@ -1,0 +1,9 @@
+gateways:
+- shop-gateway
+routes:
+- protocol: http
+  weights:
+  - destination: shop-destination
+    port: 8080
+    version: subset1
+    weight: 100

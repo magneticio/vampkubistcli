@@ -49,6 +49,7 @@ var SourceFile string
 var SourceFileType string
 var OutputType string
 var Debug bool
+var Hosts []string
 
 const Version string = "0.0.1"
 

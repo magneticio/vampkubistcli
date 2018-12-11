@@ -17,8 +17,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
-	"time"
 
 	"github.com/magneticio/vamp2cli/client"
 	"github.com/spf13/cobra"
@@ -31,22 +29,16 @@ var SubsetLabels map[string]string
 // releaseCmd represents the release command
 var releaseCmd = &cobra.Command{
 	Use:   "release",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Release a new subset with labels",
+	Long: `eg.:
+vamp2cli release shop-vamp-service --destination shop-destination --subset subset2 -l version=version2`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) < 1 {
 			return
 		}
 		Type := "canary_release"
 		VampService := args[0]
-		Name := VampService +
-			"-" + Subset +
-			"-" + strconv.FormatInt(time.Now().Unix(), 10)
+		Name := VampService + "-" + Destination + "-" + Subset
 		fmt.Printf("%v %v %v\n", Type, Name, SubsetLabels)
 		canaryRelease := client.CanaryRelease{
 			VampService:  VampService,

@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -50,6 +51,26 @@ Example:
 			}
 			Source = string(b)
 		}
+		// This is a specific operation for vamp_service
+		if client.ResourceTypeConversion(Type) == "vamp_service" && len(Hosts) > 0 {
+			SourceJson, err := util.Convert(SourceFileType, "json", Source)
+			if err != nil {
+				return err
+			}
+			var vampService client.VampService
+			err_json := json.Unmarshal([]byte(SourceJson), &vampService)
+			if err_json != nil {
+				return err_json
+			}
+			vampService.Hosts = append(Hosts, vampService.Hosts...)
+			SourceRaw, err := json.Marshal(vampService)
+			if err != nil {
+				return err
+			}
+			Source = string(SourceRaw)
+
+			SourceFileType = "json"
+		}
 		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
 		values := make(map[string]string)
 		values["project"] = Config.Project
@@ -81,5 +102,7 @@ func init() {
 	createCmd.Flags().StringVarP(&SourceString, "string", "s", "", "Source from string")
 	createCmd.Flags().StringVarP(&SourceFile, "file", "f", "", "Source from file")
 	createCmd.Flags().StringVarP(&SourceFileType, "input", "i", "yaml", "Source file type yaml or json")
+
+	createCmd.Flags().StringSliceVarP(&Hosts, "host", "", []string{}, "host to add to vamp service, Comma separated lists are supported")
 
 }
