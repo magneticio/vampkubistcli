@@ -21,13 +21,14 @@ import (
 // setCmd represents the set command
 var setCmd = &cobra.Command{
 	Use:   "set",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Set global project, cluster and virtual cluster",
+	Long: `When you need to use the command line client for longer periods,
+  it is cumbersome to set project, cluster and virtualcluster in every command.
+  You can set these variables with a set command
+  and it is stored in global configuration.
+  Example:
+  vamp2cli set -p myproject -c mycluster -v myvirtualcluster
+  `,
 	Run: func(cmd *cobra.Command, args []string) {
 		WriteConfigFile()
 	},

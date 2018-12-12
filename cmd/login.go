@@ -29,13 +29,15 @@ var Password string
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "login to a vamp service",
+	Long: `Login to a vamp service:
+Example:
+  vamp2cli --url https://1.2.3.4:8888 --user username --password password
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+  Login creates a configuration file in the home folder of the user.
+  Username and password is not stored in the configuration, only token is stored.
+  Default config location is ~/.vamp2cli.yaml
+`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// fmt.Println("Server: " + Server)
 		// fmt.Println("login called for " + Username + " " + Password)
