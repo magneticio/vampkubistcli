@@ -31,6 +31,14 @@ cp vamp2cli-darwin-amd64 /usr/local/bin/vamp2cli
 chmod +x /usr/local/bin/vamp2cli
 ```
 
+## installation
+Easy install for MacOS:
+```
+base=https://github.com/magneticio/vamp2cli/releases/download/0.0.2 &&
+  curl -L $base/vamp2cli-$(uname -s)-$(uname -m) >/usr/local/bin/vamp2cli &&
+  chmod +x /usr/local/bin/vamp2cli
+```
+
 Check if it is running with:
 ```
 vamp2cli version
