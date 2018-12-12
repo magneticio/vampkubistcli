@@ -17,10 +17,15 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/magneticio/vamp2cli/client"
+	"github.com/magneticio/vamp2cli/util"
 	"github.com/spf13/cobra"
 )
+
+var JsonPath string
+var WaitUntilAvailable bool
 
 // getCmd represents the get command
 var getCmd = &cobra.Command{
@@ -34,7 +39,11 @@ By adding -o json, output can be converted to json
 Example:
     vamp2cli get project myproject
     vamp2cli get -p myproject cluster mycluster
-    vamp2cli get -p myproject cluster mycluster -o json`,
+    vamp2cli get -p myproject cluster mycluster -o json
+
+Json path example with wait
+    vamp2cli get gateway shop-gateway -o=json --jsonpath '$.status.ip' --wait
+    `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			return errors.New("Not Enough Arguments")
@@ -48,12 +57,28 @@ Example:
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		result, err := restClient.Get(Type, Name, OutputType, values)
-		if err == nil {
-			fmt.Printf(result)
-			return nil
+		first := true
+		for WaitUntilAvailable || first {
+			first = false
+			result, err := restClient.Get(Type, Name, OutputType, values)
+			if err == nil {
+				if JsonPath != "" {
+					resultPath, err_jsonpath := util.GetJsonPath(result, OutputType, JsonPath)
+					if err_jsonpath != nil {
+						fmt.Printf("Error %v\n", err_jsonpath)
+						time.Sleep(5 * time.Second)
+						continue
+					}
+					result = resultPath
+				}
+				if result != "" {
+					fmt.Printf(result)
+					return nil
+				}
+			}
+			return err
 		}
-		return err
+		return nil
 	},
 }
 
@@ -72,4 +97,6 @@ func init() {
 	// getCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
 	// getCmd.MarkFlagRequired("name")
 	getCmd.Flags().StringVarP(&OutputType, "output", "o", "yaml", "Output format yaml or json")
+	getCmd.Flags().StringVarP(&JsonPath, "jsonpath", "", "", "Json path to access specific parts of the object")
+	getCmd.Flags().BoolVarP(&WaitUntilAvailable, "wait", "w", false, "Wait until output is available")
 }

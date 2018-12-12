@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
+	"github.com/yalp/jsonpath"
 )
 
 /*
@@ -110,4 +111,21 @@ func DownloadFile(filepath string, url string) error {
 	}
 
 	return nil
+}
+
+func GetJsonPath(source string, sourceFormat, jsonPath string) (string, error) {
+	var jsonInterface map[string]interface{}
+	err := json.Unmarshal([]byte(source), &jsonInterface)
+	if err != nil {
+		return "", err
+	}
+	resultPath, err := jsonpath.Read(jsonInterface, jsonPath)
+	if err != nil {
+		return "", err
+	}
+	str, ok := resultPath.(string)
+	if !ok {
+		return "", errors.New("There is no string representation for " + jsonPath)
+	}
+	return str, nil
 }

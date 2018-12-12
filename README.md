@@ -7,6 +7,11 @@ so that docker builder works.
 
 ## build
 
+If you get errors about missing libraries while building, run:
+```
+go get
+```
+
 for docker build:
 ```
 ./build.sh
@@ -18,7 +23,8 @@ for local build:
 
 binaries will be under bin directory
 
-## Run
+## installation
+If you have binaries built locally:
 For mac run:
 ```
 ./bin/vamp2cli-darwin-amd64 --help
@@ -31,26 +37,33 @@ cp vamp2cli-darwin-amd64 /usr/local/bin/vamp2cli
 chmod +x /usr/local/bin/vamp2cli
 ```
 
-## installation
+If you don't have anything yet and automatically download an install follow commands for your platform:
+
 Easy install for MacOS:
 ```
-base=https://github.com/magneticio/vamp2cli/releases/download/0.0.2 &&
+base=https://github.com/magneticio/demo-resources/releases/download/cli-release-0.0.3 &&
   curl -L $base/vamp2cli-$(uname -s)-$(uname -m) >/usr/local/bin/vamp2cli &&
   chmod +x /usr/local/bin/vamp2cli
 ```
+
+TODO: add installation for other platforms
+
+## Run
 
 Check if it is running with:
 ```
 vamp2cli version
 ```
 
-This documentation is for version 0.0.2
+This documentation is for version 0.0.3
 
 First you need to login to the vamp application:
 You will need
   - the url of your cluster eg.: http://1.2.3.4:8888
   - username eg.: username
   - password eg.: password
+
+Please ask your providers if you don't have these information
 
 If you have installed your vamp into your cluster, these information will be given to you during the installation.
 If you are using the SaaS version, this information will be provided by the Vamp.io
@@ -66,9 +79,17 @@ Please list projects first and choose a new one:
 vamp2cli list project
 ```
 
+Starting a new project, users can bundle all the resources under a project.
+
+Please set a project name that is not listed above
+
+```
+PROJECT_NAME=myproject
+```
+
 This command will let you create an empty project
 ```
-vamp2cli create project myproject -i json -s "{}"
+vamp2cli create project $PROJECT_NAME -i json -s "{}"
 ```
 
 Client allows you to pass specifications as json, yaml and from file or from string. This command reads the input as json and passes the empty json object as configuration. Project doesn't have any mandatory fields, so an empty json is still valid.
@@ -76,7 +97,7 @@ Client allows you to pass specifications as json, yaml and from file or from str
 You can delete the project just created with:
 
 ```
-vamp2cli delete project myproject
+vamp2cli delete project $PROJECT_NAME
 ```
 
 Please download resources folder from the repo to continue rest of the examples.
@@ -85,13 +106,13 @@ Assuming resources folder exists in your current workspace;
 Let's create a project from a yaml file currently exists in the resources folder.
 
 ```
-vamp2cli create project myproject -f ./resources/project.yaml
+vamp2cli create project $PROJECT_NAME -f ./resources/project.yaml
 ```
 
 If you don't have files locally you can also load them from a remote location:
 
 ```
-vamp2cli create project myproject -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/project.yaml
+vamp2cli create project $PROJECT_NAME -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/project.yaml
 ```
 
 Rest of the README will use remote resources.
@@ -99,26 +120,26 @@ Rest of the README will use remote resources.
 You can check the details of the created project with get method:
 
 ```
-vamp2cli get project myproject
+vamp2cli get project $PROJECT_NAME
 ```
 
 By default it will print yaml representation of project
 For JSON user can specify output, eg.:
 
 ```
-vamp2cli get project myproject -o json
+vamp2cli get project $PROJECT_NAME -o json
 ```
 
 Let's update the project configuration with an updated file.
 
 ```
-vamp2cli update project myproject -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/project_update.yaml
+vamp2cli update project $PROJECT_NAME -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/project_update.yaml
 ```
 
 Run get project again to see the changes:
 
 ```
-vamp2cli get project myproject
+vamp2cli get project $PROJECT_NAME
 ```
 You will see the second key in the metadata changed to
 "key2: value2_new"
@@ -132,7 +153,7 @@ If you have used kubernetes, Cluster represents configurations related to an act
 You are expected to work in the same project so you can set it as default by running set command:
 
 ```
-vamp2cli set -p myproject
+vamp2cli set -p $PROJECT_NAME
 ```
 
 Now, you can bootstrap your cluster with vamp.
@@ -226,8 +247,28 @@ It is easier to get with a grep command:
 ```
 vamp2cli get gateway shop-gateway | grep ip
 ```
+Or you can use jsonpath parameter to filter the ip, this is an experimental feature and only supports string parameters:
 
-I will reference this ip as IP_OF_GATEWAY in the rest of the documentation.
+```
+vamp2cli get gateway shop-gateway -o=json --jsonpath '$.status.ip'
+```
+
+You can also wait until it is available:
+```
+vamp2cli get gateway shop-gateway -o=json --jsonpath '$.status.ip' --wait
+```
+
+To set the IP address to a bash variable run:
+DON'T SKIP THIS STEP
+```
+GATEWAY_IP=$(./run.sh get gateway shop-gateway -o=json --jsonpath '$.status.ip' --wait)
+echo $GATEWAY_IP
+```
+This command waits until IP is ready and set it to a bash parameter.
+
+You need so see an IP address which is the IP address of the public facing load balancer.
+
+I will reference this ip as GATEWAY_IP in the rest of the documentation.
 
 Please note that this may take some time depending on the provider.
 
@@ -236,10 +277,15 @@ Since this is harder to do in remote resources, there is an easier way to add ho
 
 Create a Vamp Service with 100% traffic on version1
 ```
-vamp2cli create vamp_service shop-vamp-service -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/vampservice_template.yaml --host IP_OF_GATEWAY
+vamp2cli create vamp_service shop-vamp-service -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/vampservice_template.yaml --host $GATEWAY_IP
 ```
 
-Now your application is released to public, copy paste the ip of your gateway to your favourite browser (http://IP_OF_GATEWAY). Now you should be able to see the blue e-commerce page. This is the first version.
+Check link generated with:
+```
+echo http://$GATEWAY_IP
+```
+
+Now your application is released to public, copy paste the ip of your gateway to your favourite browser (http://$GATEWAY_IP). Now you should be able to see the blue e-commerce page. This is the first version.
 
 Let's deploy the second version of the e-commerce website with kubectl
 ```
@@ -282,10 +328,16 @@ vamp2cli delete canary_release shop-vamp-service-shop-destination-subset2
 Update the hosts field the IP address of gateway in ./resources/conditionalvampservice.yaml then update the vamp service:
 
 ```
-vamp2cli update vamp_service shop-vamp-service -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/conditionalvampservice_template.yaml --host IP_OF_GATEWAY
+vamp2cli update vamp_service shop-vamp-service -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/conditionalvampservice_template.yaml --host $GATEWAY_IP
 ```
 
 Now you can see that first version is available under url:
-http://IP_OF_GATEWAY/v1
+http://$GATEWAY_IP/v1
 and second version is under
-http://IP_OF_GATEWAY/v2
+http://$GATEWAY_IP/v2
+
+Check links generated with:
+```
+echo http://$GATEWAY_IP/v1
+echo http://$GATEWAY_IP/v2
+```
