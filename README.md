@@ -261,7 +261,7 @@ vamp2cli get gateway shop-gateway -o=json --jsonpath '$.status.ip' --wait
 To set the IP address to a bash variable run:
 DON'T SKIP THIS STEP
 ```
-GATEWAY_IP=$(./run.sh get gateway shop-gateway -o=json --jsonpath '$.status.ip' --wait)
+GATEWAY_IP=$(vamp2cli get gateway shop-gateway -o=json --jsonpath '$.status.ip' --wait)
 echo $GATEWAY_IP
 ```
 This command waits until IP is ready and set it to a bash parameter.
