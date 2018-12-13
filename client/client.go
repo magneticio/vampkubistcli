@@ -98,8 +98,8 @@ type VampService struct {
 
 type Route struct {
 	Protocol  string   `json:"protocol"`
-	Condition string   `json:"condition"`
-	Rewrite   string   `json:"rewrite"`
+	Condition string   `json:"condition,omitempty"`
+	Rewrite   string   `json:"rewrite,omitempty"`
 	Weights   []Weight `json:"weights"`
 }
 
