@@ -69,7 +69,7 @@ If you have installed your vamp into your cluster, these information will be giv
 If you are using the SaaS version, this information will be provided by the Vamp.io
 
 ```
-vamp2cli --url http://1.2.3.4:8888 --user username --password password
+vamp2cli login --url http://1.2.3.4:8888 --user username --password password
 ```
 
 For managing all the resources, there is a umbrella concept called project, project name should be unique inside a vamp application. So start by creating a Project.
