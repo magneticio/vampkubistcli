@@ -41,7 +41,7 @@ If you don't have anything yet and automatically download an install follow comm
 
 Easy install for MacOS:
 ```
-base=https://github.com/magneticio/demo-resources/releases/download/cli-release-0.0.3 &&
+base=https://github.com/magneticio/demo-resources/releases/download/cli-release-0.0.4 &&
   curl -L $base/vamp2cli-$(uname -s)-$(uname -m) >/usr/local/bin/vamp2cli &&
   chmod +x /usr/local/bin/vamp2cli
 ```
@@ -55,7 +55,7 @@ Check if it is running with:
 vamp2cli version
 ```
 
-This documentation is for version 0.0.3
+This documentation is for version 0.0.4
 
 First you need to login to the vamp application:
 You will need
