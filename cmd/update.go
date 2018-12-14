@@ -17,7 +17,6 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/magneticio/vamp2cli/client"
 	"github.com/magneticio/vamp2cli/util"
@@ -67,7 +66,7 @@ Example:
 				return err
 			}
 			Source = string(SourceRaw)
-			fmt.Println(Source)
+			// fmt.Println(Source)
 			SourceFileType = "json"
 		}
 		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)

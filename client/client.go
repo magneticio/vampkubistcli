@@ -80,6 +80,7 @@ type AuthSuccess struct {
 
 type AuthError struct {
 	/* variables */
+	message string
 }
 
 type Named struct {
@@ -156,10 +157,13 @@ func (s *RestClient) Login(username string, password string) (string, error) {
 		Post(url)
 
 	if err == nil {
+		if resp.IsError() {
+			return "", errors.New(string(resp.Body()))
+		}
 		// fmt.Printf("\nAccess Token: %v", resp.Result().(*AuthSuccess).AccessToken)
 		(*s).token = resp.Result().(*AuthSuccess).AccessToken
 	} else {
-		fmt.Printf("\nError: %v", err)
+		// fmt.Printf("\nError: %v", err)
 		return "", err
 	}
 	// explore response object
@@ -281,7 +285,10 @@ func (s *RestClient) Apply(resourceName string, name string, source string, sour
 	}
 
 	if err == nil {
-		fmt.Printf("\n%v\n", resp)
+		// fmt.Printf("\n%v\n", resp)
+		if resp.IsError() {
+			return false, errors.New(string(resp.Body()))
+		}
 		return true, nil
 	} else {
 		// fmt.Printf("\nError: %v", err)
@@ -306,7 +313,10 @@ func (s *RestClient) Delete(resourceName string, name string, values map[string]
 		Delete(url)
 
 	if err == nil {
-		fmt.Printf("\nResult: %v\n", resp)
+		// fmt.Printf("\nResult: %v\n", resp)
+		if resp.IsError() {
+			return false, errors.New(string(resp.Body()))
+		}
 		return true, nil
 	} else {
 		// fmt.Printf("\nError: %v", err)

@@ -65,7 +65,7 @@ Json path example with wait
 				if JsonPath != "" {
 					resultPath, err_jsonpath := util.GetJsonPath(result, OutputType, JsonPath)
 					if err_jsonpath != nil {
-						fmt.Printf("Error %v\n", err_jsonpath)
+						// fmt.Printf("Error %v\n", err_jsonpath)
 						time.Sleep(5 * time.Second)
 						continue
 					}

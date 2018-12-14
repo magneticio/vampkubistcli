@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -58,7 +56,7 @@ func Convert(inputFormat string, outputFormat string, input string) (string, err
 	if inputFormat == "yaml" {
 		json, err := yaml.YAMLToJSON(inputSource)
 		if err != nil {
-			fmt.Printf("err: %v\n", err)
+			// fmt.Printf("err: %v\n", err)
 			return "", err
 		}
 		inputSource = json
@@ -70,7 +68,7 @@ func Convert(inputFormat string, outputFormat string, input string) (string, err
 	if outputFormat == "yaml" {
 		yaml, errYaml := yaml.JSONToYAML(inputSource)
 		if errYaml != nil {
-			fmt.Printf("YAML conversion error: %v\n", errYaml)
+			// fmt.Printf("YAML conversion error: %v\n", errYaml)
 			return "", errYaml
 		}
 		outputSourceString = string(yaml)
@@ -78,7 +76,7 @@ func Convert(inputFormat string, outputFormat string, input string) (string, err
 		var prettyJSON bytes.Buffer
 		indentError := json.Indent(&prettyJSON, inputSource, "", "    ")
 		if indentError != nil {
-			log.Println("JSON parse error: ", indentError)
+			// log.Println("JSON parse error: ", indentError)
 			return "", indentError
 		}
 		outputSourceString = string(prettyJSON.Bytes())
