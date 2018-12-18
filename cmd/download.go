@@ -29,7 +29,8 @@ var downloadCmd = &cobra.Command{
 	Long: `Utility method for downloading resources:
 eg:.
 vamp2cli download --url URL --path path-of-file`,
-	SilenceUsage: true,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := util.DownloadFile(Path, URL)
 		if err != nil {

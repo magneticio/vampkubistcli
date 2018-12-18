@@ -34,7 +34,8 @@ Run as vamp2cli list resourceType
 Example:
     vamp2cli list project
     vamp2cli list -p myproject cluster`,
-	SilenceUsage: true,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
 			Type = args[0]

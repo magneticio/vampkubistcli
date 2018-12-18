@@ -29,7 +29,8 @@ var setCmd = &cobra.Command{
   Example:
   vamp2cli set -p myproject -c mycluster -v myvirtualcluster
   `,
-	SilenceUsage: true,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		WriteConfigFile()
 	},

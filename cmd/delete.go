@@ -31,7 +31,8 @@ Run as vamp2cli delete resourceType ResourceName
 Example:
     vamp2cli delete project myproject
     vamp2cli delete -p myproject cluster mycluster`,
-	SilenceUsage: true,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			return errors.New("Not Enough Arguments")

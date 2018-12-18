@@ -37,7 +37,8 @@ var bootstrapCmd = &cobra.Command{
     This will automacially read configuration and create vamp user in your cluster and
     make required set up in vamp. You can access the cluster with name mycluster.
   `,
-	SilenceUsage: true,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			return errors.New("Not Enough Arguments")

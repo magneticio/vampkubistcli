@@ -33,7 +33,8 @@ Run as vamp2cli update resourceType ResourceName
 Example:
     vamp2cli update project myproject -f project.yaml
     vamp2cli update -p myproject cluster mycluster -f cluster.yaml`,
-	SilenceUsage: true,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			return errors.New("Not Enough Arguments")

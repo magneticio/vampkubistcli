@@ -44,7 +44,8 @@ Example:
 Json path example with wait
     vamp2cli get gateway shop-gateway -o=json --jsonpath '$.status.ip' --wait
     `,
-	SilenceUsage: true,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			return errors.New("Not Enough Arguments")
