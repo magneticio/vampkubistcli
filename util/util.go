@@ -111,7 +111,7 @@ func DownloadFile(filepath string, url string) error {
 	return nil
 }
 
-func GetJsonPath(source string, sourceFormat, jsonPath string) (string, error) {
+func GetJsonPath(source string, sourceFormat string, jsonPath string) (string, error) {
 	var jsonInterface map[string]interface{}
 	err := json.Unmarshal([]byte(source), &jsonInterface)
 	if err != nil {
