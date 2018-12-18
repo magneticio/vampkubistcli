@@ -17,6 +17,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/magneticio/vamp2cli/client"
 	"github.com/spf13/cobra"
@@ -51,7 +52,9 @@ Example:
 		values["application"] = Application
 		result, err := restClient.List(Type, OutputType, values, !Detailed)
 		if err == nil {
-			fmt.Printf(result)
+			if strings.TrimSuffix(result, "\n") != "[]" {
+				fmt.Printf(result)
+			}
 			return nil
 		}
 		return err
