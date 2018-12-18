@@ -56,7 +56,7 @@ vamp2cli release shop-vamp-service --destination shop-destination --subset subse
 		Source := string(SourceRaw)
 		// fmt.Printf("Source: %v", Source)
 		SourceFileType = "json"
-		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
 		values := make(map[string]string)
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster

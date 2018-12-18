@@ -19,12 +19,14 @@ import (
 	"fmt"
 
 	"github.com/magneticio/vamp2cli/client"
+	"github.com/magneticio/vamp2cli/util"
 	"github.com/spf13/cobra"
 )
 
 var Url string
 var Username string
 var Password string
+var Cert string
 
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
@@ -51,7 +53,24 @@ Example:
 			// fmt.Println("A Vamp Service url should be provided by url flag")
 			return errors.New("A Vamp Service url should be provided by url flag")
 		}
-		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
+		CertString := Cert
+		if Cert != "" {
+			err_cert := util.VerifyCertForHost(Config.Url, Cert)
+			if err_cert != nil {
+				b, err := util.UseSourceUrl(Cert)
+				if err != nil {
+					// fmt.Print(err)
+					return err
+				}
+				err_cert_from_path := util.VerifyCertForHost(Config.Url, b)
+				if err_cert_from_path != nil {
+					return err_cert_from_path
+				}
+				CertString = string(b)
+			}
+			Config.Cert = CertString
+		}
+		restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
 		token, err := restClient.Login(Username, Password)
 		if err != nil {
 			return err
@@ -80,6 +99,7 @@ func init() {
 	loginCmd.MarkFlagRequired("user")
 	loginCmd.Flags().StringVarP(&Password, "password", "", "", "Password required")
 	loginCmd.MarkFlagRequired("password")
+	loginCmd.Flags().StringVarP(&Cert, "cert", "", "", "Cert from file, url or string")
 
 	// loginCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")
 	// viper.BindPFlag("server", loginCmd.PersistentFlags().Lookup("server"))

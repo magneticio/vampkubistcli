@@ -2,10 +2,14 @@ package util
 
 import (
 	"bytes"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,7 +24,7 @@ This function allows using a filepath or http/s url to get resource from
 */
 func UseSourceUrl(resourceUrl string) (string, error) {
 	u, err := url.ParseRequestURI(resourceUrl)
-	if err != nil {
+	if err != nil || u.Scheme == "" {
 		file, err := ioutil.ReadFile(resourceUrl) // just pass the file name
 		if err != nil {
 			return "", err
@@ -29,7 +33,7 @@ func UseSourceUrl(resourceUrl string) (string, error) {
 		return source, nil
 	}
 	scheme := strings.ToLower(u.Scheme)
-	// fmt.Println("scheme: " + scheme)
+	fmt.Println("scheme: " + scheme)
 	if scheme == "http" || scheme == "https" {
 		resp, err := http.Get(resourceUrl)
 		if err != nil {
@@ -126,4 +130,24 @@ func GetJsonPath(source string, sourceFormat string, jsonPath string) (string, e
 		return "", errors.New("There is no string representation for " + jsonPath)
 	}
 	return str, nil
+}
+
+func VerifyCertForHost(resourceUrl string, cert string) error {
+	u, err_url := url.ParseRequestURI(resourceUrl)
+	if err_url != nil {
+		return err_url
+	}
+	host, _, _ := net.SplitHostPort(u.Host)
+	block, _ := pem.Decode([]byte(cert))
+	if block == nil {
+		return errors.New("failed to decode certificate")
+	}
+	crt, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return err
+	}
+	opts := x509.VerifyOptions{DNSName: host, Roots: x509.NewCertPool()}
+	opts.Roots.AddCert(crt)
+	_, err = crt.Verify(opts)
+	return err
 }

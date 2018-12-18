@@ -29,6 +29,7 @@ import (
 
 type config struct {
 	Url            string
+	Cert           string
 	Token          string
 	Project        string
 	Cluster        string

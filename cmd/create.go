@@ -17,7 +17,6 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/magneticio/vamp2cli/client"
 	"github.com/magneticio/vamp2cli/util"
@@ -48,7 +47,7 @@ Example:
 		if Source == "" {
 			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
-				fmt.Print(err)
+				// fmt.Print(err)
 				return err
 			}
 			Source = string(b)
@@ -73,7 +72,7 @@ Example:
 
 			SourceFileType = "json"
 		}
-		restClient := client.NewRestClient(Config.Url, Config.Token, Debug)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
 		values := make(map[string]string)
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster
