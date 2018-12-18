@@ -38,6 +38,7 @@ Example:
   Username and password is not stored in the configuration, only token is stored.
   Default config location is ~/.vamp2cli.yaml
 `,
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// fmt.Println("Server: " + Server)
 		// fmt.Println("login called for " + Username + " " + Password)

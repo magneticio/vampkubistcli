@@ -31,6 +31,7 @@ var convertCmd = &cobra.Command{
     vamp2cli convert -i json -f filepath.json
     This will print yaml version of the json object.
   `,
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		Source := SourceString
 		if Source == "" {

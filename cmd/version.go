@@ -22,9 +22,10 @@ import (
 
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print the version number of vamp2cli",
-	Long:  `All software has versions. This is vamp2cli's`,
+	Use:          "version",
+	Short:        "Print the version number of vamp2cli",
+	Long:         `All software has versions. This is vamp2cli's`,
+	SilenceUsage: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("Version: %v\n", Version)
 	},

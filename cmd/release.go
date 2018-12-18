@@ -32,6 +32,7 @@ var releaseCmd = &cobra.Command{
 	Short: "Release a new subset with labels",
 	Long: `eg.:
 vamp2cli release shop-vamp-service --destination shop-destination --subset subset2 -l version=version2`,
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return errors.New("Not Enough Arguments")

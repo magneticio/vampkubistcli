@@ -34,6 +34,7 @@ Run as vamp2cli create resourceType ResourceName
 Example:
     vamp2cli create project myproject -f project.yaml
     vamp2cli create -p myproject cluster mycluster -f cluster.yaml`,
+	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			// fmt.Errorf("Not enough arguments\n")

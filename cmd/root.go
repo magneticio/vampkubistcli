@@ -65,6 +65,7 @@ var rootCmd = &cobra.Command{
   eg.:
   vamp2cli create project myproject -f ./project.yaml
   `,
+	SilenceUsage: true,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
