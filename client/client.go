@@ -135,7 +135,7 @@ func NewRestClient(url string, token string, isDebug bool, cert string) *RestCli
 		if err_write != nil {
 			log.Fatal("Cannot create temporary file", err)
 		}
-		fmt.Printf("load cert from file: %v\n", tmpFile.Name())
+		// fmt.Printf("load cert from file: %v\n", tmpFile.Name())
 		resty.SetRootCertificate(tmpFile.Name())
 	}
 	return &RestClient{

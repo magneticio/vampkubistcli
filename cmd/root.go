@@ -88,7 +88,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.vamp2cli.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.vamp2/config.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&Project, "project", "p", "", "active project")
 	rootCmd.PersistentFlags().StringVarP(&Cluster, "cluster", "c", "", "active cluster")
 	rootCmd.PersistentFlags().StringVarP(&VirtualCluster, "virtualcluster", "v", "", "active virtual cluster")
@@ -146,10 +146,14 @@ func WriteConfigFile() error {
 			// Find home directory.
 			home, err := homedir.Dir()
 			if err != nil {
-				fmt.Println(err)
+				// fmt.Println(err)
 				return err
 			}
-			filename = filepath.FromSlash(home + "/" + ".vamp2cli.yaml")
+			path := filepath.FromSlash(home + "/" + ".vamp2")
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				os.Mkdir(path, os.ModePerm)
+			}
+			filename = filepath.FromSlash(path + "/" + "config.yaml")
 		}
 		// Solves the problem if there is no file viper.ConfigFileUsed() return empty
 		os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0644)
@@ -172,13 +176,13 @@ func initConfig() {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			fmt.Println(err)
+			// fmt.Println(err)
 			os.Exit(1)
 		}
 		// Search config in home directory with name ".vamp2cli" (without extension).
-
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".vamp2cli")
+		path := filepath.FromSlash(home + "/" + ".vamp2")
+		viper.AddConfigPath(path)
+		viper.SetConfigName("config")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
