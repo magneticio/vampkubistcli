@@ -152,6 +152,7 @@ func WriteConfigFile() error {
 			path := filepath.FromSlash(home + "/" + ".vamp2")
 			if _, err := os.Stat(path); os.IsNotExist(err) {
 				os.Mkdir(path, os.ModePerm)
+				// There is a problem here try using MkdirAll
 			}
 			filename = filepath.FromSlash(path + "/" + "config.yaml")
 		}
