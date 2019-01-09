@@ -25,14 +25,17 @@ import (
 
 // configCmd represents the config command
 var configCmd = &cobra.Command{
-	Use:           "config",
-	Short:         "Set, Get , Edit configuration of client",
-	Long:          ``,
+	Use:   "config",
+	Short: "Set, Get , Edit configuration of client",
+	Long: `To get all configuration parameters:
+  vamp2cli config get
+To set configuration parameters:
+  vamp2cli config set -p myproject -c mycluster`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			return errors.New("Not Enough Arguments")
+			return errors.New("Not Enough Arguments, use get or set")
 		}
 		function := args[0]
 		if function == "set" {

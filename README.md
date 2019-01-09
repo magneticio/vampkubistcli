@@ -55,7 +55,7 @@ Check if it is running with:
 vamp2cli version
 ```
 
-This documentation is for version 0.0.4
+This documentation is for version 0.0.5
 
 First you need to login to the vamp application:
 You will need
@@ -204,8 +204,10 @@ kubectl apply -f https://raw.githubusercontent.com/magneticio/demo-resources/mas
 ```
 
 This will create a namespace called vamp-demo and deploy two deployments. There are two ways of importing a namespace to vamp
-- label the namespace with "vamp-enable" : "true"
+- label the namespace with "vamp-managed: enabled"
 - Create a virtual cluster through vamp
+
+NOTE: Vamp lamia does not create the namespace, it should exist before the creation. If the namespace does not exist, creation will not fail immediately, it will search for namespace and it will delete itself if the namespace does not exist. It is a combination of behaviours that required to scan for namespaces and not managing them.
 
 ```
 vamp2cli create virtual_cluster vamp-demo -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/virtualcluster.yaml

@@ -23,6 +23,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var Init bool
+
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
@@ -44,6 +46,10 @@ Example:
 		Name = args[1]
 		// fmt.Println("create called for type " + Type + " with name " + Name)
 		Source := SourceString
+		if Init {
+			Source = "{}"
+			SourceFileType = "json"
+		}
 		if Source == "" {
 			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
@@ -103,6 +109,7 @@ func init() {
 	createCmd.Flags().StringVarP(&SourceString, "string", "s", "", "Source from string")
 	createCmd.Flags().StringVarP(&SourceFile, "file", "f", "", "Source from file")
 	createCmd.Flags().StringVarP(&SourceFileType, "input", "i", "yaml", "Source file type yaml or json")
+	createCmd.Flags().BoolVarP(&Init, "init", "", false, "initialize as empty source")
 
 	createCmd.Flags().StringSliceVarP(&Hosts, "host", "", []string{}, "host to add to vamp service, Comma separated lists are supported")
 

@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -94,9 +93,10 @@ type Metadata struct {
 }
 
 type VampService struct {
-	Gateways []string `json:"gateways"`
-	Hosts    []string `json:"hosts"`
-	Routes   []Route  `json:"routes"`
+	Gateways         []string `json:"gateways"`
+	Hosts            []string `json:"hosts"`
+	Routes           []Route  `json:"routes"`
+	ExposeInternally bool     `json:"exposeInternally"`
 }
 
 type Route struct {
@@ -405,12 +405,12 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 			var r []Named
 			err := json.Unmarshal([]byte(responseBody), &r)
 			if err != nil {
-				fmt.Printf("Error: %v\n", string(responseBody))
+				// fmt.Printf("Error: %v\n", string(responseBody))
 				return "", errors.New(string(responseBody))
 			}
 			responseBody, err = json.Marshal(r)
 			if err != nil {
-				fmt.Printf("Error: %v", err)
+				// fmt.Printf("Error: %v", err)
 				return "", err
 			}
 		}
@@ -419,7 +419,7 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 		if outputFormat == "yaml" {
 			yaml, err_2 := yaml.JSONToYAML(responseBody)
 			if err_2 != nil {
-				fmt.Printf("err: %v\n", err_2)
+				// fmt.Printf("err: %v\n", err_2)
 				return "", err_2
 			}
 			source = string(yaml)
@@ -427,14 +427,14 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 			var prettyJSON bytes.Buffer
 			error := json.Indent(&prettyJSON, responseBody, "", "    ")
 			if error != nil {
-				log.Println("JSON parse error: ", error)
+				// log.Println("JSON parse error: ", error)
 				return "", error
 			}
 			source = string(prettyJSON.Bytes())
 		}
 		return source, nil
 	} else {
-		fmt.Printf("\nError: %v", err)
+		// fmt.Printf("\nError: %v", err)
 		return "", err
 	}
 
