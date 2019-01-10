@@ -10,8 +10,8 @@ jobs:
       - run: go get
       - run: ./build.sh local
       - run: cp /go/src/github.com/magneticio/vamp2cli/bin/* artifacts
-    - persist_to_workspace:
-          root: artifacts
+      - persist_to_workspace:
+            root: artifacts
   publish-github-release:
     docker:
       - image: cibuilds/github:0.10
