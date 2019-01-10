@@ -63,7 +63,7 @@ You will need
   - username eg.: username
   - password eg.: password
 
-Please ask your providers if you don't have these information
+Please ask your provider if you don't have these information
 
 If you have installed your vamp into your cluster, these information will be given to you during the installation.
 If you are using the SaaS version, this information will be provided by the Vamp.io
@@ -111,8 +111,11 @@ vamp2cli create project $PROJECT_NAME -f ./resources/project.yaml
 
 If you don't have files locally you can also load them from a remote location:
 
+Resources for this readme is localed at https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1
+
+
 ```
-vamp2cli create project $PROJECT_NAME -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/project.yaml
+vamp2cli create project $PROJECT_NAME -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/project.yaml
 ```
 
 Rest of the README will use remote resources.
@@ -133,7 +136,7 @@ vamp2cli get project $PROJECT_NAME -o json
 Let's update the project configuration with an updated file.
 
 ```
-vamp2cli update project $PROJECT_NAME -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/project_update.yaml
+vamp2cli update project $PROJECT_NAME -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/project_update.yaml
 ```
 
 Run get project again to see the changes:
@@ -200,7 +203,7 @@ vamp2cli set -c mycluster
 
 Now it is time to deploy an example application with one version:
 ```
-kubectl apply -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/demo-application-version1.yaml
+kubectl apply -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/demo-application-version1.yaml
 ```
 
 This will create a namespace called vamp-demo and deploy two deployments. There are two ways of importing a namespace to vamp
@@ -210,7 +213,7 @@ This will create a namespace called vamp-demo and deploy two deployments. There 
 NOTE: Vamp lamia does not create the namespace, it should exist before the creation. If the namespace does not exist, creation will not fail immediately, it will search for namespace and it will delete itself if the namespace does not exist. It is a combination of behaviours that required to scan for namespaces and not managing them.
 
 ```
-vamp2cli create virtual_cluster vamp-demo -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/virtualcluster.yaml
+vamp2cli create virtual_cluster vamp-demo -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/virtualcluster.yaml
 ```
 
 This will re-label the namespace with required settings if the namespace exits. It will not create the namespace, as it is expected to be created by a deployment pipeline.
@@ -227,13 +230,13 @@ vamp2cli set -v vamp-demo
 To expose the application to outside, you will need a gateway:
 
 ```
-vamp2cli create gateway shop-gateway -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/gateway.yaml
+vamp2cli create gateway shop-gateway -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/gateway.yaml
 ```
 
 Create a destination
 
 ```
-vamp2cli create destination shop-destination -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/destination.yaml
+vamp2cli create destination shop-destination -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/destination.yaml
 ```
 
 Final step is creating the VampService.
@@ -279,7 +282,7 @@ Since this is harder to do in remote resources, there is an easier way to add ho
 
 Create a Vamp Service with 100% traffic on version1
 ```
-vamp2cli create vamp_service shop-vamp-service -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/vampservice_template.yaml --host $GATEWAY_IP
+vamp2cli create vamp_service shop-vamp-service -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/vampservice_template.yaml --host $GATEWAY_IP
 ```
 
 Check link generated with:
@@ -291,7 +294,7 @@ Now your application is released to public, copy paste the ip of your gateway to
 
 Let's deploy the second version of the e-commerce website with kubectl
 ```
-kubectl apply -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/demo-application-version2.yaml
+kubectl apply -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/demo-application-version2.yaml
 ```
 
 Now with this canary release, the second version will be released in time based manner,
@@ -301,7 +304,7 @@ You can create a canary release with configuration file or you can use the relea
 
 Create with configuration:
 ```
-vamp2cli create canary_release shop-release -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/canaryrelease.yaml
+vamp2cli create canary_release shop-release -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/canaryrelease.yaml
 ```
 
 Release command:
@@ -330,7 +333,7 @@ vamp2cli delete canary_release shop-vamp-service-shop-destination-subset2
 Update the hosts field the IP address of gateway in ./resources/conditionalvampservice.yaml then update the vamp service:
 
 ```
-vamp2cli update vamp_service shop-vamp-service -f https://raw.githubusercontent.com/magneticio/demo-resources/master/resources/conditionalvampservice_template.yaml --host $GATEWAY_IP
+vamp2cli update vamp_service shop-vamp-service -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/conditionalvampservice_template.yaml --host $GATEWAY_IP
 ```
 
 Now you can see that first version is available under url:
