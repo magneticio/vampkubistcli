@@ -7,6 +7,7 @@ jobs:
     steps:
       - checkout
       - run: mkdir -p artifacts
+      - run: go get
       - run: ./build.sh local
       - run: cp /go/src/github.com/magneticio/vamp2cli/bin artifacts
   publish-github-release:
