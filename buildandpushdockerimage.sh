@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=0.0.5
+VERSION=$(go run main.go version clean)
 
 IMAGE=magneticio/vamplamiacli:$VERSION
 

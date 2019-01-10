@@ -39,9 +39,12 @@ chmod +x /usr/local/bin/vamp2cli
 
 If you don't have anything yet and automatically download an install follow commands for your platform:
 
+This installation may not work since this is a private repository.
+Manual installation is recommended.
+
 Easy install for MacOS:
 ```
-base=https://github.com/magneticio/demo-resources/releases/download/cli-release-0.0.4 &&
+base=https://github.com/magneticio/vamp2cli/releases/download/0.0.6 &&
   curl -L $base/vamp2cli-$(uname -s)-$(uname -m) >/usr/local/bin/vamp2cli &&
   chmod +x /usr/local/bin/vamp2cli
 ```
