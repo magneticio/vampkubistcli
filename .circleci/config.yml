@@ -6,18 +6,18 @@ jobs:
     working_directory: /go/src/github.com/magneticio/vamp2cli
     steps:
       - checkout
-      - run: mkdir -p artifacts
+      - run: mkdir -p /artifacts
       - run: go get
       - run: ./build.sh local
-      - run: cp /go/src/github.com/magneticio/vamp2cli/bin/* artifacts
+      - run: cp ./bin/* /artifacts
       - persist_to_workspace:
-            root: artifacts
+            root: /artifacts
   publish-github-release:
     docker:
       - image: cibuilds/github:0.10
     steps:
       - attach_workspace:
-          at: ./artifacts
+          at: /artifacts
       - run:
           name: "Publish Release on GitHub"
           command: |
