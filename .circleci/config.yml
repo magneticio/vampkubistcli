@@ -11,7 +11,7 @@ jobs:
       - run: ./build.sh local
       - run: cp ./bin/* ./artifacts
       - run: cp ./bin/vamp2cli-darwin-amd64 ./artifacts/vamp2cli-darwin-x86_64
-      - run: ./bin/vamp2cli-linux-386 version clean > ./artifacts/version.txt
+      - run: go run main.go version clean > ./artifacts/version.txt
       - persist_to_workspace:
             root: ./artifacts
             paths:
@@ -26,6 +26,7 @@ jobs:
           name: "Publish Release on GitHub"
           command: |
             VERSION=$(cat ./artifacts/version.txt)
+            echo "ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/"
             ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -delete ${VERSION} ./artifacts/
 workflows:
   version: 2
