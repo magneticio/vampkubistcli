@@ -28,7 +28,15 @@ var versionCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Version: %v\n", Version)
+		if len(args) >= 1 {
+			function := args[0]
+			if function == "clean" {
+				fmt.Printf("%v\n", Version)
+			}
+		} else {
+			fmt.Printf("Version: %v\n", Version)
+		}
+
 	},
 }
 
