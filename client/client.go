@@ -399,18 +399,20 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 		Get(url)
 
 	if err == nil {
-		// fmt.Printf("\nResult: %v\n", resp)
 		responseBody := resp.Body()
 		if simple {
 			var r []Named
 			err := json.Unmarshal([]byte(responseBody), &r)
 			if err != nil {
-				// fmt.Printf("Error: %v\n", string(responseBody))
 				return "", errors.New(string(responseBody))
 			}
-			responseBody, err = json.Marshal(r)
+			// Array conversion is done to show only names
+			arr := make([]string, len(r))
+			for i, named := range r {
+				arr[i] = named.Name
+			}
+			responseBody, err = json.Marshal(arr)
 			if err != nil {
-				// fmt.Printf("Error: %v", err)
 				return "", err
 			}
 		}
@@ -419,7 +421,6 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 		if outputFormat == "yaml" {
 			yaml, err_2 := yaml.JSONToYAML(responseBody)
 			if err_2 != nil {
-				// fmt.Printf("err: %v\n", err_2)
 				return "", err_2
 			}
 			source = string(yaml)
@@ -427,14 +428,12 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 			var prettyJSON bytes.Buffer
 			error := json.Indent(&prettyJSON, responseBody, "", "    ")
 			if error != nil {
-				// log.Println("JSON parse error: ", error)
 				return "", error
 			}
 			source = string(prettyJSON.Bytes())
 		}
 		return source, nil
 	} else {
-		// fmt.Printf("\nError: %v", err)
 		return "", err
 	}
 
