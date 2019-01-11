@@ -44,7 +44,7 @@ Manual installation is recommended.
 
 Easy install for MacOS:
 ```
-base=https://github.com/magneticio/vamp2cli/releases/download/0.0.6 &&
+base=https://github.com/magneticio/vamp2cli/releases/download/0.0.10 &&
   curl -L $base/vamp2cli-$(uname -s)-$(uname -m) >/usr/local/bin/vamp2cli &&
   chmod +x /usr/local/bin/vamp2cli
 ```
@@ -53,12 +53,15 @@ TODO: add installation for other platforms
 
 ## Run
 
+This documentation is prepared for explaining the general usage of command line client.
+tutorials will be shared soon.
+
 Check if it is running with:
 ```
 vamp2cli version
 ```
 
-This documentation is for version v0.0.5
+This documentation is for version v0.0.10
 
 First you need to login to the vamp application:
 You will need
@@ -92,8 +95,10 @@ PROJECT_NAME=myproject
 
 This command will let you create an empty project
 ```
-vamp2cli create project $PROJECT_NAME -i json -s "{}"
+vamp2cli create project $PROJECT_NAME --init
 ```
+
+"--init" is a shorthand for creating empty objects
 
 Client allows you to pass specifications as json, yaml and from file or from string. This command reads the input as json and passes the empty json object as configuration. Project doesn't have any mandatory fields, so an empty json is still valid.
 
@@ -114,7 +119,7 @@ vamp2cli create project $PROJECT_NAME -f ./resources/project.yaml
 
 If you don't have files locally you can also load them from a remote location:
 
-Resources for this readme is localed at https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1
+Resources for this readme is located at https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1
 
 
 ```

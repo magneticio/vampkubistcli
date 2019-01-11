@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -33,7 +32,6 @@ func UseSourceUrl(resourceUrl string) (string, error) {
 		return source, nil
 	}
 	scheme := strings.ToLower(u.Scheme)
-	fmt.Println("scheme: " + scheme)
 	if scheme == "http" || scheme == "https" {
 		resp, err := http.Get(resourceUrl)
 		if err != nil {
@@ -45,7 +43,6 @@ func UseSourceUrl(resourceUrl string) (string, error) {
 			return "", err
 		}
 		source := string(contents)
-		// fmt.Println(source)
 		return source, nil
 	}
 	return "", errors.New("Not Supported protocol :" + scheme)
@@ -60,7 +57,6 @@ func Convert(inputFormat string, outputFormat string, input string) (string, err
 	if inputFormat == "yaml" {
 		json, err := yaml.YAMLToJSON(inputSource)
 		if err != nil {
-			// fmt.Printf("err: %v\n", err)
 			return "", err
 		}
 		inputSource = json
