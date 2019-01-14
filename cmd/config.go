@@ -27,10 +27,10 @@ import (
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Set, Get , Edit configuration of client",
-	Long: `To get all configuration parameters:
-  vamp2cli config get
+	Long: AddAppName(`To get all configuration parameters:
+  $AppName config get
 To set configuration parameters:
-  vamp2cli config set -p myproject -c mycluster`,
+  $AppName config set -p myproject -c mycluster`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

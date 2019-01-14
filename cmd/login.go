@@ -32,14 +32,14 @@ var Cert string
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "login to a vamp service",
-	Long: `Login to a vamp service:
+	Long: AddAppName(`Login to a vamp service:
 Example:
-  vamp2cli --url https://1.2.3.4:8888 --user username --password password
+  $AppName --url https://1.2.3.4:8888 --user username --password password
 
   Login creates a configuration file in the home folder of the user.
   Username and password is not stored in the configuration, only token is stored.
-  Default config location is ~/.vamp2cli.yaml
-`,
+  Default config location is ~/.$AppName.yaml
+`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

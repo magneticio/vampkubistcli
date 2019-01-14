@@ -167,6 +167,20 @@ You are expected to work in the same project so you can set it as default by run
 vamp2cli set -p $PROJECT_NAME
 ```
 
+You can create a user with the following command:
+
+```
+vamp2cli create user user1 -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/user1
+.yaml
+
+```
+
+And also grant admin role to user1 in your project
+
+```
+vamp2cli grant role --user user1 --role admin -p $PROJECT_NAME
+```
+
 Now, you can bootstrap your cluster with vamp.
 Please make sure you have installed kubectl and authenticated to connect to the cluster you want to be managed by vamp. Command line client will set up a service account user in your cluster and set up credentials to connect to your cluster in vamp.
 

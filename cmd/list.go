@@ -29,12 +29,12 @@ var Detailed bool
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "lists resources",
-	Long: `To list a resource type
-Run as vamp2cli list resourceType
+	Long: AddAppName(`To list a resource type
+Run as $AppName list resourceType
 
 Example:
-    vamp2cli list project
-    vamp2cli list -p myproject cluster`,
+    $AppName list project
+    $AppName list -p myproject cluster`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -18,10 +18,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ghodss/yaml"
 	"gopkg.in/resty.v1"
@@ -184,16 +187,6 @@ func (s *RestClient) Login(username string, password string) (string, error) {
 		// fmt.Printf("\nError: %v", err)
 		return "", err
 	}
-	// explore response object
-	/*
-		fmt.Printf("\nError: %v", err)
-		fmt.Printf("\nResponse Status Code: %v", resp.StatusCode())
-		fmt.Printf("\nResponse Status: %v", resp.Status())
-		fmt.Printf("\nResponse Time: %v", resp.Time())
-		fmt.Printf("\nResponse Received At: %v", resp.ReceivedAt())
-		fmt.Printf("\nResponse Body: %v", resp) // or resp.String() or string(resp.Body())
-		fmt.Printf("\n")
-	*/
 
 	return (*s).token, nil
 }
@@ -220,27 +213,36 @@ func getUrlForResource(base string, resourceName string, subCommand string, name
 	if application != "" {
 		applicationParameter = "&" + "application_name=" + application
 	}
+	project := values["project"]
+	projectParameter := ""
+	if project != "" {
+		projectParameter = "&" + "project_name=" + project
+	}
+	cluster := values["cluster"]
+	clusterParameter := ""
+	if cluster != "" {
+		clusterParameter = "&" + "cluster_name=" + cluster
+	}
+	virtualCluster := values["virtual_cluster"]
+	virtualClusterParameter := ""
+	if virtualCluster != "" {
+		virtualClusterParameter = "&" + "virtual_cluster_name=" + virtualCluster
+	}
 	switch resourceName {
 	case "project":
 		return base + "/1.0/api/" + "projects" + subPath + "?time=-1" + namedParameter, nil
 	case "cluster":
-		project := values["project"]
 		url := base + "/1.0/api/" + "clusters" + subPath +
 			"?" + "project_name=" + project +
 			namedParameter
 		return url, nil
 	case "virtual_cluster":
-		project := values["project"]
-		cluster := values["cluster"]
 		url := base + "/1.0/api/" + "virtual-clusters" + subPath +
 			"?" + "project_name=" + project +
 			"&" + "cluster_name=" + cluster +
 			namedParameter
 		return url, nil
 	case "virtual_service":
-		project := values["project"]
-		cluster := values["cluster"]
-		virtualCluster := values["virtual_cluster"]
 		url := base + "/1.0/api/" + "virtual-services" + subPath +
 			"?" + "project_name=" + project +
 			"&" + "cluster_name=" + cluster +
@@ -248,17 +250,15 @@ func getUrlForResource(base string, resourceName string, subCommand string, name
 			namedParameter
 		return url, nil
 	}
-	project := values["project"]
-	cluster := values["cluster"]
-	virtualCluster := values["virtual_cluster"]
+	timestamp := strconv.FormatInt(time.Now().UTC().UnixNano(), 10)
 	url := base + "/1.0/api/" + strings.Replace(resourceName, "_", "-", -1) + "s" + subPath +
-		"?" + "project_name=" + project +
-		"&" + "cluster_name=" + cluster +
-		"&" + "virtual_cluster_name=" + virtualCluster +
+		"?" + "t=" + timestamp +
+		projectParameter +
+		clusterParameter +
+		virtualClusterParameter +
 		applicationParameter +
 		namedParameter
 	return url, nil
-	// return "", errors.New("no resource Type")
 }
 
 func (s *RestClient) Create(resourceName string, name string, source string, sourceType string, values map[string]string) (bool, error) {
@@ -438,4 +438,33 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 	}
 
 	return "", nil
+}
+
+func (s *RestClient) AddRoleToUser(username string, rolename string, values map[string]string) (bool, error) {
+	url, _ := getUrlForResource((*s).url, "user-access-role", "", "", values)
+	url += "&user_name=" + username + "&role_name=" + rolename
+	fmt.Printf("Url: %v\n", url)
+	// body := source
+	resp, err := resty.R().
+		// SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetAuthToken((*s).token).
+		// SetBody([]byte(body)).
+		// SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
+		// SetError(&AuthError{}).    // or SetError(AuthError{}).
+		Post(url)
+
+	if err == nil {
+		// fmt.Printf("\nResult: %v\n", resp)
+		if resp.IsError() {
+			return false, errors.New(string(resp.Body()))
+		}
+		return true, nil
+	} else {
+		// fmt.Printf("\nError: %v", err)
+		return false, err
+	}
+
+	return false, nil
 }

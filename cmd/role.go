@@ -15,45 +15,49 @@
 package cmd
 
 import (
-	"github.com/magneticio/vamp2cli/util"
+	"github.com/magneticio/vamp2cli/client"
 	"github.com/spf13/cobra"
 )
 
-var URL string
-var Path string
+var Role string
 
-// downloadCmd represents the download command
-var downloadCmd = &cobra.Command{
-	Use:   "download",
-	Short: "Download a resource from url",
-	Long: AddAppName(`Utility method for downloading resources:
-eg:.
-$AppName download --url URL --path path-of-file`),
+// roleCmd represents the role command
+var roleCmd = &cobra.Command{
+	Use:   "role",
+	Short: "Grant a role to a user for an object",
+	Long: AddAppName(`Usage:
+$AppName grant role --user user1 --role admin -p default`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := util.DownloadFile(Path, URL)
-		if err != nil {
-			return err
+		restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
+		values := make(map[string]string)
+		values["project"] = Project
+		values["cluster"] = Cluster
+		values["virtual_cluster"] = VirtualCluster
+		// values["application"] = Application
+		isSet, err_set := restClient.AddRoleToUser(Username, Role, values)
+		if !isSet {
+			return err_set
 		}
 		return nil
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(downloadCmd)
+	grantCmd.AddCommand(roleCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// downloadCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// roleCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// downloadCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	downloadCmd.Flags().StringVarP(&URL, "url", "", "", "URL to download")
-	downloadCmd.MarkFlagRequired("url")
-	downloadCmd.Flags().StringVarP(&Path, "path", "", "", "Path to write the file")
-	downloadCmd.MarkFlagRequired("path")
+	// roleCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	roleCmd.Flags().StringVarP(&Username, "user", "", "", "Username required")
+	roleCmd.MarkFlagRequired("user")
+	roleCmd.Flags().StringVarP(&Role, "role", "", "", "Role required")
+	roleCmd.MarkFlagRequired("role")
 }

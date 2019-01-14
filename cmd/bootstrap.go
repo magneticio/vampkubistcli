@@ -29,14 +29,14 @@ import (
 var bootstrapCmd = &cobra.Command{
 	Use:   "bootstrap",
 	Short: "bootstrap a resource if it is applicable",
-	Long: `Bootstrap is currently only supported for clusters
+	Long: AddAppName(`Bootstrap is currently only supported for clusters
     When you want to bootstrap a new cluster with vamp.
     Make sure kube config setup and active locally.
     Then run:
-    vamp2cli bootstrap cluster mycluster
+    $AppName bootstrap cluster mycluster
     This will automacially read configuration and create vamp user in your cluster and
     make required set up in vamp. You can access the cluster with name mycluster.
-  `,
+  `),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

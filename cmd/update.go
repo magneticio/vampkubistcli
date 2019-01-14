@@ -27,12 +27,12 @@ import (
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Updates a resource",
-	Long: `To update a resource
-Run as vamp2cli update resourceType ResourceName
+	Long: AddAppName(`To update a resource
+Run as $AppName update resourceType ResourceName
 
 Example:
-    vamp2cli update project myproject -f project.yaml
-    vamp2cli update -p myproject cluster mycluster -f cluster.yaml`,
+    $AppName update project myproject -f project.yaml
+    $AppName update -p myproject cluster mycluster -f cluster.yaml`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

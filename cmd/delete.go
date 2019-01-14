@@ -25,12 +25,12 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Deletes a resource",
-	Long: `To delete a resource
-Run as vamp2cli delete resourceType ResourceName
+	Long: AddAppName(`To delete a resource
+Run as $AppName delete resourceType ResourceName
 
 Example:
-    vamp2cli delete project myproject
-    vamp2cli delete -p myproject cluster mycluster`,
+    $AppName delete project myproject
+    $AppName delete -p myproject cluster mycluster`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

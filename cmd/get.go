@@ -31,19 +31,19 @@ var WaitUntilAvailable bool
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get a resource as yaml or json",
-	Long: `To get a resource
-Run as vamp2cli get resourceType ResourceName
+	Long: AddAppName(`To get a resource
+Run as $AppName get resourceType ResourceName
 Get show resource as yaml by defualt
 By adding -o json, output can be converted to json
 
 Example:
-    vamp2cli get project myproject
-    vamp2cli get -p myproject cluster mycluster
-    vamp2cli get -p myproject cluster mycluster -o json
+    $AppName get project myproject
+    $AppName get -p myproject cluster mycluster
+    $AppName get -p myproject cluster mycluster -o json
 
 Json path example with wait
-    vamp2cli get gateway shop-gateway -o=json --jsonpath '$.status.ip' --wait
-    `,
+    $AppName get gateway shop-gateway -o=json --jsonpath '$.status.ip' --wait
+    `),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

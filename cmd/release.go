@@ -30,8 +30,8 @@ var SubsetLabels map[string]string
 var releaseCmd = &cobra.Command{
 	Use:   "release",
 	Short: "Release a new subset with labels",
-	Long: `eg.:
-vamp2cli release shop-vamp-service --destination shop-destination --subset subset2 -l version=version2`,
+	Long: AddAppName(`eg.:
+$AppName release shop-vamp-service --destination shop-destination --subset subset2 -l version=version2`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

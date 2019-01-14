@@ -25,12 +25,12 @@ import (
 var convertCmd = &cobra.Command{
 	Use:   "convert",
 	Short: "convert json to yaml and yam to json",
-	Long: `Convert is an utility method for easy convertion between json and yaml.
-    vamp2cli supports both json and yaml but if you like to convert them.
+	Long: AddAppName(`Convert is an utility method for easy convertion between json and yaml.
+    $AppName supports both json and yaml but if you like to convert them.
     Example converting json to yaml:
-    vamp2cli convert -i json -f filepath.json
+    $AppName convert -i json -f filepath.json
     This will print yaml version of the json object.
-  `,
+  `),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

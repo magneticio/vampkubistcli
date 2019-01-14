@@ -23,8 +23,8 @@ import (
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:           "version",
-	Short:         "Print the version number of vamp2cli",
-	Long:          `All software has versions. This is vamp2cli's`,
+	Short:         AddAppName("Print the version number of $AppName"),
+	Long:          AddAppName(`All software has versions. This is $AppName's`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Run: func(cmd *cobra.Command, args []string) {

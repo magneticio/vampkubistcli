@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -28,12 +29,12 @@ import (
 )
 
 type config struct {
-	Url            string
-	Cert           string
-	Token          string
-	Project        string
-	Cluster        string
-	VirtualCluster string
+	Url            string `yaml:"url,omitempty" json:"url,omitempty"`
+	Cert           string `yaml:"cert,omitempty" json:"cert,omitempty"`
+	Token          string `yaml:"token,omitempty" json:"token,omitempty"`
+	Project        string `yaml:"project,omitempty" json:"project,omitempty"`
+	Cluster        string `yaml:"cluster,omitempty" json:"cluster,omitempty"`
+	VirtualCluster string `yaml:"virtualcluster,omitempty" json:"virtualcluster,omitempty"`
 }
 
 var cfgFile string
@@ -54,19 +55,24 @@ var Hosts []string
 
 // version should be in format d.d.d where d is a decimal number
 const Version string = "0.0.10"
+const AppName string = "vamp2cli"
+
+func AddAppName(str string) string {
+	return strings.Replace(str, "$AppName", AppName, -1)
+}
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "vamp2cli",
-	Short: "A command line client for vamp2",
-	Long: `A command line client for vamp2:
+	Use:   AddAppName("$AppName"),
+	Short: "A command line client for vamp",
+	Long: AddAppName(`A command line client for vamp:
   Usage usually follows:
-  vamp2cli create resourceType resourceName -f filepath.yaml
-  vamp2cli update resourceType resourceName -f filepath.yaml
-  vamp2cli delete resourceType resourceName
+  $AppName create resourceType resourceName -f filepath.yaml
+  $AppName update resourceType resourceName -f filepath.yaml
+  $AppName delete resourceType resourceName
   eg.:
-  vamp2cli create project myproject -f ./project.yaml
-  `,
+  $AppName create project myproject -f ./project.yaml
+  `),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	// Uncomment the following line if your bare application
@@ -89,7 +95,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.vamp2/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", AddAppName("config file (default is $HOME/.$AppName/config.yaml)"))
 	rootCmd.PersistentFlags().StringVarP(&Project, "project", "p", "", "active project")
 	rootCmd.PersistentFlags().StringVarP(&Cluster, "cluster", "c", "", "active cluster")
 	rootCmd.PersistentFlags().StringVarP(&VirtualCluster, "virtualcluster", "v", "", "active virtual cluster")
@@ -150,7 +156,7 @@ func WriteConfigFile() error {
 				// fmt.Println(err)
 				return err
 			}
-			path := filepath.FromSlash(home + "/" + ".vamp2")
+			path := filepath.FromSlash(home + AddAppName("/.$AppName"))
 			if _, err := os.Stat(path); os.IsNotExist(err) {
 				os.Mkdir(path, os.ModePerm)
 				// There is a problem here try using MkdirAll
@@ -181,8 +187,8 @@ func initConfig() {
 			// fmt.Println(err)
 			os.Exit(1)
 		}
-		// Search config in home directory with name ".vamp2cli" (without extension).
-		path := filepath.FromSlash(home + "/" + ".vamp2")
+		// Search config in home directory with name ".$AppName" (without extension).
+		path := filepath.FromSlash(home + AddAppName("/.$AppName"))
 		viper.AddConfigPath(path)
 		viper.SetConfigName("config")
 	}

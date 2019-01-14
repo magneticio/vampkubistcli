@@ -15,45 +15,33 @@
 package cmd
 
 import (
-	"github.com/magneticio/vamp2cli/util"
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
-var URL string
-var Path string
-
-// downloadCmd represents the download command
-var downloadCmd = &cobra.Command{
-	Use:   "download",
-	Short: "Download a resource from url",
-	Long: AddAppName(`Utility method for downloading resources:
-eg:.
-$AppName download --url URL --path path-of-file`),
+// grantCmd represents the grant command
+var grantCmd = &cobra.Command{
+	Use:           "grant",
+	Short:         "A brief description of your command",
+	Long:          AddAppName(``),
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		err := util.DownloadFile(Path, URL)
-		if err != nil {
-			return err
-		}
-		return nil
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("use grant role or grant permission")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(downloadCmd)
+	rootCmd.AddCommand(grantCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// downloadCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// grantCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// downloadCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	downloadCmd.Flags().StringVarP(&URL, "url", "", "", "URL to download")
-	downloadCmd.MarkFlagRequired("url")
-	downloadCmd.Flags().StringVarP(&Path, "path", "", "", "Path to write the file")
-	downloadCmd.MarkFlagRequired("path")
+	// grantCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

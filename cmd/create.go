@@ -29,12 +29,12 @@ var Init bool
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Creates a resource",
-	Long: `To create a resource
-Run as vamp2cli create resourceType ResourceName
+	Long: AddAppName(`To create a resource
+Run as $AppName create resourceType ResourceName
 
 Example:
-    vamp2cli create project myproject -f project.yaml
-    vamp2cli create -p myproject cluster mycluster -f cluster.yaml`,
+    $AppName create project myproject -f project.yaml
+    $AppName create -p myproject cluster mycluster -f cluster.yaml`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
