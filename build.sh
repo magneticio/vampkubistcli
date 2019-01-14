@@ -13,7 +13,7 @@ if [ "$1" = "local" ]; then
       if [ "$GOOS" = "windows" ]; then
         go get -u github.com/spf13/cobra
       fi
-      go build -o bin/$AppName-$GOOS-$GOARCH
+      go build -o bin/vamp2cli-$GOOS-$GOARCH
     done
   done
   unset GOOS
@@ -28,7 +28,7 @@ else
       if [ "$GOOS" = "windows" ]; then
         go get -u github.com/spf13/cobra
       fi
-      go build -o bin/$AppName-$GOOS-$GOARCH
+      go build -o bin/vamp2cli-$GOOS-$GOARCH
     done
   done
   '
