@@ -61,7 +61,7 @@ Check if it is running with:
 vamp2cli version
 ```
 
-This documentation is for version v0.0.10
+This documentation is for version 0.0.11
 
 First you need to login to the vamp application:
 You will need
