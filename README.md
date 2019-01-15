@@ -253,6 +253,10 @@ set virtual cluster for ease of use:
 vamp2cli set -v vamp-demo
 ```
 
+NOTE:
+In all networking structures (gateway, destination, service, etc.), ports should be defined explicitly.
+All ports are closed until they are defined to be opened.
+
 To expose the application to outside, you will need a gateway:
 
 ```
