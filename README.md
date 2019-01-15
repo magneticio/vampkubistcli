@@ -170,9 +170,7 @@ vamp2cli set -p $PROJECT_NAME
 You can create a user with the following command:
 
 ```
-vamp2cli create user user1 -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/user1
-.yaml
-
+vamp2cli create user user1 -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/user1.yaml
 ```
 
 And also grant admin role to user1 in your project
