@@ -43,6 +43,7 @@ var Project string
 var Cluster string
 var VirtualCluster string
 var Application string
+var Token string
 
 var Type string
 var Name string
@@ -104,6 +105,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&VirtualCluster, "virtualcluster", "v", "", "active virtual cluster")
 	rootCmd.PersistentFlags().StringVarP(&Application, "application", "a", "", "application name for deployments")
 
+	rootCmd.PersistentFlags().StringVarP(&Token, "token", "t", "", "override the login token")
+
 	rootCmd.PersistentFlags().BoolVarP(&Debug, "debug", "", false, "enable debug on client")
 	// rootCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")
 	// viper.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server"))
@@ -118,12 +121,12 @@ func ReadConfigFile() error {
 	c := viper.AllSettings()
 	bs, err := yaml.Marshal(c)
 	if err != nil {
-		fmt.Printf("unable to marshal config to YAML: %v\n", err)
+		// fmt.Printf("unable to marshal config to YAML: %v\n", err)
 		return err
 	}
 	err_2 := yaml.Unmarshal(bs, &Config)
 	if err_2 != nil {
-		fmt.Printf("error: %v\n", err_2)
+		// fmt.Printf("error: %v\n", err_2)
 		return err_2
 	}
 	if Project != "" {
@@ -135,6 +138,9 @@ func ReadConfigFile() error {
 	if VirtualCluster != "" {
 		Config.VirtualCluster = VirtualCluster
 	}
+	if Token != "" {
+		Config.Token = Token
+	}
 	// fmt.Printf("Current config: %v \n", Config)
 	return nil
 }
@@ -142,7 +148,7 @@ func ReadConfigFile() error {
 func WriteConfigFile() error {
 	bs, err := yaml.Marshal(Config)
 	if err != nil {
-		fmt.Printf("unable to marshal config to YAML: %v\n", err)
+		// fmt.Printf("unable to marshal config to YAML: %v\n", err)
 		return err
 	}
 	// return string(bs)
