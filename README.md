@@ -178,7 +178,13 @@ vamp2cli create user user1 -f https://raw.githubusercontent.com/magneticio/demo-
 And also grant admin role to user1 in your project
 
 ```
-vamp2cli grant role --user user1 --role admin -p $PROJECT_NAME
+vamp2cli grant --user user1 --role admin -p $PROJECT_NAME
+```
+
+To revoke the same role run:
+
+```
+vamp2cli revoke --user user1 --role admin -p $PROJECT_NAME
 ```
 
 Now, you can bootstrap your cluster with vamp.

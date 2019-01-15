@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -443,10 +442,9 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 func (s *RestClient) AddRoleToUser(username string, rolename string, values map[string]string) (bool, error) {
 	url, _ := getUrlForResource((*s).url, "user-access-role", "", "", values)
 	url += "&user_name=" + username + "&role_name=" + rolename
-	fmt.Printf("Url: %v\n", url)
+	// fmt.Printf("Url: %v\n", url)
 	// body := source
 	resp, err := resty.R().
-		// SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
 		SetAuthToken((*s).token).
@@ -456,15 +454,64 @@ func (s *RestClient) AddRoleToUser(username string, rolename string, values map[
 		Post(url)
 
 	if err == nil {
-		// fmt.Printf("\nResult: %v\n", resp)
 		if resp.IsError() {
 			return false, errors.New(string(resp.Body()))
 		}
 		return true, nil
 	} else {
-		// fmt.Printf("\nError: %v", err)
 		return false, err
 	}
+	return false, nil
+}
 
+func (s *RestClient) RemoveRoleFromUser(username string, rolename string, values map[string]string) (bool, error) {
+	url, _ := getUrlForResource((*s).url, "user-access-role", "", "", values)
+	url += "&user_name=" + username + "&role_name=" + rolename
+	// fmt.Printf("Url: %v\n", url)
+	// body := source
+	resp, err := resty.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetAuthToken((*s).token).
+		// SetBody([]byte(body)).
+		// SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
+		// SetError(&AuthError{}).    // or SetError(AuthError{}).
+		Delete(url)
+
+	if err == nil {
+		if resp.IsError() {
+			return false, errors.New(string(resp.Body()))
+		}
+		return true, nil
+	} else {
+		return false, err
+	}
+	return false, nil
+}
+
+func (s *RestClient) Ping() (bool, error) {
+	// url, _ := getUrlForResource((*s).url, "", "", "", values)
+	// url += "&user_name=" + username + "&role_name=" + rolename
+	url := (*s).url + "/"
+	// fmt.Printf("Url: %v\n", url)
+	// body := source
+	resty.SetTimeout(5 * time.Second)
+	resp, err := resty.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "text/plain, application/json").
+		SetAuthToken((*s).token).
+		// SetBody([]byte(body)).
+		// SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
+		// SetError(&AuthError{}).    // or SetError(AuthError{}).
+		Get(url)
+
+	if err == nil {
+		if resp.IsError() {
+			return false, errors.New(string(resp.Body()))
+		}
+		return true, nil
+	} else {
+		return false, err
+	}
 	return false, nil
 }

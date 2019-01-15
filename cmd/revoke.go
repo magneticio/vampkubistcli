@@ -19,14 +19,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Role string
-
-// grantCmd represents the grant command
-var grantCmd = &cobra.Command{
-	Use:   "grant",
-	Short: "Grant a role or permission to a user for an object",
+// revokeCmd represents the revoke command
+var revokeCmd = &cobra.Command{
+	Use:   "revoke",
+	Short: "Revoke a role or permission of a user for an object",
 	Long: AddAppName(`Usage:
-$AppName grant --user user1 --role admin -p default`),
+$AppName revoke --user user1 --role admin -p default`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -37,7 +35,7 @@ $AppName grant --user user1 --role admin -p default`),
 		values["virtual_cluster"] = VirtualCluster
 		// values["application"] = Application
 		if Role != "" {
-			isSet, err_set := restClient.AddRoleToUser(Username, Role, values)
+			isSet, err_set := restClient.RemoveRoleFromUser(Username, Role, values)
 			if !isSet {
 				return err_set
 			}
@@ -47,19 +45,19 @@ $AppName grant --user user1 --role admin -p default`),
 }
 
 func init() {
-	rootCmd.AddCommand(grantCmd)
+	rootCmd.AddCommand(revokeCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// grantCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// revokeCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// grantCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	grantCmd.Flags().StringVarP(&Username, "user", "", "", "Username required")
-	grantCmd.MarkFlagRequired("user")
-	grantCmd.Flags().StringVarP(&Role, "role", "", "", "Role required")
-	grantCmd.MarkFlagRequired("role")
+	// revokeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	revokeCmd.Flags().StringVarP(&Username, "user", "", "", "Username required")
+	revokeCmd.MarkFlagRequired("user")
+	revokeCmd.Flags().StringVarP(&Role, "role", "", "", "Role required")
+	revokeCmd.MarkFlagRequired("role")
 }

@@ -15,49 +15,40 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/magneticio/vamp2cli/client"
 	"github.com/spf13/cobra"
 )
 
-var Role string
-
-// roleCmd represents the role command
-var roleCmd = &cobra.Command{
-	Use:   "role",
-	Short: "Grant a role to a user for an object",
-	Long: AddAppName(`Usage:
-$AppName grant role --user user1 --role admin -p default`),
+// pingCmd represents the ping command
+var pingCmd = &cobra.Command{
+	Use:           "ping",
+	Short:         "ping the api",
+	Long:          `Ping the api`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
-		values := make(map[string]string)
-		values["project"] = Project
-		values["cluster"] = Cluster
-		values["virtual_cluster"] = VirtualCluster
-		// values["application"] = Application
-		isSet, err_set := restClient.AddRoleToUser(Username, Role, values)
-		if !isSet {
-			return err_set
+		isPong, err := restClient.Ping()
+		if !isPong {
+			return err
 		}
+		fmt.Println("Pong")
 		return nil
 	},
 }
 
 func init() {
-	grantCmd.AddCommand(roleCmd)
+	rootCmd.AddCommand(pingCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// roleCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// pingCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// roleCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	roleCmd.Flags().StringVarP(&Username, "user", "", "", "Username required")
-	roleCmd.MarkFlagRequired("user")
-	roleCmd.Flags().StringVarP(&Role, "role", "", "", "Role required")
-	roleCmd.MarkFlagRequired("role")
+	// pingCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
