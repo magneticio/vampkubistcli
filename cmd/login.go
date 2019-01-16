@@ -97,10 +97,9 @@ Example:
 			if err != nil {
 				return err
 			}
-			fmt.Println("Token will be written to config: " + token)
 			Config.Token = token
 		}
-
+		fmt.Println("Token will be written to config: " + Config.Token)
 		WriteConfigFile()
 		return nil
 	},
