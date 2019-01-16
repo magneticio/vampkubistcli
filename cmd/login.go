@@ -34,7 +34,15 @@ var loginCmd = &cobra.Command{
 	Short: "login to a vamp service",
 	Long: AddAppName(`Login to a vamp service:
 Example:
-  $AppName --url https://1.2.3.4:8888 --user username --password password
+  Logging in with using username and password:
+  $AppName login --url https://1.2.3.4:8888 --user username --password password
+  Logging in with an existing token:
+  $AppName login --url https://1.2.3.4:8888 --token dXNlcjE6ZnJvbnRlbmQ6MTU0NzU2MDc5ODcyMzo5OHJhcFRydEloZXBEVW1PV0F6UQ==
+
+  It is also possible to pass certificate with cert parameter
+  $AppName login --url https://1.2.3.4:8888 --user username --password password --cert file-or-string
+
+  Cert parameter accepts cerficate string, local file path or remote file path.
 
   Login creates a configuration file in the home folder of the user.
   Username and password is not stored in the configuration, only token is stored.
@@ -70,13 +78,29 @@ Example:
 			}
 			Config.Cert = CertString
 		}
-		restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
-		token, err := restClient.Login(Username, Password)
-		if err != nil {
-			return err
+		if Token != "" {
+			Config.Token = Token
+			restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
+			isPong, err := restClient.Ping() // TODO: use an authorized endpoint to check token works
+			if !isPong {
+				return err
+			}
+		} else {
+			if Username == "" {
+				return errors.New("Username is required")
+			}
+			if Password == "" {
+				return errors.New("Password is required")
+			}
+			restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
+			token, err := restClient.Login(Username, Password)
+			if err != nil {
+				return err
+			}
+			fmt.Println("Token will be written to config: " + token)
+			Config.Token = token
 		}
-		fmt.Println("Token will be written to config: " + token)
-		Config.Token = token
+
 		WriteConfigFile()
 		return nil
 	},
@@ -96,9 +120,9 @@ func init() {
 	// is called directly, e.g.:
 	loginCmd.Flags().StringVarP(&Url, "url", "", "", "Url required")
 	loginCmd.Flags().StringVarP(&Username, "user", "", "", "Username required")
-	loginCmd.MarkFlagRequired("user")
+	// loginCmd.MarkFlagRequired("user")
 	loginCmd.Flags().StringVarP(&Password, "password", "", "", "Password required")
-	loginCmd.MarkFlagRequired("password")
+	// loginCmd.MarkFlagRequired("password")
 	loginCmd.Flags().StringVarP(&Cert, "cert", "", "", "Cert from file, url or string")
 
 	// loginCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")

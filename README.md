@@ -1,9 +1,16 @@
 # vamp lamia command line client
 
+Vamp Lamia Command Line Client is a command line client written in golang and allows a user interface to the Vamp Lamia API. It also supports common functions that are useful to regular users.
+
+Command Line client requires a running Vamp Lamia service to function.
+Please check How to Setup Vamp Lamia on common documentation repository: https://github.com/magneticio/vamp2setup
+
 ## development
-if you have go installed,
-git clone it to $GOPATH/src/github.com/magneticio/vamp2cli
-so that docker builder works.
+if you have golang installed, it is recommended to git clone it to $GOPATH/src/github.com/magneticio/vamp2cli
+This is a requirement for docker builder to work.
+
+It is recommended to read and follow golang setup for a development environment setup: https://golang.org/doc/install
+
 
 ## build
 
@@ -48,15 +55,20 @@ base=https://github.com/magneticio/vamp2cli/releases/download/0.0.10 &&
   curl -L $base/vamp2cli-$(uname -s)-$(uname -m) >/usr/local/bin/vamp2cli &&
   chmod +x /usr/local/bin/vamp2cli
 ```
-
 TODO: add installation for other platforms
+
+For general users it is recommended to download the binary for your platform.
+Latest release can be found here:
+https://github.com/magneticio/vamp2cli/releases/latest
+
 
 ## Run
 
 This documentation is prepared for explaining the general usage of command line client.
-tutorials will be shared soon.
+This Readme doesn't explain every path.
+Tutorials will be shared soon.
 
-Check if it is running with:
+Check the version of the client with:
 ```
 vamp2cli version
 ```
