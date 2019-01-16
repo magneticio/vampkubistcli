@@ -1,1 +1,0 @@
-{"application":"app1","ports":[{"name":"http","port":8080,"targetPort":8080,"protocol":"TCP"}],"subsets":{"subset1":{"labels":{"version":"version1"}}},"metadata":{},"labels":{}}

@@ -1,5 +1,0 @@
-destination: shop-destination
-subset: subset2
-subsetLabels:
-  version: version2
-vampService: shop-vamp-service
