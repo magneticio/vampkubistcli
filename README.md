@@ -73,6 +73,11 @@ Check the version of the client with:
 vamp2cli version
 ```
 
+It is possible to get all commands and flags by running help:
+```shell
+vamp2cli help
+```
+
 This documentation is for version 0.0.13 and above
 
 First you need to login to the vamp application:
@@ -165,6 +170,13 @@ vamp2cli get project $PROJECT_NAME -o json
 
 Let's update the project configuration with an updated file.
 
+contents of project_update.yaml
+```YAML
+metadata:
+  key1: value1
+  key2: value2_new
+```
+
 ```shell
 vamp2cli update project $PROJECT_NAME -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/project_update.yaml
 ```
@@ -186,26 +198,49 @@ If you have used kubernetes, Cluster represents configurations related to an act
 You are expected to work in the same project so you can set it as default by running set command:
 
 ```shell
-vamp2cli set -p $PROJECT_NAME
+vamp2cli config set -p $PROJECT_NAME
 ```
 
+It is possible to get current configuration with following command:
+```shell
+vamp2cli config get
+```
+
+
 You can create a user with the following command:
+
+contents of user1.yaml
+
+```YAML
+userName: user1
+password: pass1
+```
 
 ```shell
 vamp2cli create user user1 -f https://raw.githubusercontent.com/magneticio/demo-resources/master/vamplamiacliv1/user1.yaml
 ```
 
-And also grant admin role to user1 in your project
+And also grant admin role to user1 in your project:
 
 ```shell
 vamp2cli grant --user user1 --role admin -p $PROJECT_NAME
 ```
+
+You can also create additional roles for simplicity, admin role is used.
 
 To revoke the same role run:
 
 ```shell
 vamp2cli revoke --user user1 --role admin -p $PROJECT_NAME
 ```
+
+Now login as the user1:
+
+```shell
+vamp2cli login --user user1 --password pass1
+```
+
+It can be seen that while using the same cluster it is not needed to pass the url or certificate information again.
 
 Now, you can bootstrap your cluster with vamp.
 Please make sure you have installed kubectl and authenticated to connect to the cluster you want to be managed by vamp. Command line client will set up a service account user in your cluster and set up credentials to connect to your cluster in vamp.

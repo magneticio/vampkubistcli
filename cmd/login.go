@@ -17,10 +17,13 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"syscall"
 
 	"github.com/magneticio/vamp2cli/client"
 	"github.com/magneticio/vamp2cli/util"
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh/terminal"
+	//"golang.org/x/crypto/ssh/terminal"
 )
 
 var Url string
@@ -41,6 +44,11 @@ Example:
 
   It is also possible to pass certificate with cert parameter
   $AppName login --url https://1.2.3.4:8888 --user username --password password --cert file-or-string
+
+  Interactive password input is enabled if username is entered
+  but password is not passed for security:
+  
+  $AppName login --url https://1.2.3.4:8888 --user username
 
   Cert parameter accepts cerficate string, local file path or remote file path.
 
@@ -90,7 +98,15 @@ Example:
 				return errors.New("Username is required")
 			}
 			if Password == "" {
-				return errors.New("Password is required")
+				fmt.Println("Enter your password (password will not be visible):")
+				bytePassword, errInput := terminal.ReadPassword(int(syscall.Stdin))
+				if errInput != nil {
+					return errInput
+				}
+				Password = string(bytePassword)
+				if Password == "" {
+					return errors.New("Password is required")
+				}
 			}
 			restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
 			token, err := restClient.Login(Username, Password)
