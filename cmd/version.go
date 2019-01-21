@@ -35,6 +35,7 @@ var versionCmd = &cobra.Command{
 			}
 		} else {
 			fmt.Printf("Version: %v\n", Version)
+			fmt.Printf("Backend Version: %v\n", BackendVersion)
 		}
 
 	},
