@@ -192,13 +192,6 @@ func (s *RestClient) Login(username string, password string) (string, error) {
 	return (*s).token, nil
 }
 
-func getResourceType(resourceName string) (string, error) {
-	if resourceName == "project" {
-		return "projects", nil
-	}
-	return "", errors.New("no resource Type")
-}
-
 func getUrlForResource(base string, resourceName string, subCommand string, name string, values map[string]string) (string, error) {
 	resourceName = ResourceTypeConversion(resourceName)
 	subPath := ""
