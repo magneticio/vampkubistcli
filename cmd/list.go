@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/magneticio/vamp2cli/client"
+	"github.com/magneticio/vampkubistcli/client"
 	"github.com/spf13/cobra"
 )
 

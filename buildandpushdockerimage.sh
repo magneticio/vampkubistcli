@@ -2,7 +2,7 @@
 
 VERSION=$(go run main.go version clean)
 
-IMAGE=magneticio/vamplamiacli:$VERSION
+IMAGE=magneticio/vampkubistcli:$VERSION
 
 docker build -t $IMAGE .
 docker push $IMAGE

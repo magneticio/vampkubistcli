@@ -17,7 +17,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/magneticio/vamp2cli/util"
+	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
 )
 

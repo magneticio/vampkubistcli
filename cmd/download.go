@@ -15,7 +15,7 @@
 package cmd
 
 import (
-	"github.com/magneticio/vamp2cli/util"
+	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
 )
 

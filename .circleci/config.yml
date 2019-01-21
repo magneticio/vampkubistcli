@@ -3,14 +3,14 @@ jobs:
   build:
     docker:
       - image: circleci/golang:1.11
-    working_directory: /go/src/github.com/magneticio/vamp2cli
+    working_directory: /go/src/github.com/magneticio/vampkubistcli
     steps:
       - checkout
       - run: mkdir -p ./artifacts
       - run: go get
       - run: ./build.sh local
       - run: cp ./bin/* ./artifacts
-      - run: cp ./bin/vamp2cli-darwin-amd64 ./artifacts/vamp2cli-darwin-x86_64
+      - run: cp ./bin/vamp-darwin-amd64 ./artifacts/vamp-darwin-x86_64
       - run: go run main.go version clean > ./artifacts/version.txt
       - persist_to_workspace:
             root: ./artifacts

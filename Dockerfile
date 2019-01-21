@@ -1,8 +1,8 @@
-FROM golang:1.11.4
+/vampkubistcliFROM golang:1.11.4
 
-COPY . /go/src/github.com/magneticio/vamp2cli
+COPY . /go/src/github.com/magneticio/vampkubistcli
 
-WORKDIR /go/src/github.com/magneticio/vamp2cli
+WORKDIR /go/src/github.com/magneticio/vampkubistcli
 
 RUN go get
 
@@ -10,7 +10,7 @@ RUN go build -o bin/$AppName
 
 FROM ubuntu:16.04
 
-COPY --from=0 /go/src/github.com/magneticio/vamp2cli/bin/$AppName /usr/local/bin/$AppName
+COPY --from=0 /go/src/github.com/magneticio/vampkubistcli/bin/$AppName /usr/local/bin/$AppName
 RUN chmod +x /usr/local/bin/$AppName
 
 RUN apt-get update && apt-get install -y apt-transport-https curl wget && \

@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/magneticio/vamp2cli/cmd"
+import "github.com/magneticio/vampkubistcli/cmd"
 
 func main() {
 	cmd.Execute()

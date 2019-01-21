@@ -56,7 +56,7 @@ var Hosts []string
 
 // version should be in format d.d.d where d is a decimal number
 const Version string = "0.0.13"
-const AppName string = "vamp2cli"
+const AppName string = "vamp"
 
 /*
 Application name can change over time so it is made parameteric

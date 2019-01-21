@@ -20,8 +20,8 @@ import (
 
 	b64 "encoding/base64"
 
-	"github.com/magneticio/vamp2cli/client"
-	"github.com/magneticio/vamp2cli/kubernetes"
+	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/kubernetes"
 	"github.com/spf13/cobra"
 )
 
