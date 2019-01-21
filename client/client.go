@@ -48,6 +48,8 @@ var resourceMap map[string]string = map[string]string{
 	"vamp_services":    "vamp_service",
 	"vampservice":      "vamp_service",
 	"vampservices":     "vamp_service",
+	"application":      "application",
+	"applications":     "application",
 	"destination":      "destination",
 	"destinations":     "destination",
 	"canary_release":   "canary_release",
