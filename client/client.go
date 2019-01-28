@@ -83,9 +83,14 @@ type AuthSuccess struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-type AuthError struct {
+type SuccessResponse struct {
 	/* variables */
-	message string
+	Message string
+}
+
+type ErrorResponse struct {
+	/* variables */
+	Message string
 }
 
 type Named struct {
@@ -149,6 +154,21 @@ func NewRestClient(url string, token string, isDebug bool, cert string) *RestCli
 }
 
 /*
+Function to get Success message
+*/
+func getSuccessMessage(resp *resty.Response) string {
+	return resp.Result().(*SuccessResponse).Message
+}
+
+/*
+Return the error object with message to be returned
+It can be used after checking with IsError
+*/
+func getError(resp *resty.Response) error {
+	return errors.New(resp.Error().(*ErrorResponse).Message)
+}
+
+/*
 This is added for user friendliness.
 If a user uses a plural name or misses an underscore,
 api will still able to work
@@ -174,18 +194,16 @@ func (s *RestClient) Login(username string, password string) (string, error) {
 		SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
 		SetHeader("Accept", "application/json").
 		SetBody([]byte(body)).
-		SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
-		SetError(&AuthError{}).    // or SetError(AuthError{}).
+		SetResult(&AuthSuccess{}).
+		SetError(&ErrorResponse{}).
 		Post(url)
 
 	if err == nil {
 		if resp.IsError() {
 			return "", errors.New(string(resp.Body()))
 		}
-		// fmt.Printf("\nAccess Token: %v", resp.Result().(*AuthSuccess).AccessToken)
 		(*s).token = resp.Result().(*AuthSuccess).AccessToken
 	} else {
-		// fmt.Printf("\nError: %v", err)
 		return "", err
 	}
 
@@ -265,12 +283,9 @@ func (s *RestClient) Update(resourceName string, name string, source string, sou
 
 func (s *RestClient) Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error) {
 	url, _ := getUrlForResource((*s).url, resourceName, "", name, values)
-	// fmt.Printf("url: %v\n", url)
-
 	if sourceType == "yaml" {
 		json, err := yaml.YAMLToJSON([]byte(source))
 		if err != nil {
-			// fmt.Printf("err: %v\n", err)
 			return false, err
 		}
 		source = string(json)
@@ -286,6 +301,8 @@ func (s *RestClient) Apply(resourceName string, name string, source string, sour
 			SetHeader("Accept", "application/json").
 			SetAuthToken((*s).token).
 			SetBody([]byte(body)).
+			SetResult(&SuccessResponse{}).
+			SetError(&ErrorResponse{}).
 			Put(url)
 	} else {
 		resp, err = resty.R().
@@ -293,17 +310,17 @@ func (s *RestClient) Apply(resourceName string, name string, source string, sour
 			SetHeader("Accept", "application/json").
 			SetAuthToken((*s).token).
 			SetBody([]byte(body)).
+			SetResult(&SuccessResponse{}).
+			SetError(&ErrorResponse{}).
 			Post(url)
 	}
 
 	if err == nil {
-		// fmt.Printf("\n%v\n", resp)
 		if resp.IsError() {
-			return false, errors.New(string(resp.Body()))
+			return false, getError(resp)
 		}
 		return true, nil
 	} else {
-		// fmt.Printf("\nError: %v", err)
 		return false, err
 	}
 
@@ -313,25 +330,20 @@ func (s *RestClient) Apply(resourceName string, name string, source string, sour
 func (s *RestClient) Delete(resourceName string, name string, values map[string]string) (bool, error) {
 	url, _ := getUrlForResource((*s).url, resourceName, "", name, values)
 
-	// body := source
 	resp, err := resty.R().
-		// SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
 		SetAuthToken((*s).token).
-		// SetBody([]byte(body)).
-		// SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
-		// SetError(&AuthError{}).    // or SetError(AuthError{}).
+		SetResult(&SuccessResponse{}).
+		SetError(&ErrorResponse{}).
 		Delete(url)
 
 	if err == nil {
-		// fmt.Printf("\nResult: %v\n", resp)
 		if resp.IsError() {
-			return false, errors.New(string(resp.Body()))
+			return false, getError(resp)
 		}
 		return true, nil
 	} else {
-		// fmt.Printf("\nError: %v", err)
 		return false, err
 	}
 
@@ -342,22 +354,21 @@ func (s *RestClient) Get(resourceName string, name string, outputFormat string, 
 	url, _ := getUrlForResource((*s).url, resourceName, "", name, values)
 
 	resp, err := resty.R().
-		// SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
 		SetAuthToken((*s).token).
-		// SetBody([]byte(body)).
-		// SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
-		// SetError(&AuthError{}).    // or SetError(AuthError{}).
+		// SetResult(&SuccessResponse{}). On get Success will be parsed manually
+		SetError(&ErrorResponse{}).
 		Get(url)
 
 	if err == nil {
-		// fmt.Printf("\nResult: %v\n", resp)
+		if resp.IsError() {
+			return "", getError(resp)
+		}
 		source := ""
 		if outputFormat == "yaml" {
 			yaml, err_2 := yaml.JSONToYAML(resp.Body())
 			if err_2 != nil {
-				// fmt.Printf("err: %v\n", err_2)
 				return "", err_2
 			}
 			source = string(yaml)
@@ -365,14 +376,12 @@ func (s *RestClient) Get(resourceName string, name string, outputFormat string, 
 			var prettyJSON bytes.Buffer
 			error := json.Indent(&prettyJSON, resp.Body(), "", "    ")
 			if error != nil {
-				log.Println("JSON parse error: ", error)
 				return "", error
 			}
 			source = string(prettyJSON.Bytes())
 		}
 		return source, nil
 	} else {
-		// fmt.Printf("\nError: %v", err)
 		return "", err
 	}
 
@@ -383,16 +392,17 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 	url, _ := getUrlForResource((*s).url, resourceName, "list", "", values)
 
 	resp, err := resty.R().
-		// SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
 		SetAuthToken((*s).token).
-		// SetBody([]byte(body)).
-		// SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
-		// SetError(&AuthError{}).    // or SetError(AuthError{}).
+		// SetResult(&SuccessResponse{}). On Success list output will be parsed
+		SetError(&ErrorResponse{}).
 		Get(url)
 
 	if err == nil {
+		if resp.IsError() {
+			return "", getError(resp)
+		}
 		responseBody := resp.Body()
 		if simple {
 			var r []Named
@@ -437,20 +447,17 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 func (s *RestClient) AddRoleToUser(username string, rolename string, values map[string]string) (bool, error) {
 	url, _ := getUrlForResource((*s).url, "user-access-role", "", "", values)
 	url += "&user_name=" + username + "&role_name=" + rolename
-	// fmt.Printf("Url: %v\n", url)
-	// body := source
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
 		SetAuthToken((*s).token).
-		// SetBody([]byte(body)).
-		// SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
-		// SetError(&AuthError{}).    // or SetError(AuthError{}).
+		SetResult(&SuccessResponse{}).
+		SetError(&ErrorResponse{}).
 		Post(url)
 
 	if err == nil {
 		if resp.IsError() {
-			return false, errors.New(string(resp.Body()))
+			return false, getError(resp)
 		}
 		return true, nil
 	} else {
@@ -462,20 +469,17 @@ func (s *RestClient) AddRoleToUser(username string, rolename string, values map[
 func (s *RestClient) RemoveRoleFromUser(username string, rolename string, values map[string]string) (bool, error) {
 	url, _ := getUrlForResource((*s).url, "user-access-role", "", "", values)
 	url += "&user_name=" + username + "&role_name=" + rolename
-	// fmt.Printf("Url: %v\n", url)
-	// body := source
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
 		SetAuthToken((*s).token).
-		// SetBody([]byte(body)).
-		// SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
-		// SetError(&AuthError{}).    // or SetError(AuthError{}).
+		SetResult(&AuthSuccess{}).
+		SetError(&ErrorResponse{}).
 		Delete(url)
 
 	if err == nil {
 		if resp.IsError() {
-			return false, errors.New(string(resp.Body()))
+			return false, getError(resp)
 		}
 		return true, nil
 	} else {
@@ -484,20 +488,17 @@ func (s *RestClient) RemoveRoleFromUser(username string, rolename string, values
 	return false, nil
 }
 
+/*
+Ping is different from other calls
+It just runs a get to the root folder and doesn't check anything
+*/
 func (s *RestClient) Ping() (bool, error) {
-	// url, _ := getUrlForResource((*s).url, "", "", "", values)
-	// url += "&user_name=" + username + "&role_name=" + rolename
 	url := (*s).url + "/"
-	// fmt.Printf("Url: %v\n", url)
-	// body := source
 	resty.SetTimeout(5 * time.Second)
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "text/plain, application/json").
 		SetAuthToken((*s).token).
-		// SetBody([]byte(body)).
-		// SetResult(&AuthSuccess{}). // or SetResult(AuthSuccess{}).
-		// SetError(&AuthError{}).    // or SetError(AuthError{}).
 		Get(url)
 
 	if err == nil {
