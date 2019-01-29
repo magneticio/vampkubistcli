@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
+// this is not needed but it is kept as future reference
 func TestMain(m *testing.M) {
-	// call flag.Parse() here if TestMain uses flags
 	os.Exit(m.Run())
 }
