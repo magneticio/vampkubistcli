@@ -8,6 +8,7 @@ jobs:
       - checkout
       - run: mkdir -p ./artifacts
       - run: go get
+      - run: ./test.sh
       - run: ./build.sh local
       - run: cp ./bin/* ./artifacts
       - run: cp ./bin/vamp-darwin-amd64 ./artifacts/vamp-darwin-x86_64
