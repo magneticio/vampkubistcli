@@ -7,11 +7,14 @@ import (
 	"path/filepath"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
+	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	// Initialize all known client auth plugins.
@@ -139,6 +142,212 @@ func InstallVampService() (string, string, string, error) {
 	return host, crt, token, nil
 }
 
+func InstallMongoDB(clientset *kubernetes.Clientset, ns string) error {
+	service := &apiv1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "vamp-mongodb",
+		},
+		Spec: apiv1.ServiceSpec{
+			ClusterIP: "None",
+			Selector: map[string]string{
+				"app": "vamp-mongodb",
+			},
+			Ports: []apiv1.ServicePort{
+				{
+					Port:       27017,
+					TargetPort: intstr.FromInt(27017),
+				},
+			},
+		},
+	}
+	_, errService := clientset.Core().Services(ns).Create(service)
+	if errService != nil {
+		fmt.Printf("Warning: %v\n", errService.Error())
+	}
+	/*
+	   apiVersion: apps/v1beta1
+	   kind: StatefulSet
+	   metadata:
+	     namespace: vamp-system
+	     name: mongo
+	   spec:
+	     serviceName: vamp-mongodb
+	     replicas: 3
+	     template:
+	       metadata:
+	         labels:
+	           app: vamp-mongodb
+	       spec:
+	         terminationGracePeriodSeconds: 10
+	         containers:
+	           - name: mongo
+	             image: mongo
+	             command:
+	               - mongod
+	               - "--replSet"
+	               - rs0
+	               - "--bind_ip"
+	               - 0.0.0.0
+	               - "--smallfiles"
+	               - "--noprealloc"
+	             ports:
+	               - containerPort: 27017
+	             volumeMounts:
+	               - name: mongo-persistent-storage
+	                 mountPath: /data/db
+	           - name: mongo-sidecar
+	             image: cvallance/mongo-k8s-sidecar
+	             env:
+	               - name: MONGO_SIDECAR_POD_LABELS
+	                 value: "app=vamp-mongodb"
+	               - name: KUBERNETES_MONGO_SERVICE_NAME
+	                 value: "vamp-mongodb"
+	     volumeClaimTemplates:
+	     - metadata:
+	         name: mongo-persistent-storage
+	         annotations:
+	           volume.beta.kubernetes.io/storage-class: "standard"
+	       spec:
+	         accessModes: [ "ReadWriteOnce" ]
+	         resources:
+	           requests:
+	             storage: 1Gi
+	*/
+
+	statefulSet := &appsv1.StatefulSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "mongo",
+		},
+		Spec: appsv1.StatefulSetSpec{
+			ServiceName: "vamp-mongodb",
+			Replicas:    int32Ptr(3),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "vamp-mongodb",
+				},
+			},
+			Template: apiv1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "vamp-mongodb",
+					},
+				},
+				Spec: apiv1.PodSpec{
+					TerminationGracePeriodSeconds: int64Ptr(10),
+					Containers: []apiv1.Container{
+						{
+							Name:  "mongo",
+							Image: "mongo",
+							Command: []string{
+								"mongod",
+								"--replSet",
+								"rs0",
+								"--bind_ip",
+								"0.0.0.0",
+								"--smallfiles",
+								"--noprealloc",
+							},
+							Ports: []apiv1.ContainerPort{
+								{
+									ContainerPort: 27017,
+								},
+							},
+							VolumeMounts: []apiv1.VolumeMount{
+								{
+									Name:      "mongo-persistent-storage",
+									MountPath: "/data/db",
+								},
+							},
+						},
+						{
+							Name:  "mongo",
+							Image: "mongo",
+							Env: []apiv1.EnvVar{
+								{
+									Name:  "MONGO_SIDECAR_POD_LABELS",
+									Value: "app=vamp-mongodb",
+								},
+								{
+									Name:  "KUBERNETES_MONGO_SERVICE_NAME",
+									Value: "vamp-mongodb",
+								},
+							},
+						},
+					},
+				},
+			},
+			VolumeClaimTemplates: []apiv1.PersistentVolumeClaim{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "mongo-persistent-storage",
+						Annotations: map[string]string{
+							"volume.beta.kubernetes.io/storage-class": "standard",
+						},
+					},
+					Spec: apiv1.PersistentVolumeClaimSpec{
+						AccessModes: []apiv1.PersistentVolumeAccessMode{
+							"ReadWriteOnce",
+						},
+						Resources: apiv1.ResourceRequirements{
+							Requests: apiv1.ResourceList{
+								"storage": resource.MustParse("1Gi"),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	_, errStatefulSet := clientset.AppsV1().StatefulSets(ns).Create(statefulSet)
+	if errStatefulSet != nil {
+		fmt.Printf("Warning: %v\n", errStatefulSet.Error())
+	}
+	return nil
+}
+
+/*
+deployment := &appsv1.Deployment{
+  ObjectMeta: metav1.ObjectMeta{
+    Name: "demo-deployment",
+  },
+  Spec: appsv1.DeploymentSpec{
+    Replicas: int32Ptr(2),
+    Selector: &metav1.LabelSelector{
+      MatchLabels: map[string]string{
+        "app": "demo",
+      },
+    },
+    Template: apiv1.PodTemplateSpec{
+      ObjectMeta: metav1.ObjectMeta{
+        Labels: map[string]string{
+          "app": "demo",
+        },
+      },
+      Spec: apiv1.PodSpec{
+        Containers: []apiv1.Container{
+          {
+            Name:  "web",
+            Image: "nginx:1.12",
+            Ports: []apiv1.ContainerPort{
+              {
+                Name:          "http",
+                Protocol:      apiv1.ProtocolTCP,
+                ContainerPort: 80,
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+}
+fmt.Printf("Name: %v\n", deployment.ObjectMeta.Name)
+_, errDeployment := clientset.AppsV1().Deployments(ns).Create(deployment)
+if errDeployment != nil {
+  fmt.Printf("Warning: %v\n", errDeployment.Error())
+}
+*/
+
 func Run() {
 
 	// create the clientset
@@ -180,3 +389,6 @@ func homeDir() string {
 	}
 	return os.Getenv("USERPROFILE") // windows
 }
+
+func int32Ptr(i int32) *int32 { return &i }
+func int64Ptr(i int64) *int64 { return &i }
