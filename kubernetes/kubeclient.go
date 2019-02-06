@@ -21,6 +21,10 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/openstack"
 )
 
+/*
+Builds and returns ClientSet by using local KubeConfig
+It also returns hostname since it is needed.
+*/
 func getLocalKubeClient() (*kubernetes.Clientset, string, error) {
 	var kubeconfig *string
 	if home := homeDir(); home != "" {
@@ -47,69 +51,27 @@ func getLocalKubeClient() (*kubernetes.Clientset, string, error) {
 	return clientset, config.Host, nil
 }
 
-func BootstrapVampService() (string, string, string, error) {
-	// create the clientset
-	clientset, host, err := getLocalKubeClient()
-	if err != nil {
-		panic(err.Error())
-	}
-	ns := "vamp-system"
+/*
+This method installs namespace, cluster role binding and image pull secret
+TODO: differenciate between already exists and other error types
+*/
+func SetupVampCredentials(clientset *kubernetes.Clientset, ns string, secretDataString string) error {
 	nsSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
-
 	_, err_n := clientset.Core().Namespaces().Create(nsSpec)
 	if err_n != nil {
-		// panic(err_n.Error())
 		fmt.Printf("Warning: %v\n", err_n.Error())
 	}
-
-	/*
-	   kind: ClusterRoleBinding
-	   apiVersion: rbac.authorization.k8s.io/v1
-	   metadata:
-	     name: vamp-sa-cluster-admin-binding
-	   subjects:
-	   - kind: User
-	     name: system:serviceaccount:vamp-system:default
-	     apiGroup: rbac.authorization.k8s.io
-	   roleRef:
-	     kind: ClusterRole
-	     name: cluster-admin
-	     apiGroup: rbac.authorization.k8s.io
-	*/
-
-	/*
-		clusterRoleBindingSpec := &rbacv1.ClusterRoleBinding{
-			ObjectMeta: metav1.ObjectMeta{Name: ns + "-sa-cluster-admin-binding"},
-			Subjects:   []rbacv1.Subject{rbacv1.Subject{Kind: "ServiceAccount", Name: "default", Namespace: ns}},
-			RoleRef:    rbacv1.RoleRef{Kind: "ClusterRole", Name: "cluster-admin", APIGroup: ""},
-		}
-	*/
+	// Create Cluster Role Binding Vamp Default Service Account
 	clusterRoleBindingSpec := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{Name: ns + "-sa-cluster-admin-binding"},
 		Subjects:   []rbacv1.Subject{rbacv1.Subject{Kind: "User", Name: "system:serviceaccount:" + ns + ":default", APIGroup: "rbac.authorization.k8s.io"}},
 		RoleRef:    rbacv1.RoleRef{Kind: "ClusterRole", Name: "cluster-admin", APIGroup: "rbac.authorization.k8s.io"},
 	}
 	_, err_c := clientset.RbacV1().ClusterRoleBindings().Create(clusterRoleBindingSpec)
-
 	if err_c != nil {
-		// panic(err_n.Error())
 		fmt.Printf("Warning: %v\n", err_c.Error())
 	}
-
-	/*
-	  apiVersion: v1
-	  kind: Secret
-	  metadata:
-	    name: vamp2imagepull
-	    namespace: vamp-system
-	  type: kubernetes.io/dockercfg
-	  data:
-	     .dockercfg: eyJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iOnsiYXV0aCI6ImRtRnRjREp3ZFd4c09uWmhiWEF5Y0hWc2JFWnNkWGc9In19
-	*/
-
-	// this should be a variable
-	secretDataString := "{\"https://index.docker.io/v1/\":{\"auth\":\"dmFtcDJwdWxsOnZhbXAycHVsbEZsdXg=\"}}"
-
+	// Create Image Pull Secret
 	pullSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "vamp2imagepull", Namespace: ns},
 		Data: map[string][]byte{
@@ -117,49 +79,63 @@ func BootstrapVampService() (string, string, string, error) {
 		},
 		Type: "kubernetes.io/dockercfg",
 	}
-
 	_, err_s := clientset.Core().Secrets(ns).Create(pullSecret)
 	if err_s != nil {
-		// panic(err_n.Error())
 		fmt.Printf("Warning: %v\n", err_s.Error())
+	}
+	return nil
+}
+
+func BootstrapVampService() (string, string, string, error) {
+	// create the clientset
+	clientset, host, err := getLocalKubeClient()
+	if err != nil {
+		panic(err.Error())
+	}
+	ns := "vamp-system"
+	secretDataString := "{\"https://index.docker.io/v1/\":{\"auth\":\"dmFtcDJwdWxsOnZhbXAycHVsbEZsdXg=\"}}"
+	errSetup := SetupVampCredentials(clientset, ns, secretDataString)
+	if errSetup != nil {
+		fmt.Printf("Warning: %v\n", errSetup.Error())
+		return host, "", "", errSetup
 	}
 
 	// This is end of setting up remote vamp set up
 	// now we need to get information to connect to the cluster
 
-	/*
-		res, err_d := clientset.SettingsV1alpha1()
-		if err_d != nil {
-			// panic(err_n.Error())
-			fmt.Printf("Warning: %v\n", err_d.Error())
-		} else {
-			fmt.Printf("Response: %v\n", res)
-		}
-	*/
-
-	// res := clientset.SettingsV1alpha1().RESTClient().Config.Host
-	// fmt.Printf("Response: %v\n", res)
-	// fmt.Printf("Host: %v\n", host)
-
 	getOptions := metav1.GetOptions{}
 	sa, err_sa := clientset.Core().ServiceAccounts(ns).Get("default", getOptions)
 	if err_sa != nil {
-		// panic(err_n.Error())
-		fmt.Printf("Warning: %v\n", err_s.Error())
+		fmt.Printf("Warning: %v\n", err_sa.Error())
+		return host, "", "", err_sa
 	}
-	// fmt.Printf("Sa Secret name: %v\n", sa.Secrets[0].Name)
 
 	saSecret, err_sa_secret := clientset.Core().Secrets(ns).Get(sa.Secrets[0].Name, getOptions)
 	if err_sa_secret != nil {
-		// panic(err_n.Error())
 		fmt.Printf("Warning: %v\n", err_sa_secret.Error())
+		// This is a problem command should be re-tried by user
+		return host, "", "", err_sa_secret
 	}
-	// fmt.Printf("Sa Secret: %v\n", saSecret)
 	crt := string(saSecret.Data["ca.crt"])
-	// fmt.Printf("Sa Secret crt: %v\n", crt)
 	token := string(saSecret.Data["token"])
-	// fmt.Printf("Sa Secret token: %v\n", token)
 
+	return host, crt, token, nil
+}
+
+func InstallVampService() (string, string, string, error) {
+	host, crt, token, errBootstap := BootstrapVampService()
+	if errBootstap != nil {
+		fmt.Printf("Warning: %v\n", errBootstap.Error())
+		// This is a problem command should be re-tried by user
+		return host, "", "", errBootstap
+	}
+	// Install Database or skip it
+	// Deploy Db
+	// Create service for db
+	// Create internal service for sync
+	// Create external service for vamp
+	// Create Vamp Deployment
+	// Wait for external service
 	return host, crt, token, nil
 }
 
