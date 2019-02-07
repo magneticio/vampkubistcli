@@ -86,9 +86,10 @@ func SetupVampCredentials(clientset *kubernetes.Clientset, ns string, secretData
 		},
 		Type: "kubernetes.io/dockercfg",
 	}
-	_, err_s := clientset.Core().Secrets(ns).Create(pullSecret)
-	if err_s != nil {
-		fmt.Printf("Warning: %v\n", err_s.Error())
+	secretErr := CreateOrUpdateSecret(clientset, ns, pullSecret)
+	if secretErr != nil {
+		fmt.Printf("Warning: %v\n", secretErr.Error())
+		return secretErr
 	}
 	return nil
 }
@@ -329,9 +330,10 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, im
 		},
 		Type: "Opaque",
 	}
-	_, errPaswordSecret := clientset.Core().Secrets(ns).Create(paswordSecret)
-	if errPaswordSecret != nil {
-		fmt.Printf("Warning: %v\n", errPaswordSecret.Error())
+	paswordSecretErr := CreateOrUpdateSecret(clientset, ns, paswordSecret)
+	if paswordSecretErr != nil {
+		fmt.Printf("Warning: %v\n", paswordSecretErr.Error())
+		return paswordSecretErr
 	}
 	vampDeployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -455,6 +457,29 @@ func CreateOrUpdateService(clientset *kubernetes.Clientset, ns string, service *
 			// TODO: increment resource version
 			service.ObjectMeta.ResourceVersion = currentService.ObjectMeta.ResourceVersion
 			_, updateErr := servicesClient.Update(service)
+			return updateErr
+		})
+		if retryErr != nil {
+			panic(fmt.Errorf("Update failed: %v", retryErr))
+		}
+	}
+	return nil
+}
+
+func CreateOrUpdateSecret(clientset *kubernetes.Clientset, ns string, secret *apiv1.Secret) error {
+	fmt.Printf("CreateOrUpdateDeployment: %v\n", secret.GetObjectMeta().GetName())
+	secretsClient := clientset.Core().Secrets(ns)
+	_, err := secretsClient.Create(secret)
+	if err != nil {
+		fmt.Printf("Warning: %v\n", err.Error())
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// Retrieve the latest version of Deployment before attempting update
+			// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
+			_, getErr := secretsClient.Get(secret.GetObjectMeta().GetName(), metav1.GetOptions{})
+			if getErr != nil {
+				panic(fmt.Errorf("Failed to get latest version of Secret: %v", getErr))
+			}
+			_, updateErr := secretsClient.Update(secret)
 			return updateErr
 		})
 		if retryErr != nil {
