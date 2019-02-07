@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -13,9 +14,11 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"syscall"
 
 	"github.com/ghodss/yaml"
 	"github.com/yalp/jsonpath"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 /*
@@ -146,4 +149,23 @@ func VerifyCertForHost(resourceUrl string, cert string) error {
 	opts.Roots.AddCert(crt)
 	_, err = crt.Verify(opts)
 	return err
+}
+
+func GetParameterFromTerminalAsSecret(text1 string, text2 string, errorText string) (string, error) {
+	fmt.Println(text1)
+	byteInput1, errInput1 := terminal.ReadPassword(int(syscall.Stdin))
+	if errInput1 != nil {
+		return "", errInput1
+	}
+	input1 := string(byteInput1)
+	fmt.Println(text2)
+	byteInput2, errInput2 := terminal.ReadPassword(int(syscall.Stdin))
+	if errInput2 != nil {
+		return "", errInput2
+	}
+	input2 := string(byteInput2)
+	if input1 != input2 {
+		return "", errors.New(errorText)
+	}
+	return input1, nil
 }

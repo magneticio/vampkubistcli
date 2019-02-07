@@ -1,17 +1,15 @@
 package kubeclient
 
 import (
-	"flag"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -24,33 +22,38 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/openstack"
 )
 
+func GetKubeConfigPath(configPath string) *string {
+	if configPath == "" {
+		home := homeDir()
+		path := filepath.Join(home, ".kube", "config")
+		return &path
+	}
+	return &configPath
+}
+
 /*
 Builds and returns ClientSet by using local KubeConfig
 It also returns hostname since it is needed.
 */
 func getLocalKubeClient() (*kubernetes.Clientset, string, error) {
-	var kubeconfig *string
-	if home := homeDir(); home != "" {
+	// var kubeconfig *string
+	/* if home := homeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	}
-	flag.Parse()
-
+	flag.Parse() */
+	kubeconfig := GetKubeConfigPath("")
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
 		panic(err.Error())
 	}
-
-	// fmt.Printf("Host: %v\n", config.Host)
-
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err.Error())
 	}
-
 	return clientset, config.Host, nil
 }
 
@@ -125,19 +128,33 @@ func BootstrapVampService() (string, string, string, error) {
 	return host, crt, token, nil
 }
 
-func InstallVampService() (string, string, string, error) {
+func InstallVampService(password string, image string, dbUrl string) (string, string, string, error) {
 	host, crt, token, errBootstap := BootstrapVampService()
 	if errBootstap != nil {
 		fmt.Printf("Warning: %v\n", errBootstap.Error())
 		// This is a problem command should be re-tried by user
 		return host, "", "", errBootstap
 	}
+	// create the clientset
+	clientset, host, err := getLocalKubeClient()
+	if err != nil {
+		panic(err.Error())
+	}
+	ns := "vamp-system"
 	// Install Database or skip it
 	// Deploy Db
-	// Create service for db
-	// Create internal service for sync
-	// Create external service for vamp
-	// Create Vamp Deployment
+	if dbUrl == "" {
+		installMongoErr := InstallMongoDB(clientset, ns)
+		if installMongoErr != nil {
+			return "", "", "", installMongoErr
+		}
+		dbUrl = "mongodb://mongo-0.vamp-mongodb:27017,mongo-1.vamp-mongodb:27017,mongo-2.vamp-mongodb:27017"
+	}
+	// Deploy vamp
+	installVampErr := InstallVamp(clientset, ns, password, image, dbUrl)
+	if installVampErr != nil {
+		return "", "", "", installVampErr
+	}
 	// Wait for external service
 	return host, crt, token, nil
 }
@@ -164,56 +181,6 @@ func InstallMongoDB(clientset *kubernetes.Clientset, ns string) error {
 	if errService != nil {
 		fmt.Printf("Warning: %v\n", errService.Error())
 	}
-	/*
-	   apiVersion: apps/v1beta1
-	   kind: StatefulSet
-	   metadata:
-	     namespace: vamp-system
-	     name: mongo
-	   spec:
-	     serviceName: vamp-mongodb
-	     replicas: 3
-	     template:
-	       metadata:
-	         labels:
-	           app: vamp-mongodb
-	       spec:
-	         terminationGracePeriodSeconds: 10
-	         containers:
-	           - name: mongo
-	             image: mongo
-	             command:
-	               - mongod
-	               - "--replSet"
-	               - rs0
-	               - "--bind_ip"
-	               - 0.0.0.0
-	               - "--smallfiles"
-	               - "--noprealloc"
-	             ports:
-	               - containerPort: 27017
-	             volumeMounts:
-	               - name: mongo-persistent-storage
-	                 mountPath: /data/db
-	           - name: mongo-sidecar
-	             image: cvallance/mongo-k8s-sidecar
-	             env:
-	               - name: MONGO_SIDECAR_POD_LABELS
-	                 value: "app=vamp-mongodb"
-	               - name: KUBERNETES_MONGO_SERVICE_NAME
-	                 value: "vamp-mongodb"
-	     volumeClaimTemplates:
-	     - metadata:
-	         name: mongo-persistent-storage
-	         annotations:
-	           volume.beta.kubernetes.io/storage-class: "standard"
-	       spec:
-	         accessModes: [ "ReadWriteOnce" ]
-	         resources:
-	           requests:
-	             storage: 1Gi
-	*/
-
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "mongo",
@@ -305,49 +272,147 @@ func InstallMongoDB(clientset *kubernetes.Clientset, ns string) error {
 	return nil
 }
 
-/*
-deployment := &appsv1.Deployment{
-  ObjectMeta: metav1.ObjectMeta{
-    Name: "demo-deployment",
-  },
-  Spec: appsv1.DeploymentSpec{
-    Replicas: int32Ptr(2),
-    Selector: &metav1.LabelSelector{
-      MatchLabels: map[string]string{
-        "app": "demo",
-      },
-    },
-    Template: apiv1.PodTemplateSpec{
-      ObjectMeta: metav1.ObjectMeta{
-        Labels: map[string]string{
-          "app": "demo",
-        },
-      },
-      Spec: apiv1.PodSpec{
-        Containers: []apiv1.Container{
-          {
-            Name:  "web",
-            Image: "nginx:1.12",
-            Ports: []apiv1.ContainerPort{
-              {
-                Name:          "http",
-                Protocol:      apiv1.ProtocolTCP,
-                ContainerPort: 80,
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-}
-fmt.Printf("Name: %v\n", deployment.ObjectMeta.Name)
-_, errDeployment := clientset.AppsV1().Deployments(ns).Create(deployment)
-if errDeployment != nil {
-  fmt.Printf("Warning: %v\n", errDeployment.Error())
-}
-*/
+func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, image string, dbUrl string) error {
+	hazelcastService := &apiv1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "vamp-hazelcast",
+		},
+		Spec: apiv1.ServiceSpec{
+			Selector: map[string]string{
+				"app": "vamp",
+			},
+			Ports: []apiv1.ServicePort{
+				{
+					Protocol:   "TCP",
+					Port:       5701,
+					TargetPort: intstr.FromInt(5701),
+				},
+			},
+		},
+	}
+	_, errHazelcastService := clientset.Core().Services(ns).Create(hazelcastService)
+	if errHazelcastService != nil {
+		fmt.Printf("Warning: %v\n", errHazelcastService.Error())
+	}
+	vampService := &apiv1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "vamp",
+		},
+		Spec: apiv1.ServiceSpec{
+			Type: "LoadBalancer",
+			Selector: map[string]string{
+				"app": "vamp",
+			},
+			Ports: []apiv1.ServicePort{
+				{
+					Protocol:   "TCP",
+					Port:       8888,
+					TargetPort: intstr.FromInt(8888),
+				},
+			},
+		},
+	}
+	_, errVampService := clientset.Core().Services(ns).Create(vampService)
+	if errVampService != nil {
+		fmt.Printf("Warning: %v\n", errVampService.Error())
+	}
+	// Create Root Password Secret
+	secretDataString := base64.StdEncoding.EncodeToString([]byte(password)) //base 64 root Password
+	paswordSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "vamprootpassword"},
+		Data: map[string][]byte{
+			"password": []byte(secretDataString),
+		},
+		Type: "Opaque",
+	}
+	_, errPaswordSecret := clientset.Core().Secrets(ns).Create(paswordSecret)
+	if errPaswordSecret != nil {
+		fmt.Printf("Warning: %v\n", errPaswordSecret.Error())
+	}
+	vampdeployment := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "vamp",
+			Labels: map[string]string{
+				"app":        "vamp",
+				"deployment": "vamp",
+			},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: int32Ptr(3),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app":        "vamp",
+					"deployment": "vamp",
+				},
+			},
+			Template: apiv1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app":        "vamp",
+						"deployment": "vamp",
+					},
+				},
+				Spec: apiv1.PodSpec{
+					Containers: []apiv1.Container{
+						{
+							Name:  "vamp",
+							Image: image, // TODO: "magneticio/vamp2:0.7.0-BRK",
+							Ports: []apiv1.ContainerPort{
+								{
+									Protocol:      apiv1.ProtocolTCP,
+									ContainerPort: 8888,
+								},
+								{
+									Protocol:      apiv1.ProtocolTCP,
+									ContainerPort: 5701,
+								},
+							},
+							Env: []apiv1.EnvVar{
+								{
+									Name:  "MODE",
+									Value: "IN_CLUSTER",
+								},
+								{
+									Name:  "DBURL",
+									Value: dbUrl, // mongodb://mongo-0.vamp-mongodb:27017,mongo-1.vamp-mongodb:27017,mongo-2.vamp-mongodb:27017
+								},
+								{
+									Name:  "DBNAME",
+									Value: "vamp",
+								},
+								{
+									Name: "ROOT_PASSWORD",
+									ValueFrom: &apiv1.EnvVarSource{
+										SecretKeyRef: &apiv1.SecretKeySelector{
+											LocalObjectReference: apiv1.LocalObjectReference{
+												Name: "vamprootpassword",
+											},
+											Key: "password",
+										},
+									},
+								},
+							},
+						},
+					},
+					ImagePullSecrets: []apiv1.LocalObjectReference{
+						{
+							Name: "vamp2imagepull",
+						},
+					},
+				},
+			},
+		},
+	}
+	fmt.Printf("Name: %v\n", vampdeployment.ObjectMeta.Name)
+	_, errDeployment := clientset.AppsV1().Deployments(ns).Create(vampdeployment)
+	if errDeployment != nil {
+		fmt.Printf("Warning: %v\n", errDeployment.Error())
+	}
 
+	return nil
+}
+
+/*
 func Run() {
 
 	// create the clientset
@@ -382,6 +447,7 @@ func Run() {
 		time.Sleep(10 * time.Second)
 	}
 }
+*/
 
 func homeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
