@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/retry"
 	// Initialize all known client auth plugins.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -177,9 +178,10 @@ func InstallMongoDB(clientset *kubernetes.Clientset, ns string) error {
 			},
 		},
 	}
-	_, errService := clientset.Core().Services(ns).Create(service)
+	errService := CreateOrUpdateService(clientset, ns, service)
 	if errService != nil {
 		fmt.Printf("Warning: %v\n", errService.Error())
+		return errService
 	}
 	statefulSet := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -290,9 +292,10 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, im
 			},
 		},
 	}
-	_, errHazelcastService := clientset.Core().Services(ns).Create(hazelcastService)
+	errHazelcastService := CreateOrUpdateService(clientset, ns, hazelcastService)
 	if errHazelcastService != nil {
 		fmt.Printf("Warning: %v\n", errHazelcastService.Error())
+		return errHazelcastService
 	}
 	vampService := &apiv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -312,9 +315,10 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, im
 			},
 		},
 	}
-	_, errVampService := clientset.Core().Services(ns).Create(vampService)
+	errVampService := CreateOrUpdateService(clientset, ns, vampService)
 	if errVampService != nil {
 		fmt.Printf("Warning: %v\n", errVampService.Error())
+		return errVampService
 	}
 	// Create Root Password Secret
 	secretDataString := base64.StdEncoding.EncodeToString([]byte(password)) //base 64 root Password
@@ -329,7 +333,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, im
 	if errPaswordSecret != nil {
 		fmt.Printf("Warning: %v\n", errPaswordSecret.Error())
 	}
-	vampdeployment := &appsv1.Deployment{
+	vampDeployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "vamp",
 			Labels: map[string]string{
@@ -403,51 +407,62 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, im
 			},
 		},
 	}
-	fmt.Printf("Name: %v\n", vampdeployment.ObjectMeta.Name)
-	_, errDeployment := clientset.AppsV1().Deployments(ns).Create(vampdeployment)
+	errDeployment := CreateOrUpdateDeployment(clientset, ns, vampDeployment)
 	if errDeployment != nil {
 		fmt.Printf("Warning: %v\n", errDeployment.Error())
+		return errDeployment
 	}
-
 	return nil
 }
 
-/*
-func Run() {
-
-	// create the clientset
-	clientset, _, err := getLocalKubeClient()
-	if err != nil {
-		panic(err.Error())
-	}
-	for {
-		pods, err := clientset.CoreV1().Pods("").List(metav1.ListOptions{})
-		if err != nil {
-			panic(err.Error())
+func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ns string, deployment *appsv1.Deployment) error {
+	fmt.Printf("CreateOrUpdateDeployment: %v\n", deployment.GetObjectMeta().GetName())
+	deploymentsClient := clientset.AppsV1().Deployments(ns)
+	_, errDeployment := deploymentsClient.Create(deployment)
+	if errDeployment != nil {
+		fmt.Printf("Warning: %v\n", errDeployment.Error())
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// Retrieve the latest version of Deployment before attempting update
+			// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
+			_, getErr := deploymentsClient.Get(deployment.GetObjectMeta().GetName(), metav1.GetOptions{})
+			if getErr != nil {
+				panic(fmt.Errorf("Failed to get latest version of Deployment: %v", getErr))
+			}
+			_, updateErr := deploymentsClient.Update(deployment)
+			return updateErr
+		})
+		if retryErr != nil {
+			panic(fmt.Errorf("Update failed: %v", retryErr))
 		}
-		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
-
-		// Examples for error handling:
-		// - Use helper functions like e.g. errors.IsNotFound()
-		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
-		namespace := "vamp-demo"
-		pod := "deployment1-7bfd78cf7c-4c2g2"
-		_, err = clientset.CoreV1().Pods(namespace).Get(pod, metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			fmt.Printf("Pod %s in namespace %s not found\n", pod, namespace)
-		} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-			fmt.Printf("Error getting pod %s in namespace %s: %v\n",
-				pod, namespace, statusError.ErrStatus.Message)
-		} else if err != nil {
-			panic(err.Error())
-		} else {
-			fmt.Printf("Found pod %s in namespace %s\n", pod, namespace)
-		}
-
-		time.Sleep(10 * time.Second)
 	}
+	return nil
 }
-*/
+
+func CreateOrUpdateService(clientset *kubernetes.Clientset, ns string, service *apiv1.Service) error {
+	fmt.Printf("CreateOrUpdateService: %v\n", service.GetObjectMeta().GetName())
+	servicesClient := clientset.Core().Services(ns)
+	_, errService := servicesClient.Create(service)
+	if errService != nil {
+		fmt.Printf("Warning: %v\n", errService.Error())
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// Retrieve the latest version of Service before attempting update
+			// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
+			currentService, getErr := servicesClient.Get(service.GetObjectMeta().GetName(), metav1.GetOptions{})
+			if getErr != nil {
+				panic(fmt.Errorf("Failed to get latest version of Service: %v", getErr))
+			}
+			service.Spec.ClusterIP = currentService.Spec.ClusterIP
+			// TODO: increment resource version
+			service.ObjectMeta.ResourceVersion = currentService.ObjectMeta.ResourceVersion
+			_, updateErr := servicesClient.Update(service)
+			return updateErr
+		})
+		if retryErr != nil {
+			panic(fmt.Errorf("Update failed: %v", retryErr))
+		}
+	}
+	return nil
+}
 
 func homeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
