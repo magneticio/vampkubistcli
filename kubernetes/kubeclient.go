@@ -23,6 +23,14 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/openstack"
 )
 
+type VampConfig struct {
+	RootPassword string `yaml:"rootPassword,omitempty" json:"rootPassword,omitempty"`
+	DatabaseUrl  string `yaml:"databaseUrl,omitempty" json:"databaseUrl,omitempty"`
+	RepoUsername string `yaml:"repoUsername,omitempty" json:"repoUsername,omitempty"`
+	RepoPassword string `yaml:"repoPassword,omitempty" json:"repoPassword,omitempty"`
+	VampVersion  string `yaml:"vampVersion,omitempty" json:"vampVersion,omitempty"`
+}
+
 func GetKubeConfigPath(configPath string) *string {
 	if configPath == "" {
 		home := homeDir()
@@ -130,7 +138,7 @@ func BootstrapVampService() (string, string, string, error) {
 	return host, crt, token, nil
 }
 
-func InstallVampService(password string, image string, dbUrl string) (string, string, string, error) {
+func InstallVampService(config *VampConfig) (string, string, string, error) {
 	host, crt, token, errBootstap := BootstrapVampService()
 	if errBootstap != nil {
 		fmt.Printf("Warning: %v\n", errBootstap.Error())
@@ -145,15 +153,15 @@ func InstallVampService(password string, image string, dbUrl string) (string, st
 	ns := "vamp-system"
 	// Install Database or skip it
 	// Deploy Db
-	if dbUrl == "" {
+	if config.DatabaseUrl == "" {
 		installMongoErr := InstallMongoDB(clientset, ns)
 		if installMongoErr != nil {
 			return "", "", "", installMongoErr
 		}
-		dbUrl = "mongodb://mongo-0.vamp-mongodb:27017,mongo-1.vamp-mongodb:27017,mongo-2.vamp-mongodb:27017"
+		config.DatabaseUrl = "mongodb://mongo-0.vamp-mongodb:27017,mongo-1.vamp-mongodb:27017,mongo-2.vamp-mongodb:27017"
 	}
 	// Deploy vamp
-	installVampErr := InstallVamp(clientset, ns, password, image, dbUrl)
+	installVampErr := InstallVamp(clientset, ns, config.RootPassword, config.VampVersion, config.DatabaseUrl)
 	if installVampErr != nil {
 		return "", "", "", installVampErr
 	}
@@ -268,14 +276,15 @@ func InstallMongoDB(clientset *kubernetes.Clientset, ns string) error {
 			},
 		},
 	}
-	_, errStatefulSet := clientset.AppsV1().StatefulSets(ns).Create(statefulSet)
+	errStatefulSet := CreateOrUpdateStatefulSet(clientset, ns, statefulSet)
 	if errStatefulSet != nil {
 		fmt.Printf("Warning: %v\n", errStatefulSet.Error())
+		return errStatefulSet
 	}
 	return nil
 }
 
-func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, image string, dbUrl string) error {
+func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, version string, dbUrl string) error {
 	hazelcastService := &apiv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "vamp-hazelcast",
@@ -362,7 +371,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, im
 					Containers: []apiv1.Container{
 						{
 							Name:  "vamp",
-							Image: image, // TODO: "magneticio/vamp2:0.7.0-BRK",
+							Image: "magneticio/vamp2:" + version, // TODO: "magneticio/vamp2:0.7.0-BRK",
 							Ports: []apiv1.ContainerPort{
 								{
 									Protocol:      apiv1.ProtocolTCP,
@@ -467,19 +476,42 @@ func CreateOrUpdateService(clientset *kubernetes.Clientset, ns string, service *
 }
 
 func CreateOrUpdateSecret(clientset *kubernetes.Clientset, ns string, secret *apiv1.Secret) error {
-	fmt.Printf("CreateOrUpdateDeployment: %v\n", secret.GetObjectMeta().GetName())
+	fmt.Printf("CreateOrUpdateSecret: %v\n", secret.GetObjectMeta().GetName())
 	secretsClient := clientset.Core().Secrets(ns)
 	_, err := secretsClient.Create(secret)
 	if err != nil {
 		fmt.Printf("Warning: %v\n", err.Error())
 		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			// Retrieve the latest version of Deployment before attempting update
+			// Retrieve the latest version of Secret before attempting update
 			// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
 			_, getErr := secretsClient.Get(secret.GetObjectMeta().GetName(), metav1.GetOptions{})
 			if getErr != nil {
 				panic(fmt.Errorf("Failed to get latest version of Secret: %v", getErr))
 			}
 			_, updateErr := secretsClient.Update(secret)
+			return updateErr
+		})
+		if retryErr != nil {
+			panic(fmt.Errorf("Update failed: %v", retryErr))
+		}
+	}
+	return nil
+}
+
+func CreateOrUpdateStatefulSet(clientset *kubernetes.Clientset, ns string, statefulSet *appsv1.StatefulSet) error {
+	fmt.Printf("CreateOrUpdateStatefulSet: %v\n", statefulSet.GetObjectMeta().GetName())
+	statefulSetsClient := clientset.AppsV1().StatefulSets(ns)
+	_, err := statefulSetsClient.Create(statefulSet)
+	if err != nil {
+		fmt.Printf("Warning: %v\n", err.Error())
+		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// Retrieve the latest version of StatefulSet before attempting update
+			// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
+			_, getErr := statefulSetsClient.Get(statefulSet.GetObjectMeta().GetName(), metav1.GetOptions{})
+			if getErr != nil {
+				panic(fmt.Errorf("Failed to get latest version of StatefulSet: %v", getErr))
+			}
+			_, updateErr := statefulSetsClient.Update(statefulSet)
 			return updateErr
 		})
 		if retryErr != nil {
