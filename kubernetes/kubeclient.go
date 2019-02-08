@@ -161,7 +161,7 @@ func InstallVampService(config *VampConfig) (string, string, string, error) {
 		config.DatabaseUrl = "mongodb://mongo-0.vamp-mongodb:27017,mongo-1.vamp-mongodb:27017,mongo-2.vamp-mongodb:27017"
 	}
 	// Deploy vamp
-	installVampErr := InstallVamp(clientset, ns, config.RootPassword, config.VampVersion, config.DatabaseUrl)
+	installVampErr := InstallVamp(clientset, ns, config)
 	if installVampErr != nil {
 		return "", "", "", installVampErr
 	}
@@ -284,7 +284,23 @@ func InstallMongoDB(clientset *kubernetes.Clientset, ns string) error {
 	return nil
 }
 
-func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, version string, dbUrl string) error {
+func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig) error {
+	// Create Image Pull Secret
+	dockerRepoAuth := base64.StdEncoding.EncodeToString([]byte(config.RepoUsername + ":" + config.RepoPassword))
+	pullSecretDataString := "{\"https://index.docker.io/v1/\":{\"auth\":\"" + dockerRepoAuth + "\"}}"
+	pullSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: "vampkubistimagepull", Namespace: ns},
+		Data: map[string][]byte{
+			".dockercfg": []byte(pullSecretDataString),
+		},
+		Type: "kubernetes.io/dockercfg",
+	}
+	secretErr := CreateOrUpdateSecret(clientset, ns, pullSecret)
+	if secretErr != nil {
+		fmt.Printf("Warning: %v\n", secretErr.Error())
+		return secretErr
+	}
+
 	hazelcastService := &apiv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "vamp-hazelcast",
@@ -331,11 +347,11 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, ve
 		return errVampService
 	}
 	// Create Root Password Secret
-	secretDataString := base64.StdEncoding.EncodeToString([]byte(password)) //base 64 root Password
+	rootPasswordDataString := base64.StdEncoding.EncodeToString([]byte(config.RootPassword)) //base 64 root Password
 	paswordSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "vamprootpassword"},
 		Data: map[string][]byte{
-			"password": []byte(secretDataString),
+			"password": []byte(rootPasswordDataString),
 		},
 		Type: "Opaque",
 	}
@@ -371,7 +387,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, ve
 					Containers: []apiv1.Container{
 						{
 							Name:  "vamp",
-							Image: "magneticio/vamp2:" + version, // TODO: "magneticio/vamp2:0.7.0-BRK",
+							Image: "magneticio/vamp2:" + config.VampVersion, // TODO: "magneticio/vamp2:0.7.0-BRK",
 							Ports: []apiv1.ContainerPort{
 								{
 									Protocol:      apiv1.ProtocolTCP,
@@ -389,7 +405,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, ve
 								},
 								{
 									Name:  "DBURL",
-									Value: dbUrl, // mongodb://mongo-0.vamp-mongodb:27017,mongo-1.vamp-mongodb:27017,mongo-2.vamp-mongodb:27017
+									Value: config.DatabaseUrl,
 								},
 								{
 									Name:  "DBNAME",
@@ -411,7 +427,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, password string, ve
 					},
 					ImagePullSecrets: []apiv1.LocalObjectReference{
 						{
-							Name: "vamp2imagepull",
+							Name: "vampkubistimagepull",
 						},
 					},
 				},
