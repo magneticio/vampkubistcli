@@ -498,7 +498,7 @@ func (s *RestClient) Ping() (bool, error) {
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "text/plain, application/json").
-		SetAuthToken((*s).token).
+		// Should be reachable without a token SetAuthToken((*s).token).
 		Get(url)
 
 	if err == nil {

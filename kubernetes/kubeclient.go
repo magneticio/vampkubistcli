@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/cenkalti/backoff"
+	"github.com/magneticio/vampkubistcli/client"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -135,12 +136,12 @@ func BootstrapVampService() (string, string, string, error) {
 	return host, crt, token, nil
 }
 
-func InstallVampService(config *VampConfig) (string, string, string, error) {
-	host, crt, token, errBootstap := BootstrapVampService()
+func InstallVampService(config *VampConfig) (string, []byte, []byte, error) {
+	host, _, _, errBootstap := BootstrapVampService()
 	if errBootstap != nil {
 		fmt.Printf("Warning: %v\n", errBootstap.Error())
 		// This is a problem command should be re-tried by user
-		return host, "", "", errBootstap
+		return host, nil, nil, errBootstap
 	}
 	// create the clientset
 	clientset, host, err := getLocalKubeClient()
@@ -153,23 +154,50 @@ func InstallVampService(config *VampConfig) (string, string, string, error) {
 	if config.DatabaseUrl == "" {
 		installMongoErr := InstallMongoDB(clientset, ns)
 		if installMongoErr != nil {
-			return "", "", "", installMongoErr
+			return "", nil, nil, installMongoErr
 		}
 		config.DatabaseUrl = "mongodb://mongo-0.vamp-mongodb:27017,mongo-1.vamp-mongodb:27017,mongo-2.vamp-mongodb:27017"
 	}
 	// Deploy vamp
-	installVampErr := InstallVamp(clientset, ns, config)
+	url, cert, key, installVampErr := InstallVamp(clientset, ns, config)
 	if installVampErr != nil {
-		return "", "", "", installVampErr
+		return "", nil, nil, installVampErr
 	}
-	ip, getIpError := GetServiceExternalIP(clientset, ns, "vamp")
+	// NewRestClient(url string, token string, isDebug bool, cert string)
+	/* ip, getIpError := GetServiceExternalIP(clientset, ns, "vamp")
 	if getIpError != nil {
 		return "", "", "", getIpError
-	}
+	} */
 	// TODO: add certificates && HTTPS
-	url := "http://" + ip + ":8888"
+	// url := "http://" + ip + ":8888"
 	// Wait for external service
-	return url, crt, token, nil
+	CheckAndWaitForService(*url, cert)
+	return *url, cert, key, nil
+}
+
+func CheckAndWaitForService(url string, cert []byte) error {
+	vampClient := client.NewRestClient(url, "", false, string(cert))
+	count := 1
+	operation := func() error {
+		fmt.Printf("Pinging the service trial: %v\n", count)
+		count += 1
+		pong, pingErr := vampClient.Ping()
+		if pingErr != nil {
+			fmt.Printf("Failed to ping the service: %v\n", pingErr)
+			return pingErr
+		}
+		if pong {
+			fmt.Printf("Connection is available\n")
+			return nil
+		}
+		return errors.New("Service is not available yet.")
+	}
+
+	err := backoff.Retry(operation, backoff.NewExponentialBackOff())
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func InstallMongoDB(clientset *kubernetes.Clientset, ns string) error {
@@ -287,7 +315,7 @@ func InstallMongoDB(clientset *kubernetes.Clientset, ns string) error {
 	return nil
 }
 
-func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig) error {
+func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig) (*string, []byte, []byte, error) {
 	// Create Image Pull Secret
 	dockerRepoAuth := base64.StdEncoding.EncodeToString([]byte(config.RepoUsername + ":" + config.RepoPassword))
 	pullSecretDataString := "{\"https://index.docker.io/v1/\":{\"auth\":\"" + dockerRepoAuth + "\"}}"
@@ -301,7 +329,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 	secretErr := CreateOrUpdateSecret(clientset, ns, pullSecret)
 	if secretErr != nil {
 		fmt.Printf("Warning: %v\n", secretErr.Error())
-		return secretErr
+		return nil, nil, nil, secretErr
 	}
 
 	hazelcastService := &apiv1.Service{
@@ -324,7 +352,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 	errHazelcastService := CreateOrUpdateService(clientset, ns, hazelcastService)
 	if errHazelcastService != nil {
 		fmt.Printf("Warning: %v\n", errHazelcastService.Error())
-		return errHazelcastService
+		return nil, nil, nil, errHazelcastService
 	}
 	vampService := &apiv1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -347,25 +375,28 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 	errVampService := CreateOrUpdateService(clientset, ns, vampService)
 	if errVampService != nil {
 		fmt.Printf("Warning: %v\n", errVampService.Error())
-		return errVampService
+		return nil, nil, nil, errVampService
 	}
 	ip, getIpError := GetServiceExternalIP(clientset, ns, vampService.GetObjectMeta().GetName())
 	if getIpError != nil {
-		return getIpError
+		return nil, nil, nil, getIpError
 	}
 	// certificates
 	cert, key, certError := cert.GenerateSelfSignedCertKey(ip, []net.IP{}, []string{})
 	if certError != nil {
-		return certError
+		return nil, nil, nil, certError
 	}
-	certSecretError := CreateOrUpdateOpaqueSecret(clientset, ns, "certificates",
+	certSecretName := "certificates-for-" + ip
+
+	// certSecret, getCertSecretErr := GetOpaqueSecret(clientset, ns, certSecretName)
+	certSecretError := CreateOrUpdateOpaqueSecret(clientset, ns, certSecretName,
 		map[string][]byte{
 			"cert": cert,
 			"key":  key,
 		})
 	if certSecretError != nil {
 		fmt.Printf("Warning: %v\n", certSecretError.Error())
-		return certSecretError
+		return nil, nil, nil, certSecretError
 	}
 	// Create Root Password Secret
 	paswordSecretErr := CreateOrUpdateOpaqueSecret(clientset, ns, "vamprootpassword",
@@ -374,7 +405,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 		})
 	if paswordSecretErr != nil {
 		fmt.Printf("Warning: %v\n", paswordSecretErr.Error())
-		return paswordSecretErr
+		return nil, nil, nil, paswordSecretErr
 	}
 	vampDeployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -436,7 +467,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 									ValueFrom: &apiv1.EnvVarSource{
 										SecretKeyRef: &apiv1.SecretKeySelector{
 											LocalObjectReference: apiv1.LocalObjectReference{
-												Name: "certificates",
+												Name: certSecretName,
 											},
 											Key: "key",
 										},
@@ -447,7 +478,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 									ValueFrom: &apiv1.EnvVarSource{
 										SecretKeyRef: &apiv1.SecretKeySelector{
 											LocalObjectReference: apiv1.LocalObjectReference{
-												Name: "certificates",
+												Name: certSecretName,
 											},
 											Key: "cert",
 										},
@@ -479,9 +510,10 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 	errDeployment := CreateOrUpdateDeployment(clientset, ns, vampDeployment)
 	if errDeployment != nil {
 		fmt.Printf("Warning: %v\n", errDeployment.Error())
-		return errDeployment
+		return nil, nil, nil, errDeployment
 	}
-	return nil
+	url := "https://" + ip + ":8888"
+	return &url, cert, key, nil
 }
 
 func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ns string, deployment *appsv1.Deployment) error {
@@ -616,6 +648,15 @@ func CreateOrUpdateOpaqueSecret(clientset *kubernetes.Clientset, ns string, name
 		Type:       "Opaque",
 	}
 	return CreateOrUpdateSecret(clientset, ns, secret)
+}
+
+func GetOpaqueSecret(clientset *kubernetes.Clientset, ns string, name string) (map[string][]byte, error) {
+	secretsClient := clientset.Core().Secrets(ns)
+	secret, getError := secretsClient.Get(name, metav1.GetOptions{})
+	if getError != nil {
+		return nil, getError
+	}
+	return secret.Data, nil
 }
 
 func homeDir() string {
