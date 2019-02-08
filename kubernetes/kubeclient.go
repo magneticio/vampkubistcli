@@ -382,21 +382,31 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 		return nil, nil, nil, getIpError
 	}
 	// certificates
-	cert, key, certError := cert.GenerateSelfSignedCertKey(ip, []net.IP{}, []string{})
-	if certError != nil {
-		return nil, nil, nil, certError
-	}
-	certSecretName := "certificates-for-" + ip
 
-	// certSecret, getCertSecretErr := GetOpaqueSecret(clientset, ns, certSecretName)
-	certSecretError := CreateOrUpdateOpaqueSecret(clientset, ns, certSecretName,
-		map[string][]byte{
-			"cert": cert,
-			"key":  key,
-		})
-	if certSecretError != nil {
-		fmt.Printf("Warning: %v\n", certSecretError.Error())
-		return nil, nil, nil, certSecretError
+	certSecretName := "certificates-for-" + ip
+	crt := []byte{}
+	key := []byte{}
+	certSecret, getCertSecretErr := GetOpaqueSecret(clientset, ns, certSecretName)
+	if getCertSecretErr != nil {
+		fmt.Printf("Warning: %v\n", getCertSecretErr.Error())
+		crtGen, keyGen, certError := cert.GenerateSelfSignedCertKey(ip, []net.IP{}, []string{})
+		if certError != nil {
+			return nil, nil, nil, certError
+		}
+		crt = crtGen
+		key = keyGen
+		certSecretError := CreateOrUpdateOpaqueSecret(clientset, ns, certSecretName,
+			map[string][]byte{
+				"cert": crt,
+				"key":  key,
+			})
+		if certSecretError != nil {
+			fmt.Printf("Warning: %v\n", certSecretError.Error())
+			return nil, nil, nil, certSecretError
+		}
+	} else {
+		crt = certSecret["cert"]
+		key = certSecret["key"]
 	}
 	// Create Root Password Secret
 	paswordSecretErr := CreateOrUpdateOpaqueSecret(clientset, ns, "vamprootpassword",
@@ -513,7 +523,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 		return nil, nil, nil, errDeployment
 	}
 	url := "https://" + ip + ":8888"
-	return &url, cert, key, nil
+	return &url, crt, key, nil
 }
 
 func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ns string, deployment *appsv1.Deployment) error {
