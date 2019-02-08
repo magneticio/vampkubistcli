@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 
@@ -17,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/retry"
 	// Initialize all known client auth plugins.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
@@ -347,15 +349,29 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 		fmt.Printf("Warning: %v\n", errVampService.Error())
 		return errVampService
 	}
-	// Create Root Password Secret
-	paswordSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "vamprootpassword"},
-		Data: map[string][]byte{
-			"password": []byte(config.RootPassword),
-		},
-		Type: "Opaque",
+	ip, getIpError := GetServiceExternalIP(clientset, ns, vampService.GetObjectMeta().GetName())
+	if getIpError != nil {
+		return getIpError
 	}
-	paswordSecretErr := CreateOrUpdateSecret(clientset, ns, paswordSecret)
+	// certificates
+	cert, key, certError := cert.GenerateSelfSignedCertKey(ip, []net.IP{}, []string{})
+	if certError != nil {
+		return certError
+	}
+	certSecretError := CreateOrUpdateOpaqueSecret(clientset, ns, "certificates",
+		map[string][]byte{
+			"cert": cert,
+			"key":  key,
+		})
+	if certSecretError != nil {
+		fmt.Printf("Warning: %v\n", certSecretError.Error())
+		return certSecretError
+	}
+	// Create Root Password Secret
+	paswordSecretErr := CreateOrUpdateOpaqueSecret(clientset, ns, "vamprootpassword",
+		map[string][]byte{
+			"password": []byte(config.RootPassword),
+		})
 	if paswordSecretErr != nil {
 		fmt.Printf("Warning: %v\n", paswordSecretErr.Error())
 		return paswordSecretErr
@@ -410,6 +426,32 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 								{
 									Name:  "DBNAME",
 									Value: "vamp",
+								},
+								{
+									Name:  "API_SSL",
+									Value: "enabled",
+								},
+								{
+									Name: "API_PRIVATE_KEY",
+									ValueFrom: &apiv1.EnvVarSource{
+										SecretKeyRef: &apiv1.SecretKeySelector{
+											LocalObjectReference: apiv1.LocalObjectReference{
+												Name: "certificates",
+											},
+											Key: "key",
+										},
+									},
+								},
+								{
+									Name: "API_SERVER_CERTIFICATE",
+									ValueFrom: &apiv1.EnvVarSource{
+										SecretKeyRef: &apiv1.SecretKeySelector{
+											LocalObjectReference: apiv1.LocalObjectReference{
+												Name: "certificates",
+											},
+											Key: "cert",
+										},
+									},
 								},
 								{
 									Name: "ROOT_PASSWORD",
@@ -565,6 +607,15 @@ func CreateOrUpdateStatefulSet(clientset *kubernetes.Clientset, ns string, state
 		}
 	}
 	return nil
+}
+
+func CreateOrUpdateOpaqueSecret(clientset *kubernetes.Clientset, ns string, name string, data map[string][]byte) error {
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Data:       data,
+		Type:       "Opaque",
+	}
+	return CreateOrUpdateSecret(clientset, ns, secret)
 }
 
 func homeDir() string {
