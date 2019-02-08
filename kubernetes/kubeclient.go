@@ -2,10 +2,12 @@ package kubeclient
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/cenkalti/backoff"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -45,13 +47,6 @@ Builds and returns ClientSet by using local KubeConfig
 It also returns hostname since it is needed.
 */
 func getLocalKubeClient() (*kubernetes.Clientset, string, error) {
-	// var kubeconfig *string
-	/* if home := homeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse() */
 	kubeconfig := GetKubeConfigPath("")
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
@@ -165,8 +160,14 @@ func InstallVampService(config *VampConfig) (string, string, string, error) {
 	if installVampErr != nil {
 		return "", "", "", installVampErr
 	}
+	ip, getIpError := GetServiceExternalIP(clientset, ns, "vamp")
+	if getIpError != nil {
+		return "", "", "", getIpError
+	}
+	// TODO: add certificates && HTTPS
+	url := "http://" + ip + ":8888"
 	// Wait for external service
-	return host, crt, token, nil
+	return url, crt, token, nil
 }
 
 func InstallMongoDB(clientset *kubernetes.Clientset, ns string) error {
@@ -238,8 +239,8 @@ func InstallMongoDB(clientset *kubernetes.Clientset, ns string) error {
 							},
 						},
 						{
-							Name:  "mongo",
-							Image: "mongo",
+							Name:  "mongo-sidecar",
+							Image: "cvallance/mongo-k8s-sidecar",
 							Env: []apiv1.EnvVar{
 								{
 									Name:  "MONGO_SIDECAR_POD_LABELS",
@@ -347,11 +348,10 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 		return errVampService
 	}
 	// Create Root Password Secret
-	rootPasswordDataString := base64.StdEncoding.EncodeToString([]byte(config.RootPassword)) //base 64 root Password
 	paswordSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: "vamprootpassword"},
 		Data: map[string][]byte{
-			"password": []byte(rootPasswordDataString),
+			"password": []byte(config.RootPassword),
 		},
 		Type: "Opaque",
 	}
@@ -387,7 +387,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 					Containers: []apiv1.Container{
 						{
 							Name:  "vamp",
-							Image: "magneticio/vamp2:" + config.VampVersion, // TODO: "magneticio/vamp2:0.7.0-BRK",
+							Image: "magneticio/vamp2:" + config.VampVersion,
 							Ports: []apiv1.ContainerPort{
 								{
 									Protocol:      apiv1.ProtocolTCP,
@@ -489,6 +489,36 @@ func CreateOrUpdateService(clientset *kubernetes.Clientset, ns string, service *
 		}
 	}
 	return nil
+}
+
+func GetServiceExternalIP(clientset *kubernetes.Clientset, ns string, name string) (string, error) {
+	fmt.Printf("GetServiceExternalIP: %v\n", name)
+	servicesClient := clientset.Core().Services(ns)
+	count := 1
+	ip := ""
+	operation := func() error {
+		fmt.Printf("Getting External IP Trial: %v\n", count)
+		count += 1
+		currentService, getErr := servicesClient.Get(name, metav1.GetOptions{})
+		if getErr != nil {
+			panic(fmt.Errorf("Failed to get latest version of Service: %v", getErr))
+		}
+		ingress := currentService.Status.LoadBalancer.Ingress
+		if ingress != nil && len(ingress) > 0 {
+			ip = ingress[0].IP
+			if ip != "" {
+				return nil
+			}
+		}
+		return errors.New("IP is not available yet.")
+	}
+
+	err := backoff.Retry(operation, backoff.NewExponentialBackOff())
+	if err != nil {
+		return "", err
+	}
+
+	return ip, nil
 }
 
 func CreateOrUpdateSecret(clientset *kubernetes.Clientset, ns string, secret *apiv1.Secret) error {
