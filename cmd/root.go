@@ -31,6 +31,7 @@ import (
 type config struct {
 	Url            string `yaml:"url,omitempty" json:"url,omitempty"`
 	Cert           string `yaml:"cert,omitempty" json:"cert,omitempty"`
+	Username       string `yaml:"username,omitempty" json:"username,omitempty"`
 	Token          string `yaml:"token,omitempty" json:"token,omitempty"`
 	Project        string `yaml:"project,omitempty" json:"project,omitempty"`
 	Cluster        string `yaml:"cluster,omitempty" json:"cluster,omitempty"`

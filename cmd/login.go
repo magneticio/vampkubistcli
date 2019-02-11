@@ -31,6 +31,15 @@ var Username string
 var Password string
 var Cert string
 
+var initial bool
+
+var WelcomeText = AddAppName(`
+  Welcome to $AppName
+  It is recommeded to update your password with
+  $AppName passwd
+  and re-login with your username and new password.
+  `)
+
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
 	Use:   "login",
@@ -75,12 +84,12 @@ Example:
 			if err_cert != nil {
 				b, err := util.UseSourceUrl(Cert)
 				if err != nil {
-					// fmt.Print(err)
-					return err
+					fmt.Printf("Warning: %v\n", err)
+					b = Cert
 				}
-				err_cert_from_path := util.VerifyCertForHost(Config.Url, b)
-				if err_cert_from_path != nil {
-					return err_cert_from_path
+				certVerifyError := util.VerifyCertForHost(Config.Url, b)
+				if certVerifyError != nil {
+					return certVerifyError
 				}
 				CertString = string(b)
 			}
@@ -116,8 +125,12 @@ Example:
 			}
 			Config.Token = token
 		}
-		fmt.Println("Token will be written to config: " + Config.Token)
+		Config.Username = Username
+		fmt.Println("Login Successful.")
 		WriteConfigFile()
+		if initial {
+			fmt.Println(WelcomeText)
+		}
 		return nil
 	},
 }
@@ -140,6 +153,7 @@ func init() {
 	loginCmd.Flags().StringVarP(&Password, "password", "", "", "Password required")
 	// loginCmd.MarkFlagRequired("password")
 	loginCmd.Flags().StringVarP(&Cert, "cert", "", "", "Cert from file, url or string")
+	loginCmd.Flags().BoolVarP(&initial, "initial", "", false, "Prints welcome string for new users.")
 
 	// loginCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")
 	// viper.BindPFlag("server", loginCmd.PersistentFlags().Lookup("server"))
