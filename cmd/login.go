@@ -47,7 +47,7 @@ Example:
 
   Interactive password input is enabled if username is entered
   but password is not passed for security:
-  
+
   $AppName login --url https://1.2.3.4:8888 --user username
 
   Cert parameter accepts cerficate string, local file path or remote file path.
@@ -104,6 +104,7 @@ Example:
 					return errInput
 				}
 				Password = string(bytePassword)
+				fmt.Println()
 				if Password == "" {
 					return errors.New("Password is required")
 				}
