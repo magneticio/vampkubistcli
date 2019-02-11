@@ -43,8 +43,8 @@ var addCmd = &cobra.Command{
 
 		if Type == "user" {
 			Username := strings.ToLower(Name)
+			// TODO: this is a temporary workaround it will be handled in the backend
 			temporarayPassword := util.RandomString(50)
-			fmt.Printf("temporarayPassword %v\n", temporarayPassword)
 			SourceFileType := "json"
 			Source := "{\"userName\":\"" + Username + "\",\"password\":\"" + temporarayPassword + "\"}"
 			restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
