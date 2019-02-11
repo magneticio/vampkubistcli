@@ -75,12 +75,12 @@ Example:
 			if err_cert != nil {
 				b, err := util.UseSourceUrl(Cert)
 				if err != nil {
-					// fmt.Print(err)
-					return err
+					fmt.Printf("Warning: %v\n", err)
+					b = Cert
 				}
-				err_cert_from_path := util.VerifyCertForHost(Config.Url, b)
-				if err_cert_from_path != nil {
-					return err_cert_from_path
+				certVerifyError := util.VerifyCertForHost(Config.Url, b)
+				if certVerifyError != nil {
+					return certVerifyError
 				}
 				CertString = string(b)
 			}
