@@ -31,6 +31,15 @@ var Username string
 var Password string
 var Cert string
 
+var initial bool
+
+var WelcomeText = AddAppName(`
+  Welcome to $AppName
+  It is recommeded to update your password with
+  $AppName passwd
+  and re-login with your username and new password.
+  `)
+
 // loginCmd represents the login command
 var loginCmd = &cobra.Command{
 	Use:   "login",
@@ -116,8 +125,12 @@ Example:
 			}
 			Config.Token = token
 		}
-		fmt.Println("Token will be written to config: " + Config.Token)
+		Config.Username = Username
+		fmt.Println("Login Successful.")
 		WriteConfigFile()
+		if initial {
+			fmt.Println(WelcomeText)
+		}
 		return nil
 	},
 }
@@ -140,6 +153,7 @@ func init() {
 	loginCmd.Flags().StringVarP(&Password, "password", "", "", "Password required")
 	// loginCmd.MarkFlagRequired("password")
 	loginCmd.Flags().StringVarP(&Cert, "cert", "", "", "Cert from file, url or string")
+	loginCmd.Flags().BoolVarP(&initial, "initial", "", false, "Prints welcome string for new users.")
 
 	// loginCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")
 	// viper.BindPFlag("server", loginCmd.PersistentFlags().Lookup("server"))

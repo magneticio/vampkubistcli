@@ -159,12 +159,14 @@ func GetParameterFromTerminalAsSecret(text1 string, text2 string, errorText stri
 	if errInput1 != nil {
 		return "", errInput1
 	}
+	fmt.Println()
 	input1 := string(byteInput1)
 	fmt.Println(text2)
 	byteInput2, errInput2 := terminal.ReadPassword(int(syscall.Stdin))
 	if errInput2 != nil {
 		return "", errInput2
 	}
+	fmt.Println()
 	input2 := string(byteInput2)
 	if input1 != input2 {
 		return "", errors.New(errorText)
