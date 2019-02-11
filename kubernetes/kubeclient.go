@@ -31,9 +31,11 @@ import (
 type VampConfig struct {
 	RootPassword string `yaml:"rootPassword,omitempty" json:"rootPassword,omitempty"`
 	DatabaseUrl  string `yaml:"databaseUrl,omitempty" json:"databaseUrl,omitempty"`
+	DatabaseName string `yaml:"databaseName,omitempty" json:"databaseName,omitempty"`
 	RepoUsername string `yaml:"repoUsername,omitempty" json:"repoUsername,omitempty"`
 	RepoPassword string `yaml:"repoPassword,omitempty" json:"repoPassword,omitempty"`
 	VampVersion  string `yaml:"vampVersion,omitempty" json:"vampVersion,omitempty"`
+	Mode         string `yaml:"mode,omitempty" json:"mode,omitempty"`
 }
 
 func GetKubeConfigPath(configPath string) *string {
@@ -458,7 +460,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 							Env: []apiv1.EnvVar{
 								{
 									Name:  "MODE",
-									Value: "IN_CLUSTER",
+									Value: config.Mode,
 								},
 								{
 									Name:  "DBURL",
@@ -466,7 +468,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 								},
 								{
 									Name:  "DBNAME",
-									Value: "vamp",
+									Value: config.DatabaseName,
 								},
 								{
 									Name:  "API_SSL",
