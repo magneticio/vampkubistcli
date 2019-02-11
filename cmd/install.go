@@ -17,6 +17,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/magneticio/vampkubistcli/kubernetes"
 	"github.com/magneticio/vampkubistcli/util"
@@ -25,6 +26,7 @@ import (
 
 var installConfigPath string
 var configFileType string
+var certFileName string
 
 // installCmd represents the install command
 var installCmd = &cobra.Command{
@@ -32,7 +34,7 @@ var installCmd = &cobra.Command{
 	Short: "Install Vamp Management in your cluster",
 	Long: `
 Example:
-vamp install --configuration installconfig.yml
+vamp install --configuration installconfig.yml --cert ./certiticate.crt
 
 Configuration file example as yaml:
 rootPassword: root
@@ -60,13 +62,17 @@ Leave databaseUrl empty to deploy an internal one
 		if unmarshallError != nil {
 			return unmarshallError
 		}
-		url, _, _, err := kubeclient.InstallVampService(&config)
+		url, cert, _, err := kubeclient.InstallVampService(&config)
 		if err != nil {
 			return err
 		}
+		writeError := ioutil.WriteFile(certFileName, cert, 0644)
+		if writeError != nil {
+			return writeError
+		}
 		fmt.Printf("Vamp Service Installed.\n")
 		fmt.Printf("Login with:\n")
-		fmt.Printf("vamp login --url %v --user root\n", url)
+		fmt.Printf("vamp login --url %v --user root --cert %v\n", url, certFileName)
 		return nil
 	},
 }
@@ -86,4 +92,5 @@ func init() {
 	installCmd.Flags().StringVarP(&installConfigPath, "configuration", "", "", "Installation configuration file path")
 	installCmd.MarkFlagRequired("configuration")
 	installCmd.Flags().StringVarP(&configFileType, "input", "i", "yaml", "Configuration file type yaml or json")
+	installCmd.Flags().StringVarP(&certFileName, "cert", "", "cert.crt", "Certificate file output path")
 }

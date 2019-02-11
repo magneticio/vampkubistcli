@@ -136,13 +136,13 @@ func NewRestClient(url string, token string, isDebug bool, cert string) *RestCli
 		// We can use a pattern of "pre-*.txt" to get an extension like: /tmp/pre-123456.txt
 		tmpFile, err := ioutil.TempFile(os.TempDir(), "vamp-")
 		if err != nil {
-			log.Fatal("Cannot create temporary file", err)
+			log.Fatal("Can not create temporary file", err)
 		}
 		// Remember to clean up the file afterwards
 		defer os.Remove(tmpFile.Name())
 		err_write := ioutil.WriteFile(tmpFile.Name(), []byte(cert), 0644)
 		if err_write != nil {
-			log.Fatal("Cannot create temporary file", err)
+			log.Fatal("Can not write temporary file", err_write)
 		}
 		// fmt.Printf("load cert from file: %v\n", tmpFile.Name())
 		resty.SetRootCertificate(tmpFile.Name())

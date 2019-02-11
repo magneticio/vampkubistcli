@@ -179,7 +179,7 @@ func CheckAndWaitForService(url string, cert []byte) error {
 	vampClient := client.NewRestClient(url, "", false, string(cert))
 	count := 1
 	operation := func() error {
-		fmt.Printf("Pinging the service trial: %v\n", count)
+		fmt.Printf("Pinging the service trial %v\n", count)
 		count += 1
 		pong, pingErr := vampClient.Ping()
 		if pingErr != nil {
@@ -581,10 +581,11 @@ func GetServiceExternalIP(clientset *kubernetes.Clientset, ns string, name strin
 	count := 1
 	ip := ""
 	operation := func() error {
-		fmt.Printf("Getting External IP Trial: %v\n", count)
+		fmt.Printf("Getting External IP trial %v\n", count)
 		count += 1
 		currentService, getErr := servicesClient.Get(name, metav1.GetOptions{})
 		if getErr != nil {
+			// TODO: return error instead of panic
 			panic(fmt.Errorf("Failed to get latest version of Service: %v", getErr))
 		}
 		ingress := currentService.Status.LoadBalancer.Ingress
