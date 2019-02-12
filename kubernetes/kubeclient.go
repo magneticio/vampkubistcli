@@ -38,6 +38,34 @@ type VampConfig struct {
 	Mode         string `yaml:"mode,omitempty" json:"mode,omitempty"`
 }
 
+func VampConfigValidateAndSetupDefaults(config *VampConfig) (*VampConfig, error) {
+	if config.RootPassword == "" {
+		// This is enforced
+		return config, errors.New("Root Password can not be empty.")
+	}
+	if config.RepoUsername == "" {
+		return config, errors.New("Repo Username can not be empty.")
+	}
+	if config.RepoPassword == "" {
+		return config, errors.New("Repo Password can not be empty.")
+	}
+	if config.DatabaseName == "" {
+		config.DatabaseName = "vamp"
+		fmt.Printf("Database Name set to default value: %v\n", config.DatabaseName)
+	}
+	if config.VampVersion == "" {
+		config.VampVersion = "0.7.0"
+		fmt.Printf("Vamp Version set to default value: %v\n", config.VampVersion)
+	}
+	if config.Mode != "IN_CLUSTER" &&
+		config.Mode != "OUT_CLUSTER" &&
+		config.Mode != "OUT_OF_CLUSTER" {
+		config.Mode = "IN_CLUSTER"
+		fmt.Printf("Vamp Mode set to default value: %v\n", config.Mode)
+	}
+	return config, nil
+}
+
 func GetKubeConfigPath(configPath string) *string {
 	if configPath == "" {
 		home := homeDir()
