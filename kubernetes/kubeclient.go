@@ -31,9 +31,39 @@ import (
 type VampConfig struct {
 	RootPassword string `yaml:"rootPassword,omitempty" json:"rootPassword,omitempty"`
 	DatabaseUrl  string `yaml:"databaseUrl,omitempty" json:"databaseUrl,omitempty"`
+	DatabaseName string `yaml:"databaseName,omitempty" json:"databaseName,omitempty"`
 	RepoUsername string `yaml:"repoUsername,omitempty" json:"repoUsername,omitempty"`
 	RepoPassword string `yaml:"repoPassword,omitempty" json:"repoPassword,omitempty"`
 	VampVersion  string `yaml:"vampVersion,omitempty" json:"vampVersion,omitempty"`
+	Mode         string `yaml:"mode,omitempty" json:"mode,omitempty"`
+}
+
+func VampConfigValidateAndSetupDefaults(config *VampConfig) (*VampConfig, error) {
+	if config.RootPassword == "" {
+		// This is enforced
+		return config, errors.New("Root Password can not be empty.")
+	}
+	if config.RepoUsername == "" {
+		return config, errors.New("Repo Username can not be empty.")
+	}
+	if config.RepoPassword == "" {
+		return config, errors.New("Repo Password can not be empty.")
+	}
+	if config.DatabaseName == "" {
+		config.DatabaseName = "vamp"
+		fmt.Printf("Database Name set to default value: %v\n", config.DatabaseName)
+	}
+	if config.VampVersion == "" {
+		config.VampVersion = "0.7.0"
+		fmt.Printf("Vamp Version set to default value: %v\n", config.VampVersion)
+	}
+	if config.Mode != "IN_CLUSTER" &&
+		config.Mode != "OUT_CLUSTER" &&
+		config.Mode != "OUT_OF_CLUSTER" {
+		config.Mode = "IN_CLUSTER"
+		fmt.Printf("Vamp Mode set to default value: %v\n", config.Mode)
+	}
+	return config, nil
 }
 
 func GetKubeConfigPath(configPath string) *string {
@@ -458,7 +488,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 							Env: []apiv1.EnvVar{
 								{
 									Name:  "MODE",
-									Value: "IN_CLUSTER",
+									Value: config.Mode,
 								},
 								{
 									Name:  "DBURL",
@@ -466,7 +496,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 								},
 								{
 									Name:  "DBNAME",
-									Value: "vamp",
+									Value: config.DatabaseName,
 								},
 								{
 									Name:  "API_SSL",

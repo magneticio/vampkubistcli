@@ -62,7 +62,12 @@ Leave databaseUrl empty to deploy an internal one
 		if unmarshallError != nil {
 			return unmarshallError
 		}
-		url, cert, _, err := kubeclient.InstallVampService(&config)
+		validatedConfig, configError := kubeclient.VampConfigValidateAndSetupDefaults(&config)
+		if configError != nil {
+			return configError
+		}
+		fmt.Printf("Vamp Configuration validated.\n")
+		url, cert, _, err := kubeclient.InstallVampService(validatedConfig)
 		if err != nil {
 			return err
 		}
