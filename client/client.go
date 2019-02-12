@@ -165,7 +165,11 @@ Return the error object with message to be returned
 It can be used after checking with IsError
 */
 func getError(resp *resty.Response) error {
-	return errors.New(resp.Error().(*ErrorResponse).Message)
+	message := resp.Error().(*ErrorResponse).Message
+	if message == "" {
+		message = string(resp.Body())
+	}
+	return errors.New(message)
 }
 
 /*
