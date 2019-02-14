@@ -32,6 +32,7 @@ type VampConfig struct {
 	RootPassword string `yaml:"rootPassword,omitempty" json:"rootPassword,omitempty"`
 	DatabaseUrl  string `yaml:"databaseUrl,omitempty" json:"databaseUrl,omitempty"`
 	DatabaseName string `yaml:"databaseName,omitempty" json:"databaseName,omitempty"`
+	ImageName    string `yaml:"imageName,omitempty" json:"imageName,omitempty"`
 	RepoUsername string `yaml:"repoUsername,omitempty" json:"repoUsername,omitempty"`
 	RepoPassword string `yaml:"repoPassword,omitempty" json:"repoPassword,omitempty"`
 	VampVersion  string `yaml:"vampVersion,omitempty" json:"vampVersion,omitempty"`
@@ -53,8 +54,12 @@ func VampConfigValidateAndSetupDefaults(config *VampConfig) (*VampConfig, error)
 		config.DatabaseName = "vamp"
 		fmt.Printf("Database Name set to default value: %v\n", config.DatabaseName)
 	}
+	if config.ImageName == "" {
+		config.ImageName = "magneticio/kubist"
+		fmt.Printf("Image Name set to default value: %v\n", config.ImageName)
+	}
 	if config.VampVersion == "" {
-		config.VampVersion = "0.7.0"
+		config.VampVersion = "0.7.5"
 		fmt.Printf("Vamp Version set to default value: %v\n", config.VampVersion)
 	}
 	if config.Mode != "IN_CLUSTER" &&
@@ -193,14 +198,7 @@ func InstallVampService(config *VampConfig) (string, []byte, []byte, error) {
 	if installVampErr != nil {
 		return "", nil, nil, installVampErr
 	}
-	// NewRestClient(url string, token string, isDebug bool, cert string)
-	/* ip, getIpError := GetServiceExternalIP(clientset, ns, "vamp")
-	if getIpError != nil {
-		return "", "", "", getIpError
-	} */
-	// TODO: add certificates && HTTPS
-	// url := "http://" + ip + ":8888"
-	// Wait for external service
+	// this waits until service is accessible and cerficate is valid
 	CheckAndWaitForService(*url, cert)
 	return *url, cert, key, nil
 }
@@ -474,7 +472,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 					Containers: []apiv1.Container{
 						{
 							Name:  "vamp",
-							Image: "magneticio/vamp2:" + config.VampVersion,
+							Image: config.ImageName + ":" + config.VampVersion,
 							Ports: []apiv1.ContainerPort{
 								{
 									Protocol:      apiv1.ProtocolTCP,
