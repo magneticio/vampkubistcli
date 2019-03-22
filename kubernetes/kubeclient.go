@@ -35,9 +35,22 @@ type VampConfig struct {
 	ImageName    string `yaml:"imageName,omitempty" json:"imageName,omitempty"`
 	RepoUsername string `yaml:"repoUsername,omitempty" json:"repoUsername,omitempty"`
 	RepoPassword string `yaml:"repoPassword,omitempty" json:"repoPassword,omitempty"`
-	VampVersion  string `yaml:"vampVersion,omitempty" json:"vampVersion,omitempty"`
+	ImageTag     string `yaml:"imageTag,omitempty" json:"imageTag,omitempty"`
 	Mode         string `yaml:"mode,omitempty" json:"mode,omitempty"`
 }
+
+// Golang does't support struct constants
+// Default values for an installation config
+var DefaultVampConfig = VampConfig{
+	DatabaseName: "vamp",
+	ImageName:    "magneticio/vampkubist",
+	ImageTag:     "0.7.5",
+	Mode:         "IN_CLUSTER",
+}
+
+// This is shared between installation and credentials, it is currently not configurable
+// TODO: add it to VampConfig when it is configurable
+const InstallationNamespace = "vamp-system"
 
 func VampConfigValidateAndSetupDefaults(config *VampConfig) (*VampConfig, error) {
 	if config.RootPassword == "" {
@@ -51,21 +64,21 @@ func VampConfigValidateAndSetupDefaults(config *VampConfig) (*VampConfig, error)
 		return config, errors.New("Repo Password can not be empty.")
 	}
 	if config.DatabaseName == "" {
-		config.DatabaseName = "vamp"
+		config.DatabaseName = DefaultVampConfig.DatabaseName
 		fmt.Printf("Database Name set to default value: %v\n", config.DatabaseName)
 	}
 	if config.ImageName == "" {
-		config.ImageName = "magneticio/vampkubist"
+		config.ImageName = DefaultVampConfig.ImageName
 		fmt.Printf("Image Name set to default value: %v\n", config.ImageName)
 	}
-	if config.VampVersion == "" {
-		config.VampVersion = "0.7.5"
-		fmt.Printf("Vamp Version set to default value: %v\n", config.VampVersion)
+	if config.ImageTag == "" {
+		config.ImageTag = DefaultVampConfig.ImageTag
+		fmt.Printf("Image Tag set to default value: %v\n", config.ImageTag)
 	}
 	if config.Mode != "IN_CLUSTER" &&
 		config.Mode != "OUT_CLUSTER" &&
 		config.Mode != "OUT_OF_CLUSTER" {
-		config.Mode = "IN_CLUSTER"
+		config.Mode = DefaultVampConfig.Mode
 		fmt.Printf("Vamp Mode set to default value: %v\n", config.Mode)
 	}
 	return config, nil
@@ -103,11 +116,12 @@ func getLocalKubeClient() (*kubernetes.Clientset, string, error) {
 This method installs namespace, cluster role binding and image pull secret
 TODO: differenciate between already exists and other error types
 */
-func SetupVampCredentials(clientset *kubernetes.Clientset, ns string, secretDataString string) error {
+func SetupVampCredentials(clientset *kubernetes.Clientset, ns string) error {
 	nsSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
-	_, err_n := clientset.CoreV1().Namespaces().Create(nsSpec)
-	if err_n != nil {
-		fmt.Printf("Warning: %v\n", err_n.Error())
+	_, namespaceCreationError := clientset.CoreV1().Namespaces().Create(nsSpec)
+	if namespaceCreationError != nil {
+		// TODO: handle already exists
+		fmt.Printf("Warning: %v\n", namespaceCreationError.Error())
 	}
 	// Create Cluster Role Binding Vamp Default Service Account
 	clusterRoleBindingSpec := &rbacv1.ClusterRoleBinding{
@@ -115,23 +129,12 @@ func SetupVampCredentials(clientset *kubernetes.Clientset, ns string, secretData
 		Subjects:   []rbacv1.Subject{rbacv1.Subject{Kind: "User", Name: "system:serviceaccount:" + ns + ":default", APIGroup: "rbac.authorization.k8s.io"}},
 		RoleRef:    rbacv1.RoleRef{Kind: "ClusterRole", Name: "cluster-admin", APIGroup: "rbac.authorization.k8s.io"},
 	}
-	_, err_c := clientset.RbacV1().ClusterRoleBindings().Create(clusterRoleBindingSpec)
-	if err_c != nil {
-		fmt.Printf("Warning: %v\n", err_c.Error())
+	_, roleBindingCreationError := clientset.RbacV1().ClusterRoleBindings().Create(clusterRoleBindingSpec)
+	if roleBindingCreationError != nil {
+		// TODO: handle already exists
+		fmt.Printf("Warning: %v\n", roleBindingCreationError.Error())
 	}
-	// Create Image Pull Secret
-	pullSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: "vamp2imagepull", Namespace: ns},
-		Data: map[string][]byte{
-			".dockercfg": []byte(secretDataString),
-		},
-		Type: "kubernetes.io/dockercfg",
-	}
-	secretErr := CreateOrUpdateSecret(clientset, ns, pullSecret)
-	if secretErr != nil {
-		fmt.Printf("Warning: %v\n", secretErr.Error())
-		return secretErr
-	}
+	// Note: Image pull secret creation removed to only deploy public images on remote clusters
 	return nil
 }
 
@@ -141,9 +144,8 @@ func BootstrapVampService() (string, string, string, error) {
 	if err != nil {
 		panic(err.Error())
 	}
-	ns := "vamp-system"
-	secretDataString := "{\"https://index.docker.io/v1/\":{\"auth\":\"dmFtcDJwdWxsOnZhbXAycHVsbEZsdXg=\"}}"
-	errSetup := SetupVampCredentials(clientset, ns, secretDataString)
+	ns := InstallationNamespace
+	errSetup := SetupVampCredentials(clientset, ns)
 	if errSetup != nil {
 		fmt.Printf("Warning: %v\n", errSetup.Error())
 		return host, "", "", errSetup
@@ -183,7 +185,7 @@ func InstallVampService(config *VampConfig) (string, []byte, []byte, error) {
 	if err != nil {
 		panic(err.Error())
 	}
-	ns := "vamp-system"
+	ns := InstallationNamespace
 	// Install Database or skip it
 	// Deploy Db
 	if config.DatabaseUrl == "" {
@@ -472,7 +474,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 					Containers: []apiv1.Container{
 						{
 							Name:  "vamp",
-							Image: config.ImageName + ":" + config.VampVersion,
+							Image: config.ImageName + ":" + config.ImageTag,
 							Ports: []apiv1.ContainerPort{
 								{
 									Protocol:      apiv1.ProtocolTCP,
