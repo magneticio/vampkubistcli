@@ -209,14 +209,16 @@ func (s *RestClient) Login(username string, password string) (string, error) {
 		return "", err
 	}
 
-	if err == nil {
+	if resp != nil {
 		if resp.IsError() {
 			return "", errors.New(string(resp.Body()))
 		}
 		(*s).token = resp.Result().(*AuthSuccess).AccessToken
+		return (*s).token, nil
 	}
 
-	return (*s).token, nil
+	return "", errors.New("Token retrievel failed")
+
 }
 
 func getUrlForResource(base string, resourceName string, subCommand string, name string, values map[string]string) (string, error) {
