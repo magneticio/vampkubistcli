@@ -35,7 +35,7 @@ type VampConfig struct {
 	ImageName    string `yaml:"imageName,omitempty" json:"imageName,omitempty"`
 	RepoUsername string `yaml:"repoUsername,omitempty" json:"repoUsername,omitempty"`
 	RepoPassword string `yaml:"repoPassword,omitempty" json:"repoPassword,omitempty"`
-	VampVersion  string `yaml:"vampVersion,omitempty" json:"vampVersion,omitempty"`
+	ImageTag     string `yaml:"imageTag,omitempty" json:"imageTag,omitempty"`
 	Mode         string `yaml:"mode,omitempty" json:"mode,omitempty"`
 }
 
@@ -58,9 +58,9 @@ func VampConfigValidateAndSetupDefaults(config *VampConfig) (*VampConfig, error)
 		config.ImageName = "magneticio/vampkubist"
 		fmt.Printf("Image Name set to default value: %v\n", config.ImageName)
 	}
-	if config.VampVersion == "" {
-		config.VampVersion = "0.7.5"
-		fmt.Printf("Vamp Version set to default value: %v\n", config.VampVersion)
+	if config.ImageTag == "" {
+		config.ImageTag = "0.7.5"
+		fmt.Printf("Image Tag set to default value: %v\n", config.ImageTag)
 	}
 	if config.Mode != "IN_CLUSTER" &&
 		config.Mode != "OUT_CLUSTER" &&
@@ -472,7 +472,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig)
 					Containers: []apiv1.Container{
 						{
 							Name:  "vamp",
-							Image: config.ImageName + ":" + config.VampVersion,
+							Image: config.ImageName + ":" + config.ImageTag,
 							Ports: []apiv1.ContainerPort{
 								{
 									Protocol:      apiv1.ProtocolTCP,
