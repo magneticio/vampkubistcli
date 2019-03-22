@@ -116,7 +116,7 @@ func getLocalKubeClient() (*kubernetes.Clientset, string, error) {
 This method installs namespace, cluster role binding and image pull secret
 TODO: differenciate between already exists and other error types
 */
-func SetupVampCredentials(clientset *kubernetes.Clientset, ns string, secretDataString string) error {
+func SetupVampCredentials(clientset *kubernetes.Clientset, ns string) error {
 	nsSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
 	_, namespaceCreationError := clientset.CoreV1().Namespaces().Create(nsSpec)
 	if namespaceCreationError != nil {
@@ -145,8 +145,7 @@ func BootstrapVampService() (string, string, string, error) {
 		panic(err.Error())
 	}
 	ns := InstallationNamespace
-	secretDataString := "{\"https://index.docker.io/v1/\":{\"auth\":\"dmFtcDJwdWxsOnZhbXAycHVsbEZsdXg=\"}}"
-	errSetup := SetupVampCredentials(clientset, ns, secretDataString)
+	errSetup := SetupVampCredentials(clientset, ns)
 	if errSetup != nil {
 		fmt.Printf("Warning: %v\n", errSetup.Error())
 		return host, "", "", errSetup
