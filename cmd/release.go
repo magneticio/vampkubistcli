@@ -23,6 +23,7 @@ import (
 )
 
 var Subset string
+var Port string
 var Destination string
 var SubsetLabels map[string]string
 
@@ -31,7 +32,7 @@ var releaseCmd = &cobra.Command{
 	Use:   "release",
 	Short: "Release a new subset with labels",
 	Long: AddAppName(`eg.:
-$AppName release shop-vamp-service --destination shop-destination --subset subset2 -l version=version2`),
+$AppName release shop-vamp-service --destination shop-destination --port port --subset subset2 -l version=version2`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -41,10 +42,12 @@ $AppName release shop-vamp-service --destination shop-destination --subset subse
 		Type := "canary_release"
 		VampService := args[0]
 		Name := VampService + "-" + Destination + "-" + Subset
+
 		// fmt.Printf("%v %v %v\n", Type, Name, SubsetLabels)
 		canaryRelease := client.CanaryRelease{
 			VampService:  VampService,
 			Destination:  Destination,
+			Port:         Port,
 			Subset:       Subset,
 			SubsetLabels: SubsetLabels,
 		}
@@ -84,6 +87,7 @@ func init() {
 	// is called directly, e.g.:
 	// releaseCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	releaseCmd.Flags().StringVarP(&Destination, "destination", "", "", "Destination to use in the release")
+	releaseCmd.Flags().StringVarP(&Port, "port", "", "", "Port to use in the release")
 	releaseCmd.Flags().StringVarP(&Subset, "subset", "", "", "Subset to use in the release")
 	releaseCmd.Flags().StringToStringVarP(&SubsetLabels, "label", "l", map[string]string{}, "Subset labels, multiple labels are allowed")
 

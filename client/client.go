@@ -124,9 +124,10 @@ type Weight struct {
 
 type CanaryRelease struct {
 	VampService  string            `json:"vampService"`
-	Destination  string            `json:"destination"`
-	Subset       string            `json:"subset"`
-	SubsetLabels map[string]string `json:"subsetLabels"`
+	Destination  string            `json:"destination,omitempty"`
+	Port         string            `json:"port,omitempty"`
+	Subset       string            `json:"subset,omitempty"`
+	SubsetLabels map[string]string `json:"subsetLabels,omitempty"`
 }
 
 func NewRestClient(url string, token string, isDebug bool, cert string) *RestClient {
@@ -169,6 +170,7 @@ func getError(resp *resty.Response) error {
 	if message == "" {
 		message = string(resp.Body())
 	}
+
 	return errors.New(message)
 }
 
@@ -183,9 +185,10 @@ func ResourceTypeConversion(resource string) string {
 	resourceString := strings.Replace(strings.ToLower(resource), "-", "_", -1)
 	if val, ok := resourceMap[resourceString]; ok {
 		return val
-	} else {
-		return resourceString
 	}
+
+	return resourceString
+
 }
 
 func (s *RestClient) Login(username string, password string) (string, error) {
@@ -202,13 +205,15 @@ func (s *RestClient) Login(username string, password string) (string, error) {
 		SetError(&ErrorResponse{}).
 		Post(url)
 
+	if err != nil {
+		return "", err
+	}
+
 	if err == nil {
 		if resp.IsError() {
 			return "", errors.New(string(resp.Body()))
 		}
 		(*s).token = resp.Result().(*AuthSuccess).AccessToken
-	} else {
-		return "", err
 	}
 
 	return (*s).token, nil
@@ -319,16 +324,15 @@ func (s *RestClient) Apply(resourceName string, name string, source string, sour
 			Post(url)
 	}
 
-	if err == nil {
-		if resp.IsError() {
-			return false, getError(resp)
-		}
-		return true, nil
-	} else {
+	if err != nil {
 		return false, err
 	}
 
-	return false, nil
+	if resp.IsError() {
+		return false, getError(resp)
+	}
+	return true, nil
+
 }
 
 func (s *RestClient) Delete(resourceName string, name string, values map[string]string) (bool, error) {
@@ -342,16 +346,15 @@ func (s *RestClient) Delete(resourceName string, name string, values map[string]
 		SetError(&ErrorResponse{}).
 		Delete(url)
 
-	if err == nil {
-		if resp.IsError() {
-			return false, getError(resp)
-		}
-		return true, nil
-	} else {
+	if err != nil {
 		return false, err
 	}
 
-	return false, nil
+	if resp.IsError() {
+		return false, getError(resp)
+	}
+	return true, nil
+
 }
 
 func (s *RestClient) Get(resourceName string, name string, outputFormat string, values map[string]string) (string, error) {
@@ -365,31 +368,30 @@ func (s *RestClient) Get(resourceName string, name string, outputFormat string, 
 		SetError(&ErrorResponse{}).
 		Get(url)
 
-	if err == nil {
-		if resp.IsError() {
-			return "", getError(resp)
-		}
-		source := ""
-		if outputFormat == "yaml" {
-			yaml, err_2 := yaml.JSONToYAML(resp.Body())
-			if err_2 != nil {
-				return "", err_2
-			}
-			source = string(yaml)
-		} else {
-			var prettyJSON bytes.Buffer
-			error := json.Indent(&prettyJSON, resp.Body(), "", "    ")
-			if error != nil {
-				return "", error
-			}
-			source = string(prettyJSON.Bytes())
-		}
-		return source, nil
-	} else {
+	if err != nil {
 		return "", err
 	}
 
-	return "", nil
+	if resp.IsError() {
+		return "", getError(resp)
+	}
+	source := ""
+	if outputFormat == "yaml" {
+		yaml, err_2 := yaml.JSONToYAML(resp.Body())
+		if err_2 != nil {
+			return "", err_2
+		}
+		source = string(yaml)
+	} else {
+		var prettyJSON bytes.Buffer
+		error := json.Indent(&prettyJSON, resp.Body(), "", "    ")
+		if error != nil {
+			return "", error
+		}
+		source = string(prettyJSON.Bytes())
+	}
+	return source, nil
+
 }
 
 func (s *RestClient) List(resourceName string, outputFormat string, values map[string]string, simple bool) (string, error) {
@@ -403,49 +405,48 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 		SetError(&ErrorResponse{}).
 		Get(url)
 
-	if err == nil {
-		if resp.IsError() {
-			return "", getError(resp)
-		}
-		responseBody := resp.Body()
-		if simple {
-			var r []Named
-			err := json.Unmarshal([]byte(responseBody), &r)
-			if err != nil {
-				return "", errors.New(string(responseBody))
-			}
-			// Array conversion is done to show only names
-			arr := make([]string, len(r))
-			for i, named := range r {
-				arr[i] = named.Name
-			}
-			responseBody, err = json.Marshal(arr)
-			if err != nil {
-				return "", err
-			}
-		}
-
-		source := ""
-		if outputFormat == "yaml" {
-			yaml, err_2 := yaml.JSONToYAML(responseBody)
-			if err_2 != nil {
-				return "", err_2
-			}
-			source = string(yaml)
-		} else {
-			var prettyJSON bytes.Buffer
-			error := json.Indent(&prettyJSON, responseBody, "", "    ")
-			if error != nil {
-				return "", error
-			}
-			source = string(prettyJSON.Bytes())
-		}
-		return source, nil
-	} else {
+	if err != nil {
 		return "", err
 	}
 
-	return "", nil
+	if resp.IsError() {
+		return "", getError(resp)
+	}
+	responseBody := resp.Body()
+	if simple {
+		var r []Named
+		err := json.Unmarshal([]byte(responseBody), &r)
+		if err != nil {
+			return "", errors.New(string(responseBody))
+		}
+		// Array conversion is done to show only names
+		arr := make([]string, len(r))
+		for i, named := range r {
+			arr[i] = named.Name
+		}
+		responseBody, err = json.Marshal(arr)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	source := ""
+	if outputFormat == "yaml" {
+		yaml, err_2 := yaml.JSONToYAML(responseBody)
+		if err_2 != nil {
+			return "", err_2
+		}
+		source = string(yaml)
+	} else {
+		var prettyJSON bytes.Buffer
+		error := json.Indent(&prettyJSON, responseBody, "", "    ")
+		if error != nil {
+			return "", error
+		}
+		source = string(prettyJSON.Bytes())
+	}
+	return source, nil
+
 }
 
 func (s *RestClient) AddRoleToUser(username string, rolename string, values map[string]string) (bool, error) {
@@ -459,15 +460,15 @@ func (s *RestClient) AddRoleToUser(username string, rolename string, values map[
 		SetError(&ErrorResponse{}).
 		Post(url)
 
-	if err == nil {
-		if resp.IsError() {
-			return false, getError(resp)
-		}
-		return true, nil
-	} else {
+	if err != nil {
 		return false, err
 	}
-	return false, nil
+
+	if resp.IsError() {
+		return false, getError(resp)
+	}
+	return true, nil
+
 }
 
 func (s *RestClient) RemoveRoleFromUser(username string, rolename string, values map[string]string) (bool, error) {
@@ -481,15 +482,15 @@ func (s *RestClient) RemoveRoleFromUser(username string, rolename string, values
 		SetError(&ErrorResponse{}).
 		Delete(url)
 
-	if err == nil {
-		if resp.IsError() {
-			return false, getError(resp)
-		}
-		return true, nil
-	} else {
+	if err != nil {
 		return false, err
 	}
-	return false, nil
+
+	if resp.IsError() {
+		return false, getError(resp)
+	}
+	return true, nil
+
 }
 
 /*
@@ -505,13 +506,13 @@ func (s *RestClient) Ping() (bool, error) {
 		// Should be reachable without a token SetAuthToken((*s).token).
 		Get(url)
 
-	if err == nil {
-		if resp.IsError() {
-			return false, errors.New(string(resp.Body()))
-		}
-		return true, nil
-	} else {
+	if err != nil {
 		return false, err
 	}
-	return false, nil
+
+	if resp.IsError() {
+		return false, errors.New(string(resp.Body()))
+	}
+	return true, nil
+
 }
