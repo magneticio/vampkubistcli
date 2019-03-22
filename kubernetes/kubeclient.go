@@ -105,7 +105,7 @@ TODO: differenciate between already exists and other error types
 */
 func SetupVampCredentials(clientset *kubernetes.Clientset, ns string, secretDataString string) error {
 	nsSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
-	_, err_n := clientset.Core().Namespaces().Create(nsSpec)
+	_, err_n := clientset.CoreV1().Namespaces().Create(nsSpec)
 	if err_n != nil {
 		fmt.Printf("Warning: %v\n", err_n.Error())
 	}
@@ -153,13 +153,13 @@ func BootstrapVampService() (string, string, string, error) {
 	// now we need to get information to connect to the cluster
 
 	getOptions := metav1.GetOptions{}
-	sa, err_sa := clientset.Core().ServiceAccounts(ns).Get("default", getOptions)
+	sa, err_sa := clientset.CoreV1().ServiceAccounts(ns).Get("default", getOptions)
 	if err_sa != nil {
 		fmt.Printf("Warning: %v\n", err_sa.Error())
 		return host, "", "", err_sa
 	}
 
-	saSecret, err_sa_secret := clientset.Core().Secrets(ns).Get(sa.Secrets[0].Name, getOptions)
+	saSecret, err_sa_secret := clientset.CoreV1().Secrets(ns).Get(sa.Secrets[0].Name, getOptions)
 	if err_sa_secret != nil {
 		fmt.Printf("Warning: %v\n", err_sa_secret.Error())
 		// This is a problem command should be re-tried by user
@@ -579,7 +579,7 @@ func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ns string, deploy
 
 func CreateOrUpdateService(clientset *kubernetes.Clientset, ns string, service *apiv1.Service) error {
 	fmt.Printf("CreateOrUpdateService: %v\n", service.GetObjectMeta().GetName())
-	servicesClient := clientset.Core().Services(ns)
+	servicesClient := clientset.CoreV1().Services(ns)
 	_, errService := servicesClient.Create(service)
 	if errService != nil {
 		fmt.Printf("Warning: %v\n", errService.Error())
@@ -605,7 +605,7 @@ func CreateOrUpdateService(clientset *kubernetes.Clientset, ns string, service *
 
 func GetServiceExternalIP(clientset *kubernetes.Clientset, ns string, name string) (string, error) {
 	fmt.Printf("GetServiceExternalIP: %v\n", name)
-	servicesClient := clientset.Core().Services(ns)
+	servicesClient := clientset.CoreV1().Services(ns)
 	count := 1
 	ip := ""
 	operation := func() error {
@@ -636,7 +636,7 @@ func GetServiceExternalIP(clientset *kubernetes.Clientset, ns string, name strin
 
 func CreateOrUpdateSecret(clientset *kubernetes.Clientset, ns string, secret *apiv1.Secret) error {
 	fmt.Printf("CreateOrUpdateSecret: %v\n", secret.GetObjectMeta().GetName())
-	secretsClient := clientset.Core().Secrets(ns)
+	secretsClient := clientset.CoreV1().Secrets(ns)
 	_, err := secretsClient.Create(secret)
 	if err != nil {
 		fmt.Printf("Warning: %v\n", err.Error())
@@ -690,7 +690,7 @@ func CreateOrUpdateOpaqueSecret(clientset *kubernetes.Clientset, ns string, name
 }
 
 func GetOpaqueSecret(clientset *kubernetes.Clientset, ns string, name string) (map[string][]byte, error) {
-	secretsClient := clientset.Core().Secrets(ns)
+	secretsClient := clientset.CoreV1().Secrets(ns)
 	secret, getError := secretsClient.Get(name, metav1.GetOptions{})
 	if getError != nil {
 		return nil, getError
