@@ -55,7 +55,7 @@ func VampConfigValidateAndSetupDefaults(config *VampConfig) (*VampConfig, error)
 		fmt.Printf("Database Name set to default value: %v\n", config.DatabaseName)
 	}
 	if config.ImageName == "" {
-		config.ImageName = "magneticio/kubist"
+		config.ImageName = "magneticio/vampkubist"
 		fmt.Printf("Image Name set to default value: %v\n", config.ImageName)
 	}
 	if config.VampVersion == "" {
