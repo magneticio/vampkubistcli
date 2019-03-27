@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"syscall"
 
+	"github.com/magneticio/forklift/logging"
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
@@ -97,7 +98,7 @@ Example:
 		}
 		if Token != "" {
 			Config.Token = Token
-			restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
+			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
 			isPong, err := restClient.Ping() // TODO: use an authorized endpoint to check token works
 			if !isPong {
 				return err
@@ -118,7 +119,7 @@ Example:
 					return errors.New("Password is required")
 				}
 			}
-			restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
+			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
 			token, err := restClient.Login(Username, Password)
 			if err != nil {
 				return err

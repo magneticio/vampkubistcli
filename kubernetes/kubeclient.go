@@ -206,7 +206,7 @@ func InstallVampService(config *VampConfig) (string, []byte, []byte, error) {
 }
 
 func CheckAndWaitForService(url string, cert []byte) error {
-	vampClient := client.NewRestClient(url, "", false, string(cert))
+	vampClient := client.NewRestClient(url, "", "", false, string(cert))
 	count := 1
 	operation := func() error {
 		fmt.Printf("Pinging the service trial %v\n", count)

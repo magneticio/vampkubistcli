@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/magneticio/forklift/logging"
 	"github.com/magneticio/vampkubistcli/client"
 	"gopkg.in/resty.v1"
 )
@@ -52,8 +53,8 @@ func TestClientAuthToken(t *testing.T) {
 	Cert := ""
 	Username := "test"
 	Password := "pass"
-	Debug := false
-	restClient := client.NewRestClient(ts.URL, Token, Debug, Cert)
+	Version := "v1"
+	restClient := client.NewRestClient(ts.URL, Token, Version, logging.Verbose, Cert)
 	token, err := restClient.Login(Username, Password)
 
 	assertError(t, err)
@@ -66,7 +67,7 @@ func TestClientListErrorMessage(t *testing.T) {
 		t.Logf("Path: %v", r.URL.Path)
 		if r.Method == resty.MethodGet {
 			switch r.URL.Path {
-			case "/1.0/api/examples/list":
+			case "/api/v1/examples/list":
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusBadRequest)
 				_, _ = w.Write([]byte(`{"message": "ERROR MESSAGE"}`))
@@ -78,8 +79,9 @@ func TestClientListErrorMessage(t *testing.T) {
 	defer ts.Close()
 	Token := "Test-Token"
 	Cert := ""
-	Debug := false
-	restClient := client.NewRestClient(ts.URL, Token, Debug, Cert)
+	Version := "v1"
+	Verbose := false
+	restClient := client.NewRestClient(ts.URL, Token, Version, Verbose, Cert)
 	values := make(map[string]string)
 	values["project"] = "project"
 	values["cluster"] = "cluster"

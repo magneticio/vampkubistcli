@@ -17,6 +17,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/magneticio/forklift/logging"
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/spf13/cobra"
 )
@@ -29,7 +30,7 @@ var pingCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
 		isPong, err := restClient.Ping()
 		if !isPong {
 			return err

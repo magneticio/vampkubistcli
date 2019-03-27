@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"github.com/magneticio/forklift/logging"
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +31,7 @@ $AppName grant --user user1 --role admin -p default`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		restClient := client.NewRestClient(Config.Url, Config.Token, Debug, Config.Cert)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
 		values := make(map[string]string)
 		values["project"] = Project
 		values["cluster"] = Cluster
