@@ -70,6 +70,7 @@ var resourceMap map[string]string = map[string]string{
 
 type RestClient struct {
 	url      string
+	version  string
 	username string
 	password string
 	token    string
@@ -130,8 +131,8 @@ type CanaryRelease struct {
 	SubsetLabels map[string]string `json:"subsetLabels,omitempty"`
 }
 
-func NewRestClient(url string, token string, isDebug bool, cert string) *RestClient {
-	resty.SetDebug(isDebug)
+func NewRestClient(url string, token string, version string, isVerbose bool, cert string) *RestClient {
+	resty.SetDebug(isVerbose)
 	if cert != "" {
 		// Create our Temp File:  This will create a filename like /tmp/prefix-123456
 		// We can use a pattern of "pre-*.txt" to get an extension like: /tmp/pre-123456.txt
@@ -149,8 +150,9 @@ func NewRestClient(url string, token string, isDebug bool, cert string) *RestCli
 		resty.SetRootCertificate(tmpFile.Name())
 	}
 	return &RestClient{
-		url:   url,
-		token: token,
+		url:     url,
+		token:   token,
+		version: version,
 	}
 }
 
@@ -221,7 +223,7 @@ func (s *RestClient) Login(username string, password string) (string, error) {
 
 }
 
-func getUrlForResource(base string, resourceName string, subCommand string, name string, values map[string]string) (string, error) {
+func getUrlForResource(base string, version string, resourceName string, subCommand string, name string, values map[string]string) (string, error) {
 	resourceName = ResourceTypeConversion(resourceName)
 	subPath := ""
 	namedParameter := ""
@@ -253,20 +255,20 @@ func getUrlForResource(base string, resourceName string, subCommand string, name
 	}
 	switch resourceName {
 	case "project":
-		return base + "/1.0/api/" + "projects" + subPath + "?time=-1" + namedParameter, nil
+		return base + "/api/" + version + "/" + "projects" + subPath + "?time=-1" + namedParameter, nil
 	case "cluster":
-		url := base + "/1.0/api/" + "clusters" + subPath +
+		url := base + "/api/" + version + "/" + "clusters" + subPath +
 			"?" + "project_name=" + project +
 			namedParameter
 		return url, nil
 	case "virtual_cluster":
-		url := base + "/1.0/api/" + "virtual-clusters" + subPath +
+		url := base + "/api/" + version + "/" + "virtual-clusters" + subPath +
 			"?" + "project_name=" + project +
 			"&" + "cluster_name=" + cluster +
 			namedParameter
 		return url, nil
 	case "virtual_service":
-		url := base + "/1.0/api/" + "virtual-services" + subPath +
+		url := base + "/api/" + version + "/" + "virtual-services" + subPath +
 			"?" + "project_name=" + project +
 			"&" + "cluster_name=" + cluster +
 			"&" + "virtual_cluster_name=" + virtualCluster +
@@ -274,7 +276,7 @@ func getUrlForResource(base string, resourceName string, subCommand string, name
 		return url, nil
 	}
 	timestamp := strconv.FormatInt(time.Now().UTC().UnixNano(), 10)
-	url := base + "/1.0/api/" + strings.Replace(resourceName, "_", "-", -1) + "s" + subPath +
+	url := base + "/api/" + version + "/" + strings.Replace(resourceName, "_", "-", -1) + "s" + subPath +
 		"?" + "t=" + timestamp +
 		projectParameter +
 		clusterParameter +
@@ -293,7 +295,7 @@ func (s *RestClient) Update(resourceName string, name string, source string, sou
 }
 
 func (s *RestClient) Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error) {
-	url, _ := getUrlForResource((*s).url, resourceName, "", name, values)
+	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "", name, values)
 	if sourceType == "yaml" {
 		json, err := yaml.YAMLToJSON([]byte(source))
 		if err != nil {
@@ -338,7 +340,7 @@ func (s *RestClient) Apply(resourceName string, name string, source string, sour
 }
 
 func (s *RestClient) Delete(resourceName string, name string, values map[string]string) (bool, error) {
-	url, _ := getUrlForResource((*s).url, resourceName, "", name, values)
+	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "", name, values)
 
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
@@ -360,7 +362,7 @@ func (s *RestClient) Delete(resourceName string, name string, values map[string]
 }
 
 func (s *RestClient) Get(resourceName string, name string, outputFormat string, values map[string]string) (string, error) {
-	url, _ := getUrlForResource((*s).url, resourceName, "", name, values)
+	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "", name, values)
 
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
@@ -397,7 +399,7 @@ func (s *RestClient) Get(resourceName string, name string, outputFormat string, 
 }
 
 func (s *RestClient) List(resourceName string, outputFormat string, values map[string]string, simple bool) (string, error) {
-	url, _ := getUrlForResource((*s).url, resourceName, "list", "", values)
+	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "list", "", values)
 
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
@@ -414,6 +416,7 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 	if resp.IsError() {
 		return "", getError(resp)
 	}
+
 	responseBody := resp.Body()
 	if simple {
 		var r []Named
@@ -452,7 +455,7 @@ func (s *RestClient) List(resourceName string, outputFormat string, values map[s
 }
 
 func (s *RestClient) AddRoleToUser(username string, rolename string, values map[string]string) (bool, error) {
-	url, _ := getUrlForResource((*s).url, "user-access-role", "", "", values)
+	url, _ := getUrlForResource((*s).url, (*s).version, "user-access-role", "", "", values)
 	url += "&user_name=" + username + "&role_name=" + rolename
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
@@ -474,7 +477,7 @@ func (s *RestClient) AddRoleToUser(username string, rolename string, values map[
 }
 
 func (s *RestClient) RemoveRoleFromUser(username string, rolename string, values map[string]string) (bool, error) {
-	url, _ := getUrlForResource((*s).url, "user-access-role", "", "", values)
+	url, _ := getUrlForResource((*s).url, (*s).version, "user-access-role", "", "", values)
 	url += "&user_name=" + username + "&role_name=" + rolename
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").

@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/magneticio/forklift/logging"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -36,6 +37,7 @@ type config struct {
 	Project        string `yaml:"project,omitempty" json:"project,omitempty"`
 	Cluster        string `yaml:"cluster,omitempty" json:"cluster,omitempty"`
 	VirtualCluster string `yaml:"virtualcluster,omitempty" json:"virtualcluster,omitempty"`
+	APIVersion     string `yaml:"apiversion,omitempty" json:"apiversion,omitempty"`
 }
 
 var cfgFile string
@@ -45,6 +47,7 @@ var Cluster string
 var VirtualCluster string
 var Application string
 var Token string
+var APIVersion string
 
 var Type string
 var Name string
@@ -52,7 +55,6 @@ var SourceString string
 var SourceFile string
 var SourceFileType string
 var OutputType string
-var Debug bool
 var Hosts []string
 
 // version should be in format d.d.d where d is a decimal number
@@ -98,6 +100,9 @@ func Execute() {
 }
 
 func init() {
+
+	logging.Init(os.Stdout, os.Stderr)
+
 	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
@@ -106,12 +111,12 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", AddAppName("config file (default is $HOME/.$AppName/config.yaml)"))
 	rootCmd.PersistentFlags().StringVarP(&Project, "project", "p", "", "active project")
 	rootCmd.PersistentFlags().StringVarP(&Cluster, "cluster", "c", "", "active cluster")
-	rootCmd.PersistentFlags().StringVarP(&VirtualCluster, "virtualcluster", "v", "", "active virtual cluster")
+	rootCmd.PersistentFlags().StringVarP(&VirtualCluster, "virtualcluster", "r", "", "active virtual cluster")
 	rootCmd.PersistentFlags().StringVarP(&Application, "application", "a", "", "application name for deployments")
-
 	rootCmd.PersistentFlags().StringVarP(&Token, "token", "t", "", "override the login token")
+	rootCmd.PersistentFlags().StringVarP(&APIVersion, "api", "", "", "override the api version")
+	rootCmd.PersistentFlags().BoolVarP(&logging.Verbose, "verbose", "v", false, "Verbose")
 
-	rootCmd.PersistentFlags().BoolVarP(&Debug, "debug", "", false, "enable debug on client")
 	// rootCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")
 	// viper.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server"))
 	// Server = viper.Get("server").(string)
@@ -144,6 +149,9 @@ func ReadConfigFile() error {
 	}
 	if Token != "" {
 		Config.Token = Token
+	}
+	if APIVersion != "" {
+		Config.APIVersion = APIVersion
 	}
 	// fmt.Printf("Current config: %v \n", Config)
 	return nil
