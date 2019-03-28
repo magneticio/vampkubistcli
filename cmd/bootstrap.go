@@ -23,6 +23,7 @@ import (
 	"github.com/magneticio/forklift/logging"
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/magneticio/vampkubistcli/kubernetes"
+	"github.com/magneticio/vampkubistcli/models"
 	"github.com/spf13/cobra"
 )
 
@@ -57,7 +58,7 @@ var bootstrapCmd = &cobra.Command{
 			metadataMap["url"] = url
 			metadataMap["cacertdata"] = b64.StdEncoding.EncodeToString([]byte(crt))
 			metadataMap["serviceaccount_token"] = b64.StdEncoding.EncodeToString([]byte(token))
-			metadata := &client.Metadata{Metadata: metadataMap}
+			metadata := &models.Metadata{Metadata: metadataMap}
 			SourceRaw, err_marshall := json.Marshal(metadata)
 			if err_marshall != nil {
 				// fmt.Printf("Error: %v", err_marshall)

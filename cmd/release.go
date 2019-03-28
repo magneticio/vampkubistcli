@@ -20,9 +20,11 @@ import (
 
 	"github.com/magneticio/forklift/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/models"
 	"github.com/spf13/cobra"
 )
 
+var Api string
 var Subset string
 var Port string
 var Destination string
@@ -33,7 +35,7 @@ var releaseCmd = &cobra.Command{
 	Use:   "release",
 	Short: "Release a new subset with labels",
 	Long: AddAppName(`eg.:
-$AppName release shop-vamp-service --destination shop-destination --port port --subset subset2 -l version=version2`),
+$AppName release shop-vamp-service --api v1 --destination shop-destination --port port --subset subset2 -l version=version2`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -45,7 +47,7 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 		Name := VampService + "-" + Destination + "-" + Subset
 
 		// fmt.Printf("%v %v %v\n", Type, Name, SubsetLabels)
-		canaryRelease := client.CanaryRelease{
+		canaryRelease := models.CanaryRelease{
 			VampService:  VampService,
 			Destination:  Destination,
 			Port:         Port,
@@ -60,7 +62,16 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 		Source := string(SourceRaw)
 		// fmt.Printf("Source: %v", Source)
 		SourceFileType = "json"
-		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
+
+		var Version string
+
+		if Api != "" {
+			Version = Api
+		} else {
+			Version = Config.APIVersion
+		}
+
+		restClient := client.NewRestClient(Config.Url, Config.Token, Version, logging.Verbose, Config.Cert)
 		values := make(map[string]string)
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster
@@ -87,6 +98,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// releaseCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	releaseCmd.Flags().StringVarP(&Api, "api", "", "", "Api version to use")
 	releaseCmd.Flags().StringVarP(&Destination, "destination", "", "", "Destination to use in the release")
 	releaseCmd.Flags().StringVarP(&Port, "port", "", "", "Port to use in the release")
 	releaseCmd.Flags().StringVarP(&Subset, "subset", "", "", "Subset to use in the release")

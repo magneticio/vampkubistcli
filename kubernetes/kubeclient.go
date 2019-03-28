@@ -10,6 +10,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/models"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -28,20 +29,9 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/openstack"
 )
 
-type VampConfig struct {
-	RootPassword string `yaml:"rootPassword,omitempty" json:"rootPassword,omitempty"`
-	DatabaseUrl  string `yaml:"databaseUrl,omitempty" json:"databaseUrl,omitempty"`
-	DatabaseName string `yaml:"databaseName,omitempty" json:"databaseName,omitempty"`
-	ImageName    string `yaml:"imageName,omitempty" json:"imageName,omitempty"`
-	RepoUsername string `yaml:"repoUsername,omitempty" json:"repoUsername,omitempty"`
-	RepoPassword string `yaml:"repoPassword,omitempty" json:"repoPassword,omitempty"`
-	ImageTag     string `yaml:"imageTag,omitempty" json:"imageTag,omitempty"`
-	Mode         string `yaml:"mode,omitempty" json:"mode,omitempty"`
-}
-
 // Golang does't support struct constants
 // Default values for an installation config
-var DefaultVampConfig = VampConfig{
+var DefaultVampConfig = models.VampConfig{
 	DatabaseName: "vamp",
 	ImageName:    "magneticio/vampkubist",
 	ImageTag:     "0.7.5",
@@ -52,7 +42,7 @@ var DefaultVampConfig = VampConfig{
 // TODO: add it to VampConfig when it is configurable
 const InstallationNamespace = "vamp-system"
 
-func VampConfigValidateAndSetupDefaults(config *VampConfig) (*VampConfig, error) {
+func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.VampConfig, error) {
 	if config.RootPassword == "" {
 		// This is enforced
 		return config, errors.New("Root Password can not be empty.")
@@ -173,7 +163,7 @@ func BootstrapVampService() (string, string, string, error) {
 	return host, crt, token, nil
 }
 
-func InstallVampService(config *VampConfig) (string, []byte, []byte, error) {
+func InstallVampService(config *models.VampConfig) (string, []byte, []byte, error) {
 	host, _, _, errBootstap := BootstrapVampService()
 	if errBootstap != nil {
 		fmt.Printf("Warning: %v\n", errBootstap.Error())
@@ -345,7 +335,7 @@ func InstallMongoDB(clientset *kubernetes.Clientset, ns string) error {
 	return nil
 }
 
-func InstallVamp(clientset *kubernetes.Clientset, ns string, config *VampConfig) (*string, []byte, []byte, error) {
+func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.VampConfig) (*string, []byte, []byte, error) {
 	// Create Image Pull Secret
 	dockerRepoAuth := base64.StdEncoding.EncodeToString([]byte(config.RepoUsername + ":" + config.RepoPassword))
 	pullSecretDataString := "{\"https://index.docker.io/v1/\":{\"auth\":\"" + dockerRepoAuth + "\"}}"
