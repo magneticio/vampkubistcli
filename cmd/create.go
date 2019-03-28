@@ -46,9 +46,6 @@ Example:
 		}
 		Type = args[0]
 		Name = args[1]
-
-		var Version string
-
 		// fmt.Println("create called for type " + Type + " with name " + Name)
 		Source := SourceString
 		if Init {
@@ -56,25 +53,12 @@ Example:
 			SourceFileType = "json"
 		}
 		if Source == "" {
-
-			bytes, err := util.ReadFileFromUrl(SourceFile)
+			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
+				// fmt.Print(err)
 				return err
 			}
-
-			var Versioned models.Versioned
-			jsonErr := json.Unmarshal(bytes, &Versioned)
-			if jsonErr != nil {
-				return jsonErr
-			}
-
-			if Versioned.Version != "" {
-				Version = Versioned.Version
-			} else {
-				Version = Config.APIVersion
-			}
-
-			Source = string(bytes)
+			Source = string(b)
 		}
 		// This is a specific operation for vamp_service
 		if client.ResourceTypeConversion(Type) == "vamp_service" && len(Hosts) > 0 {
@@ -97,7 +81,7 @@ Example:
 			SourceFileType = "json"
 		}
 
-		restClient := client.NewRestClient(Config.Url, Config.Token, Version, logging.Verbose, Config.Cert)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
 		values := make(map[string]string)
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster

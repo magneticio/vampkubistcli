@@ -259,7 +259,9 @@ func (s *restClient) Update(resourceName string, name string, source string, sou
 }
 
 func (s *restClient) Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error) {
-	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "", name, values)
+
+	var Version string
+
 	if sourceType == "yaml" {
 		json, err := yaml.YAMLToJSON([]byte(source))
 		if err != nil {
@@ -268,7 +270,21 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 		source = string(json)
 	}
 
-	body := source
+	body := []byte(source)
+
+	var Versioned models.Versioned
+	jsonErr := json.Unmarshal(body, &Versioned)
+	if jsonErr != nil {
+		return false, jsonErr
+	}
+
+	if Versioned.Version != "" {
+		Version = Versioned.Version
+	} else {
+		Version = (*s).version
+	}
+
+	url, _ := getUrlForResource((*s).url, Version, resourceName, "", name, values)
 
 	var resp *resty.Response
 	var err error
@@ -277,7 +293,7 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 			SetHeader("Content-Type", "application/json").
 			SetHeader("Accept", "application/json").
 			SetAuthToken((*s).token).
-			SetBody([]byte(body)).
+			SetBody(body).
 			SetResult(&successResponse{}).
 			SetError(&errorResponse{}).
 			Put(url)
@@ -286,7 +302,7 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 			SetHeader("Content-Type", "application/json").
 			SetHeader("Accept", "application/json").
 			SetAuthToken((*s).token).
-			SetBody([]byte(body)).
+			SetBody(body).
 			SetResult(&successResponse{}).
 			SetError(&errorResponse{}).
 			Post(url)
