@@ -27,6 +27,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/magneticio/vampkubistcli/models"
+	"github.com/magneticio/vampkubistcli/util"
 	"gopkg.in/resty.v1"
 )
 
@@ -260,8 +261,6 @@ func (s *restClient) Update(resourceName string, name string, source string, sou
 
 func (s *restClient) Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error) {
 
-	var Version string
-
 	if sourceType == "yaml" {
 		json, err := yaml.YAMLToJSON([]byte(source))
 		if err != nil {
@@ -272,19 +271,16 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 
 	body := []byte(source)
 
-	var Versioned models.Versioned
-	jsonErr := json.Unmarshal(body, &Versioned)
+	version, jsonErr := util.GetVersionFromResource(body)
 	if jsonErr != nil {
 		return false, jsonErr
 	}
 
-	if Versioned.Version != "" {
-		Version = Versioned.Version
-	} else {
-		Version = (*s).version
+	if version == "" {
+		version = (*s).version
 	}
 
-	url, _ := getUrlForResource((*s).url, Version, resourceName, "", name, values)
+	url, _ := getUrlForResource((*s).url, version, resourceName, "", name, values)
 
 	var resp *resty.Response
 	var err error
