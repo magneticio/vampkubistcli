@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
-	"github.com/magneticio/vampkubistcli/models"
 	"github.com/yalp/jsonpath"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -34,19 +33,6 @@ func UseSourceUrl(resourceUrl string) (string, error) {
 	}
 
 	return string(u), nil
-}
-
-func GetVersionFromResource(source []byte) (string, error) {
-
-	var Versioned models.Versioned
-
-	jsonErr := json.Unmarshal(source, &Versioned)
-	if jsonErr != nil {
-		return "", jsonErr
-	}
-
-	return Versioned.Version, nil
-
 }
 
 func ReadFileFromUrl(resourceUrl string) ([]byte, error) {

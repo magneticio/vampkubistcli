@@ -27,7 +27,6 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/magneticio/vampkubistcli/models"
-	"github.com/magneticio/vampkubistcli/util"
 	"gopkg.in/resty.v1"
 )
 
@@ -271,7 +270,7 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 
 	body := []byte(source)
 
-	version, jsonErr := util.GetVersionFromResource(body)
+	version, jsonErr := getVersionFromResource(body)
 	if jsonErr != nil {
 		return false, jsonErr
 	}
@@ -495,5 +494,18 @@ func (s *restClient) Ping() (bool, error) {
 		return false, errors.New(string(resp.Body()))
 	}
 	return true, nil
+
+}
+
+func getVersionFromResource(source []byte) (string, error) {
+
+	var Versioned models.Versioned
+
+	jsonErr := json.Unmarshal(source, &Versioned)
+	if jsonErr != nil {
+		return "", jsonErr
+	}
+
+	return Versioned.Version, nil
 
 }
