@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 
 	"github.com/magneticio/vampkubistcli/kubernetes"
+	"github.com/magneticio/vampkubistcli/models"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
 )
@@ -57,7 +58,7 @@ Leave databaseUrl empty to deploy an internal one
 		if convertErr != nil {
 			return convertErr
 		}
-		var config kubeclient.VampConfig
+		var config models.VampConfig
 		unmarshallError := json.Unmarshal([]byte(configJson), &config)
 		if unmarshallError != nil {
 			return unmarshallError

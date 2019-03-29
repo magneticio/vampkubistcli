@@ -27,30 +27,37 @@ import (
 This function allows using a filepath or http/s url to get resource from
 */
 func UseSourceUrl(resourceUrl string) (string, error) {
+	u, err := ReadFileFromUrl(resourceUrl)
+	if err != nil {
+		return "", err
+	}
+
+	return string(u), nil
+}
+
+func ReadFileFromUrl(resourceUrl string) ([]byte, error) {
 	u, err := url.ParseRequestURI(resourceUrl)
 	if err != nil || u.Scheme == "" {
 		file, err := ioutil.ReadFile(resourceUrl) // just pass the file name
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		source := string(file)
-		return source, nil
+		return file, nil
 	}
 	scheme := strings.ToLower(u.Scheme)
 	if scheme == "http" || scheme == "https" {
 		resp, err := http.Get(resourceUrl)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		defer resp.Body.Close()
 		contents, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		source := string(contents)
-		return source, nil
+		return contents, nil
 	}
-	return "", errors.New("Not Supported protocol :" + scheme)
+	return nil, errors.New("Not Supported protocol :" + scheme)
 }
 
 func Convert(inputFormat string, outputFormat string, input string) (string, error) {

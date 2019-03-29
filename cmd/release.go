@@ -20,9 +20,11 @@ import (
 
 	"github.com/magneticio/forklift/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/models"
 	"github.com/spf13/cobra"
 )
 
+var Api string
 var Subset string
 var Port string
 var Destination string
@@ -45,7 +47,7 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 		Name := VampService + "-" + Destination + "-" + Subset
 
 		// fmt.Printf("%v %v %v\n", Type, Name, SubsetLabels)
-		canaryRelease := client.CanaryRelease{
+		canaryRelease := models.CanaryRelease{
 			VampService:  VampService,
 			Destination:  Destination,
 			Port:         Port,
@@ -60,6 +62,7 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 		Source := string(SourceRaw)
 		// fmt.Printf("Source: %v", Source)
 		SourceFileType = "json"
+
 		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
 		values := make(map[string]string)
 		values["project"] = Config.Project

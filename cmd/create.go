@@ -20,6 +20,7 @@ import (
 
 	"github.com/magneticio/forklift/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/models"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
 )
@@ -65,7 +66,7 @@ Example:
 			if err != nil {
 				return err
 			}
-			var vampService client.VampService
+			var vampService models.VampService
 			err_json := json.Unmarshal([]byte(SourceJson), &vampService)
 			if err_json != nil {
 				return err_json
@@ -79,6 +80,7 @@ Example:
 
 			SourceFileType = "json"
 		}
+
 		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
 		values := make(map[string]string)
 		values["project"] = Config.Project
