@@ -58,7 +58,7 @@ var OutputType string
 var Hosts []string
 
 // version should be in format d.d.d where d is a decimal number
-const Version string = "0.0.20"
+const Version string = "0.0.21"
 const AppName string = "vamp"
 
 // Backend version is the version this client is tested with

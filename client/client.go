@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	"gopkg.in/resty.v1"
 )
@@ -95,8 +96,14 @@ type authSuccess struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+const defaultVersion = "v1"
+
 func NewRestClient(url string, token string, version string, isVerbose bool, cert string) *restClient {
 	resty.SetDebug(isVerbose)
+	if version == "" {
+		logging.Info("Using Default Version for client: %s\n", defaultVersion)
+		version = defaultVersion
+	}
 	if cert != "" {
 		// Create our Temp File:  This will create a filename like /tmp/prefix-123456
 		// We can use a pattern of "pre-*.txt" to get an extension like: /tmp/pre-123456.txt
