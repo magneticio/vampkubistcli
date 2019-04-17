@@ -27,7 +27,8 @@ var revokeCmd = &cobra.Command{
 	Use:   "revoke",
 	Short: "Revoke a role or permission of a user for an object",
 	Long: AddAppName(`Usage:
-$AppName revoke --user user1 --role admin -p default`),
+$AppName revoke --user user1 --role admin -p default
+$AppName vamp revoke permission --user user1 -p project -c cluster -r virtualcluster -a application --kind deployment --name deploymentname`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {

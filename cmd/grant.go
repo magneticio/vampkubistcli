@@ -33,6 +33,11 @@ var grantCmd = &cobra.Command{
 	Long: AddAppName(`Usage:
 $AppName grant --user user1 --role admin -p default
 $AppName grant --user user1 --permission rwda -p project -c cluster -r virtualcluster -a application --kind deployment --name deploymentname
+Permissions follow the format:
+	r = read
+	w = write
+	d = delete
+	a = edit access to resource for other users
 `),
 	SilenceUsage:  true,
 	SilenceErrors: true,
