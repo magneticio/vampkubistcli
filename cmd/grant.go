@@ -15,19 +15,25 @@
 package cmd
 
 import (
+	"errors"
+
 	"github.com/magneticio/forklift/logging"
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/spf13/cobra"
 )
 
 var Role string
+var Permission string
+var Kind string
 
 // grantCmd represents the grant command
 var grantCmd = &cobra.Command{
 	Use:   "grant",
 	Short: "Grant a role or permission to a user for an object",
 	Long: AddAppName(`Usage:
-$AppName grant --user user1 --role admin -p default`),
+$AppName grant --user user1 --role admin -p default
+$AppName grant --user user1 --permission rwda -p project -c cluster -r virtualcluster -a application --kind deployment --name deploymentname
+`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -36,13 +42,23 @@ $AppName grant --user user1 --role admin -p default`),
 		values["project"] = Project
 		values["cluster"] = Cluster
 		values["virtual_cluster"] = VirtualCluster
+		values["application"] = Application
+		values[Kind] = Name
 		// values["application"] = Application
 		if Role != "" {
 			isSet, err_set := restClient.AddRoleToUser(Username, Role, values)
 			if !isSet {
 				return err_set
 			}
+		} else if Permission != "" {
+			isSet, err_set := restClient.UpdateUserPermission(Username, Permission, values)
+			if !isSet {
+				return err_set
+			}
+		} else {
+			return errors.New("Resource to be granted is missing. Specify either permission or role.")
 		}
+
 		return nil
 	},
 }
@@ -61,6 +77,8 @@ func init() {
 	// grantCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	grantCmd.Flags().StringVarP(&Username, "user", "", "", "Username required")
 	grantCmd.MarkFlagRequired("user")
-	grantCmd.Flags().StringVarP(&Role, "role", "", "", "Role required")
-	grantCmd.MarkFlagRequired("role")
+	grantCmd.Flags().StringVarP(&Kind, "kind", "k", "", "")
+	grantCmd.Flags().StringVarP(&Name, "name", "n", "", "")
+	grantCmd.Flags().StringVarP(&Permission, "permission", "", "", "")
+	grantCmd.Flags().StringVarP(&Role, "role", "", "", "")
 }
