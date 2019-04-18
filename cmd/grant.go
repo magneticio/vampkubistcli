@@ -17,6 +17,7 @@ package cmd
 import (
 	"errors"
 	"regexp"
+	"strings"
 
 	"github.com/magneticio/forklift/logging"
 	"github.com/magneticio/vampkubistcli/client"
@@ -58,16 +59,26 @@ Permissions follow the format:
 			}
 		} else if Permission != "" {
 
+			lowkPermission := strings.ToLower(Permission)
+
 			// Regex matches all permutations of lowercase rwda with max length 4 and only once character per type
-			match, regexErr := regexp.MatchString("^[rwdaRWDA]{1,4}$", Permission)
+			reg := "^[rwda]{1,4}$"
+
+			match, regexErr := regexp.MatchString(reg, lowkPermission)
 			if regexErr != nil {
 				return regexErr
 			}
-			if !match {
+			validity := match &&
+				strings.Count(lowkPermission, "r") <= 1 &&
+				strings.Count(lowkPermission, "w") <= 1 &&
+				strings.Count(lowkPermission, "d") <= 1 &&
+				strings.Count(lowkPermission, "a") <= 1
+
+			if !validity {
 				return errors.New("Permission format is invalid")
 			}
 
-			isSet, err_set := restClient.UpdateUserPermission(Username, Permission, values)
+			isSet, err_set := restClient.UpdateUserPermission(Username, lowkPermission, values)
 			if !isSet {
 				return err_set
 			}
