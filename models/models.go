@@ -23,6 +23,13 @@ type Metadata struct {
 	Metadata map[string]string `json:"metadata"`
 }
 
+type Permission struct {
+	Read       bool `json:"read"`
+	Write      bool `json:"write"`
+	Delete     bool `json:"delete"`
+	EditAccess bool `json:"editAccess"`
+}
+
 type VampService struct {
 	Gateways         []string `json:"gateways"`
 	Hosts            []string `json:"hosts"`

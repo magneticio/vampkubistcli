@@ -204,26 +204,13 @@ func getUrlForResource(base string, version string, resourceName string, subComm
 	if name != "" {
 		namedParameter = "&" + resourceName + "_name=" + name
 	}
-	applicationParameter := ""
-	application := values["application"]
-	if application != "" {
-		applicationParameter = "&" + "application_name=" + application
-	}
+
 	project := values["project"]
-	projectParameter := ""
-	if project != "" {
-		projectParameter = "&" + "project_name=" + project
-	}
+
 	cluster := values["cluster"]
-	clusterParameter := ""
-	if cluster != "" {
-		clusterParameter = "&" + "cluster_name=" + cluster
-	}
+
 	virtualCluster := values["virtual_cluster"]
-	virtualClusterParameter := ""
-	if virtualCluster != "" {
-		virtualClusterParameter = "&" + "virtual_cluster_name=" + virtualCluster
-	}
+
 	switch resourceName {
 	case "project":
 		return base + "/api/" + version + "/" + "projects" + subPath + "?time=-1" + namedParameter, nil
@@ -246,13 +233,16 @@ func getUrlForResource(base string, version string, resourceName string, subComm
 			namedParameter
 		return url, nil
 	}
+	var queryParams = ""
+
+	for key, value := range values {
+		queryParams = queryParams + "&" + key + "_name=" + value
+	}
+
 	timestamp := strconv.FormatInt(time.Now().UTC().UnixNano(), 10)
 	url := base + "/api/" + version + "/" + strings.Replace(resourceName, "_", "-", -1) + "s" + subPath +
 		"?" + "t=" + timestamp +
-		projectParameter +
-		clusterParameter +
-		virtualClusterParameter +
-		applicationParameter +
+		queryParams +
 		namedParameter
 	return url, nil
 }
@@ -433,6 +423,59 @@ func (s *restClient) List(resourceName string, outputFormat string, values map[s
 		source = string(prettyJSON.Bytes())
 	}
 	return source, nil
+
+}
+
+func (s *restClient) UpdateUserPermission(username string, permission string, values map[string]string) (bool, error) {
+	url, _ := getUrlForResource((*s).url, (*s).version, "user-access-permission", "", "", values)
+	url += "&user_name=" + username
+
+	permissionBody := models.Permission{
+		Read:       strings.Contains(permission, "r"),
+		Write:      strings.Contains(permission, "w"),
+		Delete:     strings.Contains(permission, "d"),
+		EditAccess: strings.Contains(permission, "a"),
+	}
+
+	resp, err := resty.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetAuthToken((*s).token).
+		SetBody(permissionBody).
+		SetResult(&successResponse{}).
+		SetError(&errorResponse{}).
+		Post(url)
+
+	if err != nil {
+		return false, err
+	}
+
+	if resp.IsError() {
+		return false, getError(resp)
+	}
+	return true, nil
+
+}
+
+func (s *restClient) RemovePermissionFromUser(username string, values map[string]string) (bool, error) {
+	url, _ := getUrlForResource((*s).url, (*s).version, "user-access-permission", "", "", values)
+	url += "&user_name=" + username
+	resp, err := resty.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetAuthToken((*s).token).
+		SetResult(&authSuccess{}).
+		SetError(&errorResponse{}).
+		Delete(url)
+
+	if err != nil {
+		return false, err
+	}
+
+	if resp.IsError() {
+		return false, getError(resp)
+	}
+	return true, nil
 
 }
 

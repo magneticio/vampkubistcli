@@ -15,6 +15,8 @@
 package cmd
 
 import (
+	"errors"
+
 	"github.com/magneticio/forklift/logging"
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/spf13/cobra"
@@ -25,7 +27,8 @@ var revokeCmd = &cobra.Command{
 	Use:   "revoke",
 	Short: "Revoke a role or permission of a user for an object",
 	Long: AddAppName(`Usage:
-$AppName revoke --user user1 --role admin -p default`),
+$AppName revoke --user user1 --role admin -p default
+$AppName vamp revoke permission --user user1 -p project -c cluster -r virtualcluster -a application --kind deployment --name deploymentname`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -40,7 +43,15 @@ $AppName revoke --user user1 --role admin -p default`),
 			if !isSet {
 				return err_set
 			}
+		} else if len(args) > 0 && args[0] == "permission" {
+			isSet, err_set := restClient.RemovePermissionFromUser(Username, values)
+			if !isSet {
+				return err_set
+			}
+		} else {
+			return errors.New("Resource to be revoked is missing. Specify either permission or role.")
 		}
+
 		return nil
 	},
 }
@@ -59,6 +70,7 @@ func init() {
 	// revokeCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	revokeCmd.Flags().StringVarP(&Username, "user", "", "", "Username required")
 	revokeCmd.MarkFlagRequired("user")
-	revokeCmd.Flags().StringVarP(&Role, "role", "", "", "Role required")
+	revokeCmd.Flags().StringVarP(&Kind, "kind", "k", "", "")
+	revokeCmd.Flags().StringVarP(&Name, "name", "n", "", "")
 	revokeCmd.MarkFlagRequired("role")
 }
