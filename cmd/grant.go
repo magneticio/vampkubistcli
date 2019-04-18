@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"errors"
+	"regexp"
 
 	"github.com/magneticio/forklift/logging"
 	"github.com/magneticio/vampkubistcli/client"
@@ -56,6 +57,16 @@ Permissions follow the format:
 				return err_set
 			}
 		} else if Permission != "" {
+
+			// Regex matches all permutations of lowercase rwda with max length 4 and only once character per type
+			match, regexErr := regexp.MatchString("^[rwdaRWDA]{1,4}$", Permission)
+			if regexErr != nil {
+				return regexErr
+			}
+			if !match {
+				return errors.New("Permission format is invalid")
+			}
+
 			isSet, err_set := restClient.UpdateUserPermission(Username, Permission, values)
 			if !isSet {
 				return err_set

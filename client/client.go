@@ -430,11 +430,13 @@ func (s *restClient) UpdateUserPermission(username string, permission string, va
 	url, _ := getUrlForResource((*s).url, (*s).version, "user-access-permission", "", "", values)
 	url += "&user_name=" + username
 
+	lowkPermission := strings.ToLower(permission)
+
 	permissionBody := models.Permission{
-		Read:       strings.Contains(permission, "r"),
-		Write:      strings.Contains(permission, "w"),
-		Delete:     strings.Contains(permission, "d"),
-		EditAccess: strings.Contains(permission, "a"),
+		Read:       strings.Contains(lowkPermission, "r"),
+		Write:      strings.Contains(lowkPermission, "w"),
+		Delete:     strings.Contains(lowkPermission, "d"),
+		EditAccess: strings.Contains(lowkPermission, "a"),
 	}
 
 	resp, err := resty.R().
