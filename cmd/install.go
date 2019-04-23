@@ -33,19 +33,25 @@ var certFileName string
 var installCmd = &cobra.Command{
 	Use:   "install",
 	Short: "Install Vamp Management in your cluster",
-	Long: `
+	Long: AddAppName(`
 Example:
-vamp install --configuration installconfig.yml --cert ./certiticate.crt
+$AppName install --configuration installconfig.yml --certificate-output-path ./certiticate.crt
 
 Configuration file example as yaml:
-rootPassword: root
+rootPassword: root1234
 databaseUrl:
-repoUsername: dockerhubusername
-repoPassword: dockerhubpassword
-vampVersion: 0.7.0
+databaseName: vamp
+imageName: magneticio/vampkubist
+repoUsername: dockerHubUsername
+repoPassword: dockerHubPassword
+imageTag: 0.7.7
+mode: IN_CLUSTER
 
-Leave databaseUrl empty to deploy an internal one
-  `,
+Leave databaseUrl empty to deploy an internal one.
+
+Install will generate certificates for the cluster which will be written to the certificate output path.
+Install command is reentrant, it is possible to update the cluster with re-running the command.
+  `),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -78,7 +84,7 @@ Leave databaseUrl empty to deploy an internal one
 		}
 		fmt.Printf("Vamp Service Installed.\n")
 		fmt.Printf("Login with:\n")
-		fmt.Printf("vamp login --url %v --user root --cert %v\n", url, certFileName)
+		fmt.Printf("%v login --url %v --user root --cert %v\n", AppName, url, certFileName)
 		return nil
 	},
 }
@@ -86,18 +92,9 @@ Leave databaseUrl empty to deploy an internal one
 func init() {
 	rootCmd.AddCommand(installCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// installCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// installCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	installCmd.Flags().StringVarP(&installConfigPath, "configuration", "", "", "Installation configuration file path")
 	installCmd.MarkFlagRequired("configuration")
 	installCmd.Flags().StringVarP(&configFileType, "input", "i", "yaml", "Configuration file type yaml or json")
-	installCmd.Flags().StringVarP(&certFileName, "cert", "", "cert.crt", "Certificate file output path")
+	installCmd.Flags().StringVarP(&certFileName, "certificate-output-path", "", "certificate.crt", "Certificate file output path")
 	installCmd.Flags().StringVarP(&kubeConfigPath, "kubeconfig", "", "", "Kube Config path")
 }

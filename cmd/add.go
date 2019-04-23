@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
 )
@@ -64,7 +64,7 @@ var addCmd = &cobra.Command{
 				return loginError
 			}
 			fmt.Printf("User can login with:\n")
-			fmt.Printf("vamp login --url %v --user %v --initial --token %v --cert <<EOF \"%v\"\nEOF\n", Config.Url, Username, token, Config.Cert)
+			fmt.Printf("%v login --url %v --user %v --initial --token %v --cert <<EOF \"%v\"\nEOF\n", AppName, Config.Url, Username, token, Config.Cert)
 		}
 		return nil
 	},
