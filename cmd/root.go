@@ -59,7 +59,8 @@ var Hosts []string
 
 // version should be in format d.d.d where d is a decimal number
 const Version string = "v0.0.22"
-const AppName string = "vamp"
+
+var AppName string = InitAppName()
 
 // Backend version is the version this client is tested with
 const BackendVersion string = "0.7.5"
@@ -69,6 +70,16 @@ Application name can change over time so it is made parameteric
 */
 func AddAppName(str string) string {
 	return strings.Replace(str, "$AppName", AppName, -1)
+}
+
+/*
+Application name is automacially set to the calling name
+*/
+func InitAppName() string {
+	if len(os.Args) > 0 {
+		return os.Args[0]
+	}
+	return "vamp"
 }
 
 // rootCmd represents the base command when called without any subcommands
