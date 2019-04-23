@@ -11,6 +11,16 @@ type VampConfig struct {
 	Mode         string `yaml:"mode,omitempty" json:"mode,omitempty"`
 }
 
+type ErrorResponse struct {
+	Message           string            `json:"message"`
+	ValidationOutcome []ValidationError `json:"validationOutcome"`
+}
+
+type ValidationError struct {
+	Name  string `json:"name"`
+	Error string `json:"error"`
+}
+
 type Named struct {
 	Name string `json:"name"`
 }
