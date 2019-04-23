@@ -20,7 +20,7 @@ import (
 
 	b64 "encoding/base64"
 
-	"github.com/magneticio/forklift/logging"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/magneticio/vampkubistcli/kubernetes"
 	"github.com/magneticio/vampkubistcli/models"
