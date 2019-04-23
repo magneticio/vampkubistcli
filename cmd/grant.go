@@ -19,7 +19,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/magneticio/forklift/logging"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/spf13/cobra"
 )

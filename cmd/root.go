@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/magneticio/forklift/logging"
+	"github.com/magneticio/vampkubistcli/logging"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -58,7 +58,7 @@ var OutputType string
 var Hosts []string
 
 // version should be in format d.d.d where d is a decimal number
-const Version string = "0.0.21"
+const Version string = "v0.0.22"
 const AppName string = "vamp"
 
 // Backend version is the version this client is tested with

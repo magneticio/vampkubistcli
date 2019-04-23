@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/magneticio/forklift/logging"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/magneticio/vampkubistcli/models"
 	"github.com/magneticio/vampkubistcli/util"
