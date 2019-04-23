@@ -144,6 +144,16 @@ func getError(resp *resty.Response) error {
 		message = string(resp.Body())
 	}
 
+	var responseBody models.ErrorResponse
+
+	json.Unmarshal([]byte(resp.Body()), &responseBody)
+
+	if responseBody.ValidationOutcome != nil {
+		for _, element := range responseBody.ValidationOutcome {
+			message = message + "\n\t- " + element.Error
+		}
+	}
+
 	return errors.New(message)
 }
 
