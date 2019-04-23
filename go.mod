@@ -13,6 +13,7 @@ require (
 	github.com/gophercloud/gophercloud v0.0.0-20190422143055-fe6299556848 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
+	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.6 // indirect
 	github.com/magneticio/forklift v0.1.15
 	github.com/mitchellh/go-homedir v1.1.0
