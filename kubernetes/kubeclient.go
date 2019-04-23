@@ -74,6 +74,9 @@ func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.Vamp
 	return config, nil
 }
 
+/*
+Tries to detect kubeconfig path if it is not explicitly set
+*/
 func GetKubeConfigPath(configPath string) *string {
 	if configPath == "" {
 		home := homeDir()
@@ -87,8 +90,8 @@ func GetKubeConfigPath(configPath string) *string {
 Builds and returns ClientSet by using local KubeConfig
 It also returns hostname since it is needed.
 */
-func getLocalKubeClient() (*kubernetes.Clientset, string, error) {
-	kubeconfig := GetKubeConfigPath("")
+func getLocalKubeClient(configPath string) (*kubernetes.Clientset, string, error) {
+	kubeconfig := GetKubeConfigPath(configPath)
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
@@ -128,9 +131,9 @@ func SetupVampCredentials(clientset *kubernetes.Clientset, ns string) error {
 	return nil
 }
 
-func BootstrapVampService() (string, string, string, error) {
+func BootstrapVampService(configPath string) (string, string, string, error) {
 	// create the clientset
-	clientset, host, err := getLocalKubeClient()
+	clientset, host, err := getLocalKubeClient(configPath)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -163,15 +166,15 @@ func BootstrapVampService() (string, string, string, error) {
 	return host, crt, token, nil
 }
 
-func InstallVampService(config *models.VampConfig) (string, []byte, []byte, error) {
-	host, _, _, errBootstap := BootstrapVampService()
+func InstallVampService(config *models.VampConfig, configPath string) (string, []byte, []byte, error) {
+	host, _, _, errBootstap := BootstrapVampService(configPath)
 	if errBootstap != nil {
 		fmt.Printf("Warning: %v\n", errBootstap.Error())
 		// This is a problem command should be re-tried by user
 		return host, nil, nil, errBootstap
 	}
 	// create the clientset
-	clientset, host, err := getLocalKubeClient()
+	clientset, host, err := getLocalKubeClient(configPath)
 	if err != nil {
 		panic(err.Error())
 	}

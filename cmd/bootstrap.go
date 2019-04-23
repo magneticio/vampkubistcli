@@ -20,9 +20,9 @@ import (
 
 	b64 "encoding/base64"
 
-	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/magneticio/vampkubistcli/kubernetes"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	"github.com/spf13/cobra"
 )
@@ -49,7 +49,7 @@ var bootstrapCmd = &cobra.Command{
 		Name = args[1]
 
 		if Type == "cluster" {
-			url, crt, token, err := kubeclient.BootstrapVampService()
+			url, crt, token, err := kubeclient.BootstrapVampService(kubeConfigPath)
 			if err != nil {
 				// fmt.Printf("Error: %v\n", err)
 				return err
@@ -61,11 +61,9 @@ var bootstrapCmd = &cobra.Command{
 			metadata := &models.Metadata{Metadata: metadataMap}
 			SourceRaw, err_marshall := json.Marshal(metadata)
 			if err_marshall != nil {
-				// fmt.Printf("Error: %v", err_marshall)
 				return err_marshall
 			}
 			Source := string(SourceRaw)
-			// fmt.Printf("Source: %v", Source)
 			SourceFileType = "json"
 			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
 			values := make(map[string]string)
@@ -75,7 +73,6 @@ var bootstrapCmd = &cobra.Command{
 			values["application"] = Application
 			isCreated, err_create := restClient.Create(Type, Name, Source, SourceFileType, values)
 			if !isCreated {
-				// fmt.Println("Not Created " + Type + " with name " + Name)
 				return err_create
 			}
 			return nil
@@ -87,13 +84,5 @@ var bootstrapCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(bootstrapCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// bootstrapCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// bootstrapCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	bootstrapCmd.Flags().StringVarP(&kubeConfigPath, "kubeconfig", "", "", "Kube Config path")
 }

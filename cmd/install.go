@@ -68,7 +68,7 @@ Leave databaseUrl empty to deploy an internal one
 			return configError
 		}
 		fmt.Printf("Vamp Configuration validated.\n")
-		url, cert, _, err := kubeclient.InstallVampService(validatedConfig)
+		url, cert, _, err := kubeclient.InstallVampService(validatedConfig, kubeConfigPath)
 		if err != nil {
 			return err
 		}
@@ -99,4 +99,5 @@ func init() {
 	installCmd.MarkFlagRequired("configuration")
 	installCmd.Flags().StringVarP(&configFileType, "input", "i", "yaml", "Configuration file type yaml or json")
 	installCmd.Flags().StringVarP(&certFileName, "cert", "", "cert.crt", "Certificate file output path")
+	installCmd.Flags().StringVarP(&kubeConfigPath, "kubeconfig", "", "", "Kube Config path")
 }
