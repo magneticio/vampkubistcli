@@ -17,8 +17,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
 )
@@ -29,9 +29,9 @@ var passwdCmd = &cobra.Command{
 	Short: "Update password",
 	Long: AddAppName(`Update password
     For the current user:
-    $AppName
+    $AppName passwd
     For a different user
-    $AppName --user username`),
+    $AppName passwd --user username`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -66,14 +66,5 @@ var passwdCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(passwdCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// passwdCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// passwdCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	passwdCmd.Flags().StringVarP(&Username, "user", "", "", "Username of the user to change password")
 }

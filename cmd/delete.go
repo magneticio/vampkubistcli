@@ -16,9 +16,10 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 
-	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/spf13/cobra"
 )
 
@@ -47,11 +48,11 @@ Example:
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		isDeleted, err_delete := restClient.Delete(Type, Name, values)
+		isDeleted, deleteError := restClient.Delete(Type, Name, values)
 		if !isDeleted {
-			// fmt.Println("Not Deleted " + Type + " with name " + Name)
-			return err_delete
+			return deleteError
 		}
+		fmt.Println(Type + " " + Name + " is deleted")
 		return nil
 	},
 }
@@ -59,15 +60,4 @@ Example:
 func init() {
 	rootCmd.AddCommand(deleteCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// deleteCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// deleteCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	// deleteCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
-	// deleteCmd.MarkFlagRequired("name")
 }

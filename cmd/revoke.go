@@ -16,9 +16,10 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 
-	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/spf13/cobra"
 )
 
@@ -43,11 +44,13 @@ $AppName vamp revoke permission --user user1 -p project -c cluster -r virtualclu
 			if !isSet {
 				return err_set
 			}
+			fmt.Println(Role + "is removed from user " + Username)
 		} else if len(args) > 0 && args[0] == "permission" {
 			isSet, err_set := restClient.RemovePermissionFromUser(Username, values)
 			if !isSet {
 				return err_set
 			}
+			fmt.Println("Permission is removed from user " + Username)
 		} else {
 			return errors.New("Resource to be revoked is missing. Specify either permission or role.")
 		}

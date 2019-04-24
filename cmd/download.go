@@ -27,8 +27,8 @@ var downloadCmd = &cobra.Command{
 	Use:   "download",
 	Short: "Download a resource from url",
 	Long: AddAppName(`Utility method for downloading resources:
-eg:.
-$AppName download --url URL --path path-of-file`),
+    eg:.
+    $AppName download --url URL --path path-of-file`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -43,15 +43,6 @@ $AppName download --url URL --path path-of-file`),
 func init() {
 	rootCmd.AddCommand(downloadCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// downloadCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// downloadCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	downloadCmd.Flags().StringVarP(&URL, "url", "", "", "URL to download")
 	downloadCmd.MarkFlagRequired("url")
 	downloadCmd.Flags().StringVarP(&Path, "path", "", "", "Path to write the file")

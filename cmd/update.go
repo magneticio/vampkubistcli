@@ -17,9 +17,10 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
-	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
@@ -43,12 +44,10 @@ Example:
 		}
 		Type = args[0]
 		Name = args[1]
-		// fmt.Println("create called for type " + Type + " with name " + Name)
 		Source := SourceString
 		if Source == "" {
 			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
-				// fmt.Print(err)
 				return err
 			}
 			Source = string(b)
@@ -79,10 +78,11 @@ Example:
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		isUpdated, err_update := restClient.Update(Type, Name, Source, SourceFileType, values)
+		isUpdated, updateError := restClient.Update(Type, Name, Source, SourceFileType, values)
 		if !isUpdated {
-			return err_update
+			return updateError
 		}
+		fmt.Println(Type + " " + Name + " is updated")
 		return nil
 	},
 }

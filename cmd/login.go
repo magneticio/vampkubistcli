@@ -19,12 +19,11 @@ import (
 	"fmt"
 	"syscall"
 
-	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
 	"golang.org/x/crypto/ssh/terminal"
-	//"golang.org/x/crypto/ssh/terminal"
 )
 
 var Url string
@@ -69,14 +68,10 @@ Example:
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// fmt.Println("Server: " + Server)
-		// fmt.Println("login called for " + Username + " " + Password)
-		// fmt.Println("Print: " + strings.Join(args, " "))
 		if Url != "" {
 			Config.Url = Url
 		}
 		if Config.Url == "" {
-			// fmt.Println("A Vamp Service url should be provided by url flag")
 			return errors.New("A Vamp Service url should be provided by url flag")
 		}
 		CertString := Cert
@@ -139,24 +134,10 @@ Example:
 func init() {
 	rootCmd.AddCommand(loginCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// loginCmd.PersistentFlags().String("foo", "", "A help for foo")
-	// loginCmd.PersistentFlags().StringVar(&Server, "server", "", "Server to connect")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
 	loginCmd.Flags().StringVarP(&Url, "url", "", "", "Url required")
 	loginCmd.Flags().StringVarP(&Username, "user", "", "", "Username required")
-	// loginCmd.MarkFlagRequired("user")
 	loginCmd.Flags().StringVarP(&Password, "password", "", "", "Password required")
-	// loginCmd.MarkFlagRequired("password")
 	loginCmd.Flags().StringVarP(&Cert, "cert", "", "", "Cert from file, url or string")
 	loginCmd.Flags().BoolVarP(&initial, "initial", "", false, "Prints welcome string for new users.")
 
-	// loginCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")
-	// viper.BindPFlag("server", loginCmd.PersistentFlags().Lookup("server"))
-	// Server = viper.GetString("server")
 }

@@ -92,6 +92,7 @@ var addCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(addCmd)
+<<<<<<< HEAD
 
 	addCmd.Flags().StringVarP(&userConfigFilePath, "user-config-output-path", "", "", "Generated user configuration file output path. Path should be in an existing folder.")
 }
@@ -106,4 +107,6 @@ func writeConfigToFile(userConfig *config, filename string) error {
 		return fileWriteError
 	}
 	return nil
+=======
+>>>>>>> This commit includes clean up add cleaner messages and removal of unnecessary comments
 }
