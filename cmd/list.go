@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +44,6 @@ Example:
 		} else {
 			return errors.New("Not Enough Arguments")
 		}
-		// fmt.Println("get called for type " + Type + " with name " + Name)
 		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
 		values := make(map[string]string)
 		values["project"] = Config.Project
@@ -65,15 +64,6 @@ Example:
 func init() {
 	rootCmd.AddCommand(listCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// listCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	listCmd.Flags().StringVarP(&OutputType, "output", "o", "yaml", "Output format yaml or json")
 	listCmd.Flags().BoolVarP(&Detailed, "detailed", "", false, "list detailed info")
 }

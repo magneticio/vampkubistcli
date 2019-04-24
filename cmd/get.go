@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
 )
@@ -68,7 +68,6 @@ Json path example with wait
 				if JsonPath != "" {
 					resultPath, err_jsonpath := util.GetJsonPath(result, OutputType, JsonPath)
 					if err_jsonpath != nil {
-						// fmt.Printf("Error %v\n", err_jsonpath)
 						time.Sleep(5 * time.Second)
 						continue
 					}
@@ -88,17 +87,6 @@ Json path example with wait
 func init() {
 	rootCmd.AddCommand(getCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// getCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// getCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	// getCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
-	// getCmd.MarkFlagRequired("name")
 	getCmd.Flags().StringVarP(&OutputType, "output", "o", "yaml", "Output format yaml or json")
 	getCmd.Flags().StringVarP(&JsonPath, "jsonpath", "", "", "Json path to access specific parts of the object")
 	getCmd.Flags().BoolVarP(&WaitUntilAvailable, "wait", "w", false, "Wait until output is available")

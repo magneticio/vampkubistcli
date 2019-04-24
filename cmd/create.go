@@ -17,9 +17,10 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
-	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
@@ -46,7 +47,6 @@ Example:
 		}
 		Type = args[0]
 		Name = args[1]
-		// fmt.Println("create called for type " + Type + " with name " + Name)
 		Source := SourceString
 		if Init {
 			Source = "{}"
@@ -55,7 +55,6 @@ Example:
 		if Source == "" {
 			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
-				// fmt.Print(err)
 				return err
 			}
 			Source = string(b)
@@ -87,10 +86,11 @@ Example:
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		isCreated, err_create := restClient.Create(Type, Name, Source, SourceFileType, values)
+		isCreated, createError := restClient.Create(Type, Name, Source, SourceFileType, values)
 		if !isCreated {
-			return err_create
+			return createError
 		}
+		fmt.Println(Type + " " + Name + " is created")
 		return nil
 	},
 }
@@ -98,17 +98,6 @@ Example:
 func init() {
 	rootCmd.AddCommand(createCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// createCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	// createCmd.Flags().StringVarP(&Name, "name", "n", "default", "Name Required")
-	// createCmd.MarkFlagRequired("name")
 	createCmd.Flags().StringVarP(&SourceString, "string", "s", "", "Source from string")
 	createCmd.Flags().StringVarP(&SourceFile, "file", "f", "", "Source from file")
 	createCmd.Flags().StringVarP(&SourceFileType, "input", "i", "yaml", "Source file type yaml or json")

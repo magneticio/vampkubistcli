@@ -17,9 +17,10 @@ package cmd
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
-	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	"github.com/spf13/cobra"
 )
@@ -54,13 +55,11 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 			Subset:       Subset,
 			SubsetLabels: SubsetLabels,
 		}
-		SourceRaw, err_marshall := json.Marshal(canaryRelease)
-		if err_marshall != nil {
-			// fmt.Printf("Error: %v", err_marshall)
-			return err_marshall
+		SourceRaw, marshallError := json.Marshal(canaryRelease)
+		if marshallError != nil {
+			return marshallError
 		}
 		Source := string(SourceRaw)
-		// fmt.Printf("Source: %v", Source)
 		SourceFileType = "json"
 
 		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
@@ -69,11 +68,11 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		isCreated, err_create := restClient.Create(Type, Name, Source, SourceFileType, values)
+		isCreated, createError := restClient.Create(Type, Name, Source, SourceFileType, values)
 		if !isCreated {
-			// fmt.Println("Not Created " + Type + " with name " + Name)
-			return err_create
+			return createError
 		}
+		fmt.Println(Type + " " + Name + " is created")
 		return nil
 	},
 }
@@ -81,15 +80,6 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 func init() {
 	rootCmd.AddCommand(releaseCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// releaseCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// releaseCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	releaseCmd.Flags().StringVarP(&Destination, "destination", "", "", "Destination to use in the release")
 	releaseCmd.Flags().StringVarP(&Port, "port", "", "", "Port to use in the release")
 	releaseCmd.Flags().StringVarP(&Subset, "subset", "", "", "Subset to use in the release")
