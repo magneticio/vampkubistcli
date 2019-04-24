@@ -16,11 +16,12 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 
-	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/spf13/cobra"
 )
 
@@ -51,12 +52,12 @@ Permissions follow the format:
 		values["virtual_cluster"] = VirtualCluster
 		values["application"] = Application
 		values[Kind] = Name
-		// values["application"] = Application
 		if Role != "" {
 			isSet, err_set := restClient.AddRoleToUser(Username, Role, values)
 			if !isSet {
 				return err_set
 			}
+			fmt.Println(Role + "is added to user " + Username)
 		} else if Permission != "" {
 
 			lowkPermission := strings.ToLower(Permission)
@@ -82,6 +83,7 @@ Permissions follow the format:
 			if !isSet {
 				return err_set
 			}
+			fmt.Println("Permission is added to user " + Username)
 		} else {
 			return errors.New("Resource to be granted is missing. Specify either permission or role.")
 		}
@@ -92,16 +94,6 @@ Permissions follow the format:
 
 func init() {
 	rootCmd.AddCommand(grantCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// grantCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// grantCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	grantCmd.Flags().StringVarP(&Username, "user", "", "", "Username required")
 	grantCmd.MarkFlagRequired("user")
 	grantCmd.Flags().StringVarP(&Kind, "kind", "k", "", "")
