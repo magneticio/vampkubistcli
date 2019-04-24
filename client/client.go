@@ -247,7 +247,9 @@ func getUrlForResource(base string, version string, resourceName string, subComm
 	var queryParams = ""
 
 	for key, value := range values {
-		queryParams = queryParams + "&" + key + "_name=" + value
+		if value != "" {
+			queryParams = queryParams + "&" + key + "_name=" + value
+		}
 	}
 
 	timestamp := strconv.FormatInt(time.Now().UTC().UnixNano(), 10)

@@ -1,0 +1,6 @@
+permissions:
+  project:
+    read: true
+    write: true
+    delete: true
+    editAccess: true
