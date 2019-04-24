@@ -17,21 +17,27 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
+	yaml "gopkg.in/yaml.v2"
 )
+
+var userConfigFilePath string
 
 // addCmd represents the add command
 var addCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Add a new user",
 	Long: AddAppName(`Add a new user:
-    $AppName add username
+    $AppName add user username
     This will print command to login for a new user.
+    It is also possible to generate login configuration file for added user:
+    $AppName add user username --user-config-output-path ./configurationFile.yaml
   `),
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -65,6 +71,20 @@ var addCmd = &cobra.Command{
 			}
 			fmt.Printf("User can login with:\n")
 			fmt.Printf("%v login --url %v --user %v --initial --token %v --cert <<EOF \"%v\"\nEOF\n", AppName, Config.Url, Username, token, Config.Cert)
+
+			// Write the file is called after printing the output to handle avoid file write errors blocking user creation
+			if userConfigFilePath != "" {
+				userConfig := &config{
+					Url:      Config.Url,
+					Cert:     Config.Cert,
+					Username: Username,
+					Token:    token,
+				}
+				writeConfigError := writeConfigToFile(userConfig, userConfigFilePath)
+				if writeConfigError != nil {
+					return writeConfigError
+				}
+			}
 		}
 		return nil
 	},
@@ -73,13 +93,17 @@ var addCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(addCmd)
 
-	// Here you will define your flags and configuration settings.
+	addCmd.Flags().StringVarP(&userConfigFilePath, "user-config-output-path", "", "", "Generated user configuration file output path. Path should be in an existing folder.")
+}
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// addCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// addCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+func writeConfigToFile(userConfig *config, filename string) error {
+	bs, marshallError := yaml.Marshal(userConfig)
+	if marshallError != nil {
+		return marshallError
+	}
+	fileWriteError := ioutil.WriteFile(filename, bs, 0644)
+	if fileWriteError != nil {
+		return fileWriteError
+	}
+	return nil
 }
