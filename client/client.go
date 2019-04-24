@@ -99,6 +99,7 @@ type authSuccess struct {
 const defaultVersion = "v1"
 
 func NewRestClient(url string, token string, version string, isVerbose bool, cert string) *restClient {
+	url = strings.TrimRight(url, "/") // Url should end without a /
 	resty.SetDebug(isVerbose)
 	if version == "" {
 		logging.Info("Using Default Version for client: %s\n", defaultVersion)

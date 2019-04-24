@@ -65,7 +65,7 @@ const Version string = "v0.0.22"
 var AppName string = InitAppName()
 
 // Backend version is the version this client is tested with
-const BackendVersion string = "0.7.5"
+const BackendVersion string = "0.7.7"
 
 /*
 Application name can change over time so it is made parameteric
