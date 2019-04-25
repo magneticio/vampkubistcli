@@ -1,5 +1,7 @@
 # Vamp Kubist command line client
 
+[![CircleCI](https://circleci.com/gh/magneticio/vampkubistcli.svg?style=svg)](https://circleci.com/gh/magneticio/vampkubistcli)
+
 [![Coverage Status](https://coveralls.io/repos/github/magneticio/vampkubistcli/badge.svg?branch=master)](https://coveralls.io/github/magneticio/vampkubistcli?branch=master)
 
 Vamp Kubist Command Line Client is a command line client written in golang and allows a user interface to the Vamp Kubist API. It also supports common functions that are useful to regular users.
