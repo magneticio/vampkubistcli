@@ -75,5 +75,5 @@ func init() {
 	revokeCmd.MarkFlagRequired("user")
 	revokeCmd.Flags().StringVarP(&Kind, "kind", "k", "", "")
 	revokeCmd.Flags().StringVarP(&Name, "name", "n", "", "")
-	revokeCmd.MarkFlagRequired("role")
+	revokeCmd.Flags().StringVarP(&Role, "role", "", "", "")
 }
