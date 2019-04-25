@@ -16,3 +16,5 @@ bin/
 .idea/
 temp/
 vampkubistcli
+
+coverage.out
