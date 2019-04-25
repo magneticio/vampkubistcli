@@ -34,7 +34,7 @@ import (
 var DefaultVampConfig = models.VampConfig{
 	DatabaseName: "vamp",
 	ImageName:    "magneticio/vampkubist",
-	ImageTag:     "0.7.7",
+	ImageTag:     "0.7.8",
 	Mode:         "IN_CLUSTER",
 }
 
