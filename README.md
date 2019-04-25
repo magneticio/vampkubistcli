@@ -1,9 +1,11 @@
 # Vamp Kubist command line client
 
+[![Coverage Status](https://coveralls.io/repos/github/magneticio/vampkubistcli/badge.svg?branch=master)](https://coveralls.io/github/magneticio/vampkubistcli?branch=master)
+
 Vamp Kubist Command Line Client is a command line client written in golang and allows a user interface to the Vamp Kubist API. It also supports common functions that are useful to regular users.
 
 Command Line client requires a running Vamp Kubist service to function.
-Please check How to Setup Vamp Kubist on common documentation repository: https://github.com/magneticio/vamp2setup
+Please check How to Setup Vamp Kubist on common documentation repository: https://github.com/magneticio/vampkubistdocs
 
 ## development
 if you have golang installed, it is recommended to git clone it to $GOPATH/src/github.com/magneticio/vampkubistcli
@@ -66,7 +68,7 @@ https://github.com/magneticio/vamp/releases/latest
 
 This documentation is prepared for explaining the general usage of command line client.
 This Readme doesn't explain every path.
-Tutorials will be shared soon.
+Check docs repository for more: https://github.com/magneticio/vampkubistdocs
 
 Check the version of the client with:
 ```shell
