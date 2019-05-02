@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/magneticio/forklift/logging"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
 	"gopkg.in/resty.v1"
 )
 
