@@ -98,6 +98,8 @@ type authSuccess struct {
 
 const defaultVersion = "v1"
 
+const defaultTimeout = 30 * time.Second
+
 func NewRestClient(url string, token string, version string, isVerbose bool, cert string) *restClient {
 	url = strings.TrimRight(url, "/") // Url should end without a /
 	resty.SetDebug(isVerbose)
@@ -121,6 +123,8 @@ func NewRestClient(url string, token string, version string, isVerbose bool, cer
 		// fmt.Printf("load cert from file: %v\n", tmpFile.Name())
 		resty.SetRootCertificate(tmpFile.Name())
 	}
+	// default timeout of golang is very long
+	resty.SetTimeout(defaultTimeout)
 	return &restClient{
 		url:     url,
 		token:   token,
