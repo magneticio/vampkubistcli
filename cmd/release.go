@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/magneticio/vampkubistcli/logging"
@@ -30,13 +31,14 @@ var Subset string
 var Port string
 var Destination string
 var SubsetLabels map[string]string
+var ReleaseType string
 
 // releaseCmd represents the release command
 var releaseCmd = &cobra.Command{
 	Use:   "release",
 	Short: "Release a new subset with labels",
 	Long: AddAppName(`eg.:
-$AppName release shop-vamp-service --destination shop-destination --port port --subset subset2 -l version=version2`),
+$AppName release shop-vamp-service --destination shop-destination --port port --subset subset2 -l version=version2 --type time`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -45,15 +47,43 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 		}
 		Type := "canary_release"
 		VampService := args[0]
-		Name := VampService + "-" + Destination + "-" + Subset
+
+		policies := []models.PolicyReference{}
+
+		allowedReleaseTypes := map[string]string{"time": "TimedCanaryReleasePolicy", "health": "HealthBasedCanaryReleasePolicy"}
+
+		if ReleaseType != "" {
+
+			logging.Info("Release type is %v", allowedReleaseTypes[ReleaseType])
+
+			if allowedReleaseTypes[ReleaseType] == "" {
+				return errors.New("Release type is not valid")
+			}
+
+			policies = []models.PolicyReference{models.PolicyReference{
+				Name: allowedReleaseTypes[ReleaseType],
+			}}
+
+		}
+
+		var portReference *int
+
+		if Port != "" {
+			portInt, convErr := strconv.Atoi(Port)
+			if convErr != nil {
+				return convErr
+			}
+			portReference = &portInt
+		}
 
 		// fmt.Printf("%v %v %v\n", Type, Name, SubsetLabels)
 		canaryRelease := models.CanaryRelease{
 			VampService:  VampService,
 			Destination:  Destination,
-			Port:         Port,
+			Port:         portReference,
 			Subset:       Subset,
 			SubsetLabels: SubsetLabels,
+			Policies:     policies,
 		}
 		SourceRaw, marshallError := json.Marshal(canaryRelease)
 		if marshallError != nil {
@@ -68,7 +98,7 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		isCreated, createError := restClient.Create(Type, Name, Source, SourceFileType, values)
+		isCreated, createError := restClient.Create(Type, VampService, Source, SourceFileType, values)
 		if !isCreated {
 			return createError
 		}
@@ -83,6 +113,7 @@ func init() {
 	releaseCmd.Flags().StringVarP(&Destination, "destination", "", "", "Destination to use in the release")
 	releaseCmd.Flags().StringVarP(&Port, "port", "", "", "Port to use in the release")
 	releaseCmd.Flags().StringVarP(&Subset, "subset", "", "", "Subset to use in the release")
+	releaseCmd.Flags().StringVarP(&ReleaseType, "type", "", "", "Type of canary release to use")
 	releaseCmd.Flags().StringToStringVarP(&SubsetLabels, "label", "l", map[string]string{}, "Subset labels, multiple labels are allowed")
 
 }
