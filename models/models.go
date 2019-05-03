@@ -25,6 +25,10 @@ type Named struct {
 	Name string `json:"name"`
 }
 
+type WithSpecification struct {
+	Specification map[string]interface{} `json:"specification"`
+}
+
 type Versioned struct {
 	Version string `json:"version"`
 }
