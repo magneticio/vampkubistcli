@@ -27,6 +27,7 @@ import (
 
 var JsonPath string
 var WaitUntilAvailable bool
+var NumberOfTrialLimit int
 
 // getCmd represents the get command
 var getCmd = &cobra.Command{
@@ -61,13 +62,17 @@ Json path example with wait
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
 		first := true
-		for WaitUntilAvailable || first {
+		var result string
+		var getError error
+		numberOfTrials := 0
+		for (WaitUntilAvailable || first) && (numberOfTrials < NumberOfTrialLimit || NumberOfTrialLimit == 0) {
 			first = false
-			result, err := restClient.Get(Type, Name, OutputType, values)
-			if err == nil {
+			result, getError = restClient.Get(Type, Name, OutputType, values)
+			numberOfTrials++
+			if getError == nil {
 				if JsonPath != "" {
-					resultPath, err_jsonpath := util.GetJsonPath(result, OutputType, JsonPath)
-					if err_jsonpath != nil {
+					resultPath, jsonpathError := util.GetJsonPath(result, OutputType, JsonPath)
+					if jsonpathError != nil {
 						time.Sleep(5 * time.Second)
 						continue
 					}
@@ -77,8 +82,12 @@ Json path example with wait
 					fmt.Printf(result)
 					return nil
 				}
+			} else {
+				time.Sleep(10 * time.Second)
 			}
-			return err
+		}
+		if getError != nil {
+			return getError
 		}
 		return nil
 	},
@@ -90,4 +99,5 @@ func init() {
 	getCmd.Flags().StringVarP(&OutputType, "output", "o", "yaml", "Output format yaml or json")
 	getCmd.Flags().StringVarP(&JsonPath, "jsonpath", "", "", "Json path to access specific parts of the object")
 	getCmd.Flags().BoolVarP(&WaitUntilAvailable, "wait", "w", false, "Wait until output is available")
+	getCmd.Flags().IntVarP(&NumberOfTrialLimit, "number-of-tries", "", 0, "Number of Tries when failed, this flag should be used with wait flag (0 is infinite)")
 }

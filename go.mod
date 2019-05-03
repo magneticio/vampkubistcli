@@ -3,6 +3,7 @@ module github.com/magneticio/vampkubistcli
 go 1.12
 
 require (
+	4d63.com/gochecknoglobals v0.0.0-20190306162314-7c3491d2b6ec // indirect
 	github.com/Azure/go-autorest/autorest v0.1.0 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/ghodss/yaml v1.0.0
