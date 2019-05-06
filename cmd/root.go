@@ -60,7 +60,7 @@ var Hosts []string
 var kubeConfigPath string
 
 // version should be in format d.d.d where d is a decimal number
-const Version string = "v0.0.26"
+const Version string = "v0.0.27"
 
 var AppName string = InitAppName()
 

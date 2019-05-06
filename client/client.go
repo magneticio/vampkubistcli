@@ -350,6 +350,54 @@ func (s *restClient) Delete(resourceName string, name string, values map[string]
 
 }
 
+func (s *restClient) GetSpec(resourceName string, name string, outputFormat string, values map[string]string) (string, error) {
+	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "", name, values)
+
+	resp, getResourceError := resty.R().
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetAuthToken((*s).token).
+		SetError(&errorResponse{}).
+		Get(url)
+
+	if getResourceError != nil {
+		return "", getResourceError
+	}
+
+	if resp.IsError() {
+		return "", getError(resp)
+	}
+
+	var withSpec models.WithSpecification
+	unmarshalError := json.Unmarshal(resp.Body(), &withSpec)
+	if unmarshalError != nil {
+		return "", unmarshalError
+	}
+
+	specification, marshallSpecError := json.Marshal(withSpec.Specification)
+	if marshallSpecError != nil {
+		return "", marshallSpecError
+	}
+
+	source := ""
+	if outputFormat == "yaml" {
+		yaml, err_2 := yaml.JSONToYAML(specification)
+		if err_2 != nil {
+			return "", err_2
+		}
+		source = string(yaml)
+	} else {
+		var prettyJSON bytes.Buffer
+		error := json.Indent(&prettyJSON, specification, "", "    ")
+		if error != nil {
+			return "", error
+		}
+		source = string(prettyJSON.Bytes())
+	}
+	return source, nil
+
+}
+
 func (s *restClient) Get(resourceName string, name string, outputFormat string, values map[string]string) (string, error) {
 	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "", name, values)
 
