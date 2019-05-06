@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/ghodss/yaml"
+	"github.com/imdario/mergo"
 	"github.com/yalp/jsonpath"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -206,4 +207,43 @@ func RandomString(n int) string {
 	}
 
 	return string(b)
+}
+
+func Merge(destination string, source string, serializationType string) (string, error) {
+	if serializationType == "yaml" {
+		var dst map[string]interface{}
+		var src map[string]interface{}
+		if marshallDstError := yaml.Unmarshal([]byte(destination), &dst); marshallDstError != nil {
+			return "", marshallDstError
+		}
+		if marshallSrcError := yaml.Unmarshal([]byte(source), &src); marshallSrcError != nil {
+			return "", marshallSrcError
+		}
+		if mergeError := mergo.Merge(&dst, src, mergo.WithOverride); mergeError != nil {
+			return "", mergeError
+		}
+		merged, marshallSpecError := yaml.Marshal(dst)
+		if marshallSpecError != nil {
+			return "", marshallSpecError
+		}
+		return string(merged), nil
+	} else if serializationType == "json" {
+		var dst map[string]interface{}
+		var src map[string]interface{}
+		if marshallDstError := json.Unmarshal([]byte(destination), &dst); marshallDstError != nil {
+			return "", marshallDstError
+		}
+		if marshallSrcError := json.Unmarshal([]byte(source), &src); marshallSrcError != nil {
+			return "", marshallSrcError
+		}
+		if mergeError := mergo.Merge(&dst, src, mergo.WithOverride); mergeError != nil {
+			return "", mergeError
+		}
+		merged, marshallSpecError := json.Marshal(dst)
+		if marshallSpecError != nil {
+			return "", marshallSpecError
+		}
+		return string(merged), nil
+	}
+	return "", errors.New("Serialization type is not supported")
 }
