@@ -73,6 +73,7 @@ Json path example with wait
 				if JsonPath != "" {
 					resultPath, jsonpathError := util.GetJsonPath(result, OutputType, JsonPath)
 					if jsonpathError != nil {
+						getError = jsonpathError
 						time.Sleep(5 * time.Second)
 						continue
 					}

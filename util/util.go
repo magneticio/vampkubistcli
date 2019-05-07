@@ -125,8 +125,12 @@ func DownloadFile(filepath string, url string) error {
 }
 
 func GetJsonPath(source string, sourceFormat string, jsonPath string) (string, error) {
+	sourceAsJson, conversionToJsonError := Convert(sourceFormat, "json", source)
+	if conversionToJsonError != nil {
+		return "", conversionToJsonError
+	}
 	var jsonInterface map[string]interface{}
-	err := json.Unmarshal([]byte(source), &jsonInterface)
+	err := json.Unmarshal([]byte(sourceAsJson), &jsonInterface)
 	if err != nil {
 		return "", err
 	}
@@ -134,11 +138,16 @@ func GetJsonPath(source string, sourceFormat string, jsonPath string) (string, e
 	if err != nil {
 		return "", err
 	}
-	str, ok := resultPath.(string)
-	if !ok {
-		return "", errors.New("There is no string representation for " + jsonPath)
+	strJson, jsonMarshalError := json.Marshal(resultPath)
+	if jsonMarshalError != nil {
+		return "", jsonMarshalError
 	}
-	return str, nil
+
+	sourceAsSourceFormat, conversionFromJsonError := Convert("json", sourceFormat, string(strJson))
+	if conversionFromJsonError != nil {
+		return "", conversionFromJsonError
+	}
+	return sourceAsSourceFormat, nil
 }
 
 func VerifyCertForHost(resourceUrl string, cert string) error {
