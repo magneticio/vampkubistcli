@@ -16,16 +16,20 @@ package client
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ghodss/yaml"
+	"github.com/gorilla/websocket"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	"gopkg.in/resty.v1"
@@ -623,4 +627,76 @@ func getVersionFromResource(source []byte) (string, error) {
 
 	return Versioned.Version, nil
 
+}
+
+func (s *restClient) ReadNotifications(notifications chan<- models.Notification) error {
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+
+	u, urlParseError := url.Parse(s.url + "/api/" + s.version + "/notifications?access_token=" + s.token)
+	if urlParseError != nil {
+		return urlParseError
+	}
+	u.Scheme = "wss"
+	logging.Info("connecting to %s", u.String())
+	dialer := websocket.DefaultDialer
+	dialer.TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: true,
+	}
+
+	c, _, err := dialer.Dial(u.String(), nil)
+	if err != nil {
+		logging.Error("dial: %v", err)
+		return err
+	}
+	defer c.Close()
+
+	done := make(chan struct{})
+
+	go func() {
+		defer close(done)
+		for {
+			// {"text":"Initializing cluster cluster1"}
+			var notification models.Notification
+			err := c.ReadJSON(&notification)
+			if err != nil {
+				logging.Info("read: %v", err)
+				// return err
+			}
+			notifications <- notification
+			logging.Info("recv: %s", notification.Text)
+		}
+	}()
+
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-done:
+			return nil
+		case t := <-ticker.C:
+			err := c.WriteMessage(websocket.TextMessage, []byte(t.String()))
+			if err != nil {
+				logging.Info("write: %v", err)
+				return err
+			}
+		case <-interrupt:
+			logging.Info("interrupt")
+
+			// Cleanly close the connection by sending a close message and then
+			// waiting (with timeout) for the server to close the connection.
+			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			if err != nil {
+				logging.Info("write close: %v", err)
+				return err
+			}
+			select {
+			case <-done:
+			case <-time.After(time.Second):
+			}
+			return nil
+		}
+	}
 }

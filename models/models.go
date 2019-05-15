@@ -78,3 +78,7 @@ type PolicyReference struct {
 	Name       string            `json:"name,omitempty"`
 	Parameters map[string]string `json:"parameters,omitempty"`
 }
+
+type Notification struct {
+	Text string `json:"text,omitempty"`
+}
