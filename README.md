@@ -310,7 +310,7 @@ kubectl get ns vamp-demo -o yaml
 
 set virtual cluster for ease of use:
 ```shell
-vamp set -v vamp-demo
+vamp set -r vamp-demo
 ```
 
 NOTE:
