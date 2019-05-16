@@ -17,6 +17,7 @@ package client
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -80,6 +81,7 @@ type restClient struct {
 	username string
 	password string
 	token    string
+	certs    string
 }
 
 type successResponse struct {
@@ -133,6 +135,7 @@ func NewRestClient(url string, token string, version string, isVerbose bool, cer
 		url:     url,
 		token:   token,
 		version: version,
+		certs:   cert,
 	}
 }
 
@@ -641,10 +644,14 @@ func (s *restClient) ReadNotifications(notifications chan<- models.Notification)
 	u.Scheme = "wss"
 	logging.Info("connecting to %s", u.String())
 	dialer := websocket.DefaultDialer
-	dialer.TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: true,
+	roots := x509.NewCertPool()
+	ok := roots.AppendCertsFromPEM([]byte(s.certs))
+	if !ok {
+		return errors.New("failed to parse root certificate")
 	}
-
+	dialer.TLSClientConfig = &tls.Config{
+		RootCAs: roots,
+	}
 	c, _, err := dialer.Dial(u.String(), nil)
 	if err != nil {
 		logging.Error("dial: %v", err)
