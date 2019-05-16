@@ -4,14 +4,17 @@ go 1.12
 
 require (
 	4d63.com/gochecknoglobals v0.0.0-20190306162314-7c3491d2b6ec // indirect
+	github.com/0xAX/notificator v0.0.0-20181105090803-d81462e38c21
 	github.com/Azure/go-autorest/autorest v0.1.0 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
+	github.com/gen2brain/beeep v0.0.0-20190317152856-aa3d7c1499fd
 	github.com/ghodss/yaml v1.0.0
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/google/btree v1.0.0 // indirect
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/gophercloud/gophercloud v0.0.0-20190422143055-fe6299556848 // indirect
+	github.com/gorilla/websocket v1.4.0
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
 	github.com/imdario/mergo v0.3.7
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
