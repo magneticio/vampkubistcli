@@ -60,12 +60,12 @@ var Hosts []string
 var kubeConfigPath string
 
 // version should be in format d.d.d where d is a decimal number
-const Version string = "v0.0.29"
+const Version string = "v0.0.30"
 
 var AppName string = InitAppName()
 
 // Backend version is the version this client is tested with
-const BackendVersion string = "0.7.10"
+const BackendVersion string = "0.7.11"
 
 /*
 Application name can change over time so it is made parameteric
