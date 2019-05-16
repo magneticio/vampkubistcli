@@ -19,6 +19,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/0xAX/notificator"
@@ -41,15 +42,22 @@ var notificationserviceCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		iconPath := "/tmp/vamp.png"
+		var iconPath string
 		if desktop {
 			dec := base64.NewDecoder(base64.StdEncoding, strings.NewReader(LogoData))
 			buf := new(bytes.Buffer)
 			buf.ReadFrom(dec)
-			writeFileErr := ioutil.WriteFile(iconPath, buf.Bytes(), 0644)
-			if writeFileErr != nil {
-				return writeFileErr
+			tmpFile, tempFileError := ioutil.TempFile(os.TempDir(), "vamp.*.png")
+			if tempFileError != nil {
+				return tempFileError
 			}
+			// Remember to clean up the file afterwards
+			defer os.Remove(tmpFile.Name())
+			writeError := ioutil.WriteFile(tmpFile.Name(), buf.Bytes(), 0644)
+			if writeError != nil {
+				return writeError
+			}
+			iconPath = tmpFile.Name()
 		}
 		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
 		notifications := make(chan models.Notification, 10)
