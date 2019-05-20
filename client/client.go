@@ -65,6 +65,10 @@ var resourceMap map[string]string = map[string]string{
 	"canaryreleases":   "canary_release",
 	"service":          "service",
 	"services":         "service",
+	"serviceentry":     "service_entry",
+	"serviceentries":   "service_entry",
+	"service_entries":  "service_entry",
+	"service_entry":    "service_entry",
 	"deployment":       "deployment",
 	"deployments":      "deployment",
 	"role":             "role",
@@ -264,11 +268,21 @@ func getUrlForResource(base string, version string, resourceName string, subComm
 	}
 
 	timestamp := strconv.FormatInt(time.Now().UTC().UnixNano(), 10)
-	url := base + "/api/" + version + "/" + strings.Replace(resourceName, "_", "-", -1) + "s" + subPath +
+	url := base + "/api/" + version + "/" + fixResourceName(resourceName) + subPath +
 		"?" + "t=" + timestamp +
 		queryParams +
 		namedParameter
 	return url, nil
+}
+
+func fixResourceName(resourceName string) string {
+
+	if resourceMap[resourceName] == "service_entry" {
+		return "service-entries"
+	} else {
+		return strings.Replace(resourceName, "_", "-", -1) + "s"
+	}
+
 }
 
 func (s *restClient) Create(resourceName string, name string, source string, sourceType string, values map[string]string) (bool, error) {
