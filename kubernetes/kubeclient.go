@@ -10,6 +10,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
@@ -81,8 +82,10 @@ func GetKubeConfigPath(configPath string) *string {
 	if configPath == "" {
 		home := homeDir()
 		path := filepath.Join(home, ".kube", "config")
+		logging.Info("Using kube config path: %v\n", path)
 		return &path
 	}
+	logging.Info("Using kube config path: %v\n", configPath)
 	return &configPath
 }
 
@@ -91,16 +94,16 @@ Builds and returns ClientSet by using local KubeConfig
 It also returns hostname since it is needed.
 */
 func getLocalKubeClient(configPath string) (*kubernetes.Clientset, string, error) {
-	kubeconfig := GetKubeConfigPath(configPath)
+	kubeconfigpath := GetKubeConfigPath(configPath)
 	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfigpath)
 	if err != nil {
-		panic(err.Error())
+		return nil, "", errors.New(fmt.Sprintf("Kube Client can not be created due to %v", err.Error()))
 	}
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err.Error())
+		return nil, "", err
 	}
 	return clientset, config.Host, nil
 }
@@ -135,7 +138,8 @@ func BootstrapVampService(configPath string) (string, string, string, error) {
 	// create the clientset
 	clientset, host, err := getLocalKubeClient(configPath)
 	if err != nil {
-		panic(err.Error())
+		// panic(err.Error())
+		return "", "", "", err
 	}
 	ns := InstallationNamespace
 	errSetup := SetupVampCredentials(clientset, ns)
@@ -176,7 +180,8 @@ func InstallVampService(config *models.VampConfig, configPath string) (string, [
 	// create the clientset
 	clientset, host, err := getLocalKubeClient(configPath)
 	if err != nil {
-		panic(err.Error())
+		// panic(err.Error())
+		return "", nil, nil, err
 	}
 	ns := InstallationNamespace
 	// Install Database or skip it

@@ -121,6 +121,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
+
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", AddAppName("config file (default is $HOME/.$AppName/config.yaml)"))
 	rootCmd.PersistentFlags().StringVarP(&Project, "project", "p", "", "active project")
 	rootCmd.PersistentFlags().StringVarP(&Cluster, "cluster", "c", "", "active cluster")
@@ -130,13 +131,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&APIVersion, "api", "", "", "override the api version")
 	rootCmd.PersistentFlags().BoolVarP(&logging.Verbose, "verbose", "v", false, "Verbose")
 
-	// rootCmd.PersistentFlags().StringVar(&Server, "server", "default", "server to connect")
-	// viper.BindPFlag("server", rootCmd.PersistentFlags().Lookup("server"))
-	// Server = viper.Get("server").(string)
+	viper.BindEnv("config", "CONFIG")
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func ReadConfigFile() error {
@@ -211,6 +207,14 @@ func WriteConfigFile() error {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	viper.AutomaticEnv() // read in environment variables that match
+	if cfgFile == "" {
+		cfgFile = viper.GetString("config")
+	}
+	if cfgFile == "" {
+		cfgFile = viper.GetString("config")
+	}
+	logging.Info("Using Config file path: %v\n", cfgFile)
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
@@ -218,7 +222,7 @@ func initConfig() {
 		// Find home directory.
 		home, err := homedir.Dir()
 		if err != nil {
-			// fmt.Println(err)
+			logging.Error("Can not find home Directory: %v\n", err)
 			os.Exit(1)
 		}
 		// Search config in home directory with name ".$AppName" (without extension).
@@ -226,8 +230,6 @@ func initConfig() {
 		viper.AddConfigPath(path)
 		viper.SetConfigName("config")
 	}
-
-	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {

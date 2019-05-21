@@ -25,6 +25,7 @@ import (
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // bootstrapCmd represents the bootstrap command
@@ -47,6 +48,10 @@ var bootstrapCmd = &cobra.Command{
 		}
 		Type = args[0]
 		Name = args[1]
+
+		if kubeConfigPath == "" {
+			kubeConfigPath = viper.GetString("kubeconfig")
+		}
 
 		if Type == "cluster" {
 			url, crt, token, err := kubeclient.BootstrapVampService(kubeConfigPath)
@@ -85,4 +90,5 @@ func init() {
 	rootCmd.AddCommand(bootstrapCmd)
 
 	bootstrapCmd.Flags().StringVarP(&kubeConfigPath, "kubeconfig", "", "", "Kube Config path")
+	viper.BindEnv("kubeconfig", "KUBECONFIG")
 }

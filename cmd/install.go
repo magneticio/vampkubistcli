@@ -23,6 +23,7 @@ import (
 	"github.com/magneticio/vampkubistcli/models"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var installConfigPath string
@@ -55,6 +56,9 @@ Install command is reentrant, it is possible to update the cluster with re-runni
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if kubeConfigPath == "" {
+			kubeConfigPath = viper.GetString("kubeconfig")
+		}
 		configBtye, readErr := util.UseSourceUrl(installConfigPath) // just pass the file name
 		if readErr != nil {
 			return readErr
@@ -97,4 +101,5 @@ func init() {
 	installCmd.Flags().StringVarP(&configFileType, "input", "i", "yaml", "Configuration file type yaml or json")
 	installCmd.Flags().StringVarP(&certFileName, "certificate-output-path", "", "certificate.crt", "Certificate file output path")
 	installCmd.Flags().StringVarP(&kubeConfigPath, "kubeconfig", "", "", "Kube Config path")
+	viper.BindEnv("kubeconfig", "KUBECONFIG")
 }
