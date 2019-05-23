@@ -76,8 +76,8 @@ Example:
 		}
 		CertString := Cert
 		if Cert != "" {
-			err_cert := util.VerifyCertForHost(Config.Url, Cert)
-			if err_cert != nil {
+			certError := util.VerifyCertForHost(Config.Url, Cert)
+			if certError != nil {
 				b, err := util.UseSourceUrl(Cert)
 				if err != nil {
 					fmt.Printf("Warning: %v\n", err)
@@ -123,7 +123,10 @@ Example:
 		}
 		Config.Username = Username
 		fmt.Println("Login Successful.")
-		WriteConfigFile()
+		writeConfigError := WriteConfigFile()
+		if writeConfigError != nil {
+			return writeConfigError
+		}
 		if initial {
 			fmt.Println(WelcomeText)
 		}
