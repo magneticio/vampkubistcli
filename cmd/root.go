@@ -192,7 +192,7 @@ func WriteConfigFile() error {
 		os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0644)
 	}
 
-	logging.Info("Writing config to congig file path: %v\n", filename)
+	logging.Info("Writing config to config file path: %v\n", filename)
 	writeFileError := ioutil.WriteFile(filename, bs, 0644)
 	if writeFileError != nil {
 		return writeFileError
