@@ -533,6 +533,10 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 										},
 									},
 								},
+								{
+									Name: "OAUTH_TOKEN_EXPIRATION",
+									Value: config.OauthTokenExpiration,
+								},
 							},
 						},
 					},
