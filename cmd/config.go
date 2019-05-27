@@ -39,15 +39,18 @@ To set configuration parameters:
 		}
 		function := args[0]
 		if function == "set" {
-			WriteConfigFile()
-		} else if function == "get" {
-			SourceRaw, err_marshall := json.Marshal(Config)
-			if err_marshall != nil {
-				return err_marshall
+			writeConfigError := WriteConfigFile()
+			if writeConfigError != nil {
+				return writeConfigError
 			}
-			result, err_convert := util.Convert("json", OutputType, string(SourceRaw))
-			if err_convert != nil {
-				return err_convert
+		} else if function == "get" {
+			SourceRaw, marshalError := json.Marshal(Config)
+			if marshalError != nil {
+				return marshalError
+			}
+			result, convertError := util.Convert("json", OutputType, string(SourceRaw))
+			if convertError != nil {
+				return convertError
 			}
 			fmt.Printf("%v", result)
 		}

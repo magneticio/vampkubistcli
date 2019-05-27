@@ -111,6 +111,9 @@ const defaultVersion = "v1"
 const defaultTimeout = 30 * time.Second
 
 func NewRestClient(url string, token string, version string, isVerbose bool, cert string) *restClient {
+	if url == "" {
+		log.Fatal("URL can not be empty, check your configuration")
+	}
 	url = strings.TrimRight(url, "/") // Url should end without a /
 	resty.SetDebug(isVerbose)
 	if version == "" {
@@ -135,6 +138,7 @@ func NewRestClient(url string, token string, version string, isVerbose bool, cer
 	}
 	// default timeout of golang is very long
 	resty.SetTimeout(defaultTimeout)
+	logging.Info("Rest client base url: %v\n", url)
 	client := &restClient{
 		url:     url,
 		token:   token,
@@ -348,7 +352,7 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 	}
 
 	url, _ := getUrlForResource((*s).url, version, resourceName, "", name, values)
-
+	logging.Info("Requesting url: %v\n", url)
 	var resp *resty.Response
 	var err error
 	if update {

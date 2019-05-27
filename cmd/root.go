@@ -65,7 +65,7 @@ const Version string = "v0.0.33"
 var AppName string = InitAppName()
 
 // Backend version is the version this client is tested with
-const BackendVersion string = "0.7.11"
+const BackendVersion string = "0.7.12"
 
 /*
 Application name can change over time so it is made parameteric
@@ -135,17 +135,15 @@ func init() {
 
 }
 
-func ReadConfigFile() error {
+func ReadConfig() error {
 	c := viper.AllSettings()
-	bs, err := yaml.Marshal(c)
-	if err != nil {
-		// fmt.Printf("unable to marshal config to YAML: %v\n", err)
-		return err
+	bs, marshalError := yaml.Marshal(c)
+	if marshalError != nil {
+		return marshalError
 	}
-	err_2 := yaml.Unmarshal(bs, &Config)
-	if err_2 != nil {
-		// fmt.Printf("error: %v\n", err_2)
-		return err_2
+	unmarshalError := yaml.Unmarshal(bs, &Config)
+	if unmarshalError != nil {
+		return unmarshalError
 	}
 	if Project != "" {
 		Config.Project = Project
@@ -162,20 +160,17 @@ func ReadConfigFile() error {
 	if APIVersion != "" {
 		Config.APIVersion = APIVersion
 	}
-	// fmt.Printf("Current config: %v \n", Config)
 	return nil
 }
 
 func WriteConfigFile() error {
 	bs, err := yaml.Marshal(Config)
 	if err != nil {
-		// fmt.Printf("unable to marshal config to YAML: %v\n", err)
+		logging.Error("unable to marshal config to YAML: %v\n", err)
 		return err
 	}
-	// return string(bs)
 	filename := viper.ConfigFileUsed()
 	if filename == "" {
-
 		if cfgFile != "" {
 			// Use config file from the flag.
 			filename = cfgFile
@@ -183,13 +178,13 @@ func WriteConfigFile() error {
 			// Find home directory.
 			home, err := homedir.Dir()
 			if err != nil {
-				// fmt.Println(err)
+				logging.Error("Can not get home dir with error: %v\n", err)
 				return err
 			}
 			path := filepath.FromSlash(home + AddAppName("/.$AppName"))
 			if _, err := os.Stat(path); os.IsNotExist(err) {
 				os.Mkdir(path, os.ModePerm)
-				// There is a problem here try using MkdirAll
+				// If there is a problem here try using MkdirAll
 			}
 			filename = filepath.FromSlash(path + "/" + "config.yaml")
 		}
@@ -197,10 +192,10 @@ func WriteConfigFile() error {
 		os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0644)
 	}
 
-	// fmt.Printf("write config to file: %v , config: %v\n", filename, Config)
-	err_1 := ioutil.WriteFile(filename, bs, 0644)
-	if err_1 != nil {
-		return err_1
+	logging.Info("Writing config to config file path: %v\n", filename)
+	writeFileError := ioutil.WriteFile(filename, bs, 0644)
+	if writeFileError != nil {
+		return writeFileError
 	}
 	return nil
 }
@@ -211,18 +206,15 @@ func initConfig() {
 	if cfgFile == "" {
 		cfgFile = viper.GetString("config")
 	}
-	if cfgFile == "" {
-		cfgFile = viper.GetString("config")
-	}
 	logging.Info("Using Config file path: %v\n", cfgFile)
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
 		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			logging.Error("Can not find home Directory: %v\n", err)
+		home, homeDirError := homedir.Dir()
+		if homeDirError != nil {
+			logging.Error("Can not find home Directory: %v\n", homeDirError)
 			os.Exit(1)
 		}
 		// Search config in home directory with name ".$AppName" (without extension).
@@ -230,10 +222,12 @@ func initConfig() {
 		viper.AddConfigPath(path)
 		viper.SetConfigName("config")
 	}
-
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		// fmt.Println("Using config file:", viper.ConfigFileUsed())
-		ReadConfigFile()
+		logging.Info("Using config file: %v\n", viper.ConfigFileUsed())
+	} else {
+		logging.Error("Config can not be read due to error: %v\n", err)
 	}
+
+	ReadConfig()
 }
