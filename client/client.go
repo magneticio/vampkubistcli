@@ -80,7 +80,7 @@ var resourceMap map[string]string = map[string]string{
 }
 
 type restClient struct {
-	url      string
+	url	 string
 	version  string
 	username string
 	password string
@@ -135,12 +135,19 @@ func NewRestClient(url string, token string, version string, isVerbose bool, cer
 	}
 	// default timeout of golang is very long
 	resty.SetTimeout(defaultTimeout)
-	return &restClient{
+	client := &restClient{
 		url:     url,
 		token:   token,
 		version: version,
 		certs:   cert,
 	}
+	if token != "" {
+		_, err := client.RefreshToken(token)
+		if err != nil {
+			log.Fatal("Cannot refresh token - ", err)
+		}
+	}
+	return client
 }
 
 /*
@@ -213,11 +220,37 @@ func (s *restClient) Login(username string, password string) (string, error) {
 			return "", errors.New(string(resp.Body()))
 		}
 		(*s).token = resp.Result().(*authSuccess).AccessToken
+		refreshToken := resp.Result().(*authSuccess).RefreshToken
+		return refreshToken, nil
+	}
+
+	return "", errors.New("Token retrievel failed")
+}
+
+func (s *restClient) RefreshToken(refreshToken string) (string, error) {
+	url := (*s).url + "/oauth/access_token"
+	body := "client_id=frontend&client_secret=&grant_type=refresh_token&refresh_token=" + refreshToken
+	resp, err := resty.R().
+		SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
+		SetHeader("Accept", "application/json").
+		SetBody([]byte(body)).
+		SetResult(&authSuccess{}).
+		SetError(&errorResponse{}).
+		Post(url)
+
+	if err != nil {
+		return "", err
+	}
+
+	if resp != nil {
+		if resp.IsError() {
+			return "", errors.New(string(resp.Body()))
+		}
+		(*s).token = resp.Result().(*authSuccess).AccessToken
 		return (*s).token, nil
 	}
 
 	return "", errors.New("Token retrievel failed")
-
 }
 
 func getUrlForResource(base string, version string, resourceName string, subCommand string, name string, values map[string]string) (string, error) {

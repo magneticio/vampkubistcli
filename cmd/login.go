@@ -114,7 +114,7 @@ Example:
 					return errors.New("Password is required")
 				}
 			}
-			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
+			restClient := client.NewRestClient(Config.Url, "", Config.APIVersion, logging.Verbose, Config.Cert)
 			token, err := restClient.Login(Username, Password)
 			if err != nil {
 				return err
