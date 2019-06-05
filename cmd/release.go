@@ -29,6 +29,8 @@ import (
 var Api string
 var Subset string
 var Port string
+var Period string
+var Step string
 var Destination string
 var SubsetLabels map[string]string
 var ReleaseType string
@@ -76,11 +78,33 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 			portReference = &portInt
 		}
 
+		var periodReference *int
+
+		if Period != "" {
+			periodInt, convErr := strconv.Atoi(Period)
+			if convErr != nil {
+				return convErr
+			}
+			periodReference = &periodInt
+		}
+
+		var stepReference *int
+
+		if Step != "" {
+			stepInt, convErr := strconv.Atoi(Step)
+			if convErr != nil {
+				return convErr
+			}
+			stepReference = &stepInt
+		}
+
 		// fmt.Printf("%v %v %v\n", Type, Name, SubsetLabels)
 		canaryRelease := models.CanaryRelease{
 			VampService:  VampService,
 			Destination:  Destination,
 			Port:         portReference,
+			UpdatePeriod: periodReference,
+			UpdateStep:   stepReference,
 			Subset:       Subset,
 			SubsetLabels: SubsetLabels,
 			Policies:     policies,
@@ -112,6 +136,8 @@ func init() {
 
 	releaseCmd.Flags().StringVarP(&Destination, "destination", "", "", "Destination to use in the release")
 	releaseCmd.Flags().StringVarP(&Port, "port", "", "", "Port to use in the release")
+	releaseCmd.Flags().StringVarP(&Period, "period", "", "", "Period of updates")
+	releaseCmd.Flags().StringVarP(&Step, "step", "", "", "Step is the percetage change at each step")
 	releaseCmd.Flags().StringVarP(&Subset, "subset", "", "", "Subset to use in the release")
 	releaseCmd.Flags().StringVarP(&ReleaseType, "type", "", "", "Type of canary release to use")
 	releaseCmd.Flags().StringToStringVarP(&SubsetLabels, "label", "l", map[string]string{}, "Subset labels, multiple labels are allowed")
