@@ -1,4 +1,4 @@
-// Copyright 2018 Istio Authors
+// Copyright © 2018 Developer developer@vamp.io
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -99,47 +99,38 @@ func (s *VampAdapter) HandleMetric(ctx context.Context, r *metric.HandleMetricRe
 	return &v1beta1.ReportResult{}, nil
 }
 
+/*
+type InstanceMsg struct {
+	// Name of the instance as specified in configuration.
+	Name string `protobuf:"bytes,72295727,opt,name=name,proto3" json:"name,omitempty"`
+	// Variables that are delivered for each log entry.
+	Variables map[string]*v1beta1.Value `protobuf:"bytes,1,rep,name=variables,proto3" json:"variables,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Timestamp is the time value for the log entry
+	Timestamp *v1beta1.TimeStamp `protobuf:"bytes,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	// Severity indicates the importance of the log entry.
+	Severity string `protobuf:"bytes,3,opt,name=severity,proto3" json:"severity,omitempty"`
+	// Optional. An expression to compute the type of the monitored resource this log entry is being recorded on.
+	// If the logging backend supports monitored resources, these fields are used to populate that resource.
+	// Otherwise these fields will be ignored by the adapter.
+	MonitoredResourceType string `protobuf:"bytes,4,opt,name=monitored_resource_type,json=monitoredResourceType,proto3" json:"monitored_resource_type,omitempty"`
+	// Optional. A set of expressions that will form the dimensions of the monitored resource this log entry is being
+	// recorded on. If the logging backend supports monitored resources, these fields are used to populate that resource.
+	// Otherwise these fields will be ignored by the adapter.
+	MonitoredResourceDimensions map[string]*v1beta1.Value `protobuf:"bytes,5,rep,name=monitored_resource_dimensions,json=monitoredResourceDimensions,proto3" json:"monitored_resource_dimensions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+*/
+
 // logentry.Handler#HandleLogEntry
 func (s *VampAdapter) HandleLogEntry(ctx context.Context, insts []*logentry.Instance) error {
-	/*
-		  var handleErr *multierror.Error
-			for _, i := range insts {
-				logging.Info("Got a new log, name %v", i.Name)
-
-				// Durations are not supported by msgp
-				for k, v := range i.Variables {
-					if h.types[i.Name].Variables[k] == descriptor.DURATION {
-						if h.intDur {
-							d := v.(time.Duration)
-							i.Variables[k] = int64(d / time.Millisecond)
-						} else {
-							d := v.(time.Duration)
-							i.Variables[k] = d.String()
-						}
-					}
-				}
-
-				i.Variables["severity"] = i.Severity
-
-				tag, ok := i.Variables["tag"]
-				if !ok {
-					tag = i.Name
-				} else {
-					i.Variables["name"] = i.Name
-					delete(i.Variables, "tag")
-				}
-
-				select {
-				case h.dataBuffer <- dataToEncode{tag.(string), i.Timestamp, i.Variables}:
-				default:
-					logging.Error("Instance buffer full; dropping log entry.")
-					handleErr = multierror.Append(handleErr, errors.New("Instance buffer full; dropping log entry"))
-					continue
-				}
-
+	for _, i := range insts {
+		logging.Info("Got a new log, name %v", i.Name)
+		// Durations are not supported by msgp
+		for k, v := range i.Variables {
+			if k == "cookie" {
+				logging.Info("Cookiee %v\n", v)
 			}
-			return handleErr.ErrorOrNil()
-	*/
+		}
+	}
 	return nil
 }
 
@@ -229,6 +220,7 @@ func getServerTLSOption(credential, privateKey, caCertificate string) (grpc.Serv
 
 // NewVampAdapter creates a new IBP adapter that listens at provided port.
 func NewVampAdapter(addr string) (Server, error) {
+	logging.Info("Running on port %v\n", addr)
 	if addr == "" {
 		addr = "0"
 	}

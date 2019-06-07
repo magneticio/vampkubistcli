@@ -23,6 +23,7 @@ require (
 	github.com/gophercloud/gophercloud v0.0.0-20190422143055-fe6299556848 // indirect
 	github.com/gorilla/websocket v1.4.0
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
+	github.com/hashicorp/go-multierror v1.0.0
 	github.com/imdario/mergo v0.3.7
 	github.com/json-iterator/go v1.1.6 // indirect
 	github.com/kisielk/errcheck v1.2.0 // indirect

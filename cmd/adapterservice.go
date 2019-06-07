@@ -15,27 +15,28 @@
 package cmd
 
 import (
-	"errors"
+	"strconv"
 
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/vampadapter"
 	"github.com/spf13/cobra"
 )
 
+var PortInt int
+
 // adapterserviceCmd represents the adapterservice command
 var adapterserviceCmd = &cobra.Command{
-	Use:           "adapterservice",
-	Short:         "accept logs of the mixer",
-	Long:          `accept logs of the mixer`,
+	Use:   "adapterservice",
+	Short: "accept logs of the mixer",
+	Long: AddAppName(`accept logs of the mixer
+Example:
+  $AppName adapterservice --port 38355
+    `),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			return errors.New("Not enough arguments")
-		}
-		addr := args[0]
-
-		s, err := vampadapter.NewVampAdapter(addr)
+		logging.Info("Run on port: %v\n", PortInt)
+		s, err := vampadapter.NewVampAdapter(strconv.Itoa(PortInt))
 		if err != nil {
 			logging.Error("unable to start server: %v", err)
 			return err
@@ -52,4 +53,6 @@ var adapterserviceCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(adapterserviceCmd)
+	adapterserviceCmd.Flags().IntVarP(&PortInt, "port", "", 38355, "Port to run the adapter service")
+
 }
