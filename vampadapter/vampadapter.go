@@ -38,7 +38,6 @@ import (
 	"istio.io/api/mixer/adapter/model/v1beta1"
 	policy "istio.io/api/policy/v1beta1"
 	"istio.io/istio/mixer/template/logentry"
-	"istio.io/istio/mixer/template/metric"
 )
 
 type (
@@ -56,9 +55,10 @@ type (
 	}
 )
 
-var _ metric.HandleMetricServiceServer = &VampAdapter{}
+var _ logentry.HandleLogEntryServiceServer = &VampAdapter{}
 
 // HandleMetric records metric entries
+/*
 func (s *VampAdapter) HandleMetric(ctx context.Context, r *metric.HandleMetricRequest) (*v1beta1.ReportResult, error) {
 
 	logging.Info("received request %v\n", *r)
@@ -98,6 +98,7 @@ func (s *VampAdapter) HandleMetric(ctx context.Context, r *metric.HandleMetricRe
 	logging.Info("success!!")
 	return &v1beta1.ReportResult{}, nil
 }
+*/
 
 /*
 type InstanceMsg struct {
@@ -121,6 +122,7 @@ type InstanceMsg struct {
 */
 
 // logentry.Handler#HandleLogEntry
+/*
 func (s *VampAdapter) HandleLogEntry(ctx context.Context, insts []*logentry.Instance) error {
 	for _, i := range insts {
 		logging.Info("Got a new log, name %v", i.Name)
@@ -132,6 +134,47 @@ func (s *VampAdapter) HandleLogEntry(ctx context.Context, insts []*logentry.Inst
 		}
 	}
 	return nil
+}
+*/
+
+// HandleLogEntry records log entries
+func (s *VampAdapter) HandleLogEntry(ctx context.Context, r *logentry.HandleLogEntryRequest) (*v1beta1.ReportResult, error) {
+
+	logging.Info("received request %v\n", *r)
+	var b bytes.Buffer
+	cfg := &config.Params{}
+
+	if r.AdapterConfig != nil {
+		if err := cfg.Unmarshal(r.AdapterConfig.Value); err != nil {
+			logging.Error("error unmarshalling adapter config: %v", err)
+			return nil, err
+		}
+	}
+
+	b.WriteString(fmt.Sprintf("HandleMetric invoked with:\n  Adapter config: %s\n  Instances: %s\n",
+		cfg.String(), instances(r.Instances)))
+
+	if cfg.FilePath == "" {
+		logging.Info(b.String())
+	} else {
+		_, err := os.OpenFile("out.txt", os.O_RDONLY|os.O_CREATE, 0666)
+		if err != nil {
+			logging.Error("error creating file: %v", err)
+		}
+		f, err := os.OpenFile(cfg.FilePath, os.O_APPEND|os.O_WRONLY, 0600)
+		if err != nil {
+			logging.Error("error opening file for append: %v", err)
+		}
+
+		defer f.Close()
+
+		logging.Info("writing instances to file %s", f.Name())
+		if _, err = f.Write(b.Bytes()); err != nil {
+			logging.Error("error writing to file: %v", err)
+		}
+	}
+
+	return nil, nil
 }
 
 func decodeDimensions(in map[string]*policy.Value) map[string]interface{} {
@@ -155,6 +198,7 @@ func decodeValue(in interface{}) interface{} {
 	}
 }
 
+/*
 func instances(in []*metric.InstanceMsg) string {
 	var b bytes.Buffer
 	for _, inst := range in {
@@ -163,6 +207,21 @@ func instances(in []*metric.InstanceMsg) string {
 			"		Value = %v\n"+
 			"		Dimensions = %v\n"+
 			"  }", inst.Name, decodeValue(inst.Value.GetValue()), decodeDimensions(inst.Dimensions)))
+	}
+	return b.String()
+}
+*/
+
+func instances(in []*logentry.InstanceMsg) string {
+	var b bytes.Buffer
+	for _, inst := range in {
+		timeStamp := inst.Timestamp.Value.String()
+		severity := inst.Severity
+		fmt.Println("TimeStamp: ", timeStamp)
+		fmt.Println("Severity: ", severity)
+		for k, v := range inst.Variables {
+			fmt.Println(k, ": ", decodeValue(v.GetValue()))
+		}
 	}
 	return b.String()
 }
@@ -245,6 +304,6 @@ func NewVampAdapter(addr string) (Server, error) {
 	} else {
 		s.server = grpc.NewServer()
 	}
-	metric.RegisterHandleMetricServiceServer(s.server, s)
+	logentry.RegisterHandleLogEntryServiceServer(s.server, s)
 	return s, nil
 }
