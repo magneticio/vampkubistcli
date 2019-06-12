@@ -15,7 +15,7 @@
 // nolint:lll
 // Generates the VampAdapter adapter's resource yaml. It contains the adapter's configuration, name, supported template
 // names (metric in this case), and whether it is session or no-session based.
-//go:generate $GOPATH/src/istio.io/istio/bin/mixer_codegen.sh -a /adapter/config/config.proto -x "-s=false -n adapter -t logentry"
+//go:generate $GOPATH/src/istio.io/istio/bin/mixer_codegen.sh -a /adapter/config/config.proto -x "-s=false -n vampadapter -t logentry"
 
 package vampadapter
 
@@ -48,7 +48,7 @@ type (
 		Run(shutdown chan error)
 	}
 
-	// VampAdapter supports metric template.
+	// VampAdapter supports logentry template.
 	VampAdapter struct {
 		listener net.Listener
 		server   *grpc.Server
@@ -56,49 +56,6 @@ type (
 )
 
 var _ logentry.HandleLogEntryServiceServer = &VampAdapter{}
-
-// HandleMetric records metric entries
-/*
-func (s *VampAdapter) HandleMetric(ctx context.Context, r *metric.HandleMetricRequest) (*v1beta1.ReportResult, error) {
-
-	logging.Info("received request %v\n", *r)
-	var b bytes.Buffer
-	cfg := &config.Params{}
-
-	if r.AdapterConfig != nil {
-		if err := cfg.Unmarshal(r.AdapterConfig.Value); err != nil {
-			logging.Error("error unmarshalling adapter config: %v", err)
-			return nil, err
-		}
-	}
-
-	b.WriteString(fmt.Sprintf("HandleMetric invoked with:\n  Adapter config: %s\n  Instances: %s\n",
-		cfg.String(), instances(r.Instances)))
-
-	if cfg.FilePath == "" {
-		fmt.Println(b.String())
-	} else {
-		_, err := os.OpenFile("out.txt", os.O_RDONLY|os.O_CREATE, 0666)
-		if err != nil {
-			logging.Error("error creating file: %v", err)
-		}
-		f, err := os.OpenFile(cfg.FilePath, os.O_APPEND|os.O_WRONLY, 0600)
-		if err != nil {
-			logging.Error("error opening file for append: %v", err)
-		}
-
-		defer f.Close()
-
-		logging.Info("writing instances to file %s", f.Name())
-		if _, err = f.Write(b.Bytes()); err != nil {
-			logging.Error("error writing to file: %v", err)
-		}
-	}
-
-	logging.Info("success!!")
-	return &v1beta1.ReportResult{}, nil
-}
-*/
 
 /*
 type InstanceMsg struct {
@@ -118,22 +75,6 @@ type InstanceMsg struct {
 	// recorded on. If the logging backend supports monitored resources, these fields are used to populate that resource.
 	// Otherwise these fields will be ignored by the adapter.
 	MonitoredResourceDimensions map[string]*v1beta1.Value `protobuf:"bytes,5,rep,name=monitored_resource_dimensions,json=monitoredResourceDimensions,proto3" json:"monitored_resource_dimensions,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-}
-*/
-
-// logentry.Handler#HandleLogEntry
-/*
-func (s *VampAdapter) HandleLogEntry(ctx context.Context, insts []*logentry.Instance) error {
-	for _, i := range insts {
-		logging.Info("Got a new log, name %v", i.Name)
-		// Durations are not supported by msgp
-		for k, v := range i.Variables {
-			if k == "cookie" {
-				logging.Info("Cookiee %v\n", v)
-			}
-		}
-	}
-	return nil
 }
 */
 
@@ -193,24 +134,17 @@ func decodeValue(in interface{}) interface{} {
 		return t.Int64Value
 	case *policy.Value_DoubleValue:
 		return t.DoubleValue
+	case *policy.Value_IpAddressValue:
+		ipV := t.IpAddressValue.Value
+		ipAddress := net.IP(ipV)
+		str := ipAddress.String()
+		return str
+	case *policy.Value_DurationValue:
+		return t.DurationValue.Value.String()
 	default:
 		return fmt.Sprintf("%v", in)
 	}
 }
-
-/*
-func instances(in []*metric.InstanceMsg) string {
-	var b bytes.Buffer
-	for _, inst := range in {
-		b.WriteString(fmt.Sprintf("'%s':\n"+
-			"  {\n"+
-			"		Value = %v\n"+
-			"		Dimensions = %v\n"+
-			"  }", inst.Name, decodeValue(inst.Value.GetValue()), decodeDimensions(inst.Dimensions)))
-	}
-	return b.String()
-}
-*/
 
 func instances(in []*logentry.InstanceMsg) string {
 	var b bytes.Buffer
@@ -300,8 +234,10 @@ func NewVampAdapter(addr string) (Server, error) {
 		if err != nil {
 			return nil, err
 		}
+		logging.Info("Starting server with credentials")
 		s.server = grpc.NewServer(so)
 	} else {
+		logging.Info("Starting server without credentials")
 		s.server = grpc.NewServer()
 	}
 	logentry.RegisterHandleLogEntryServiceServer(s.server, s)
