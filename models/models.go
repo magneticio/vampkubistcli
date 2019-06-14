@@ -70,6 +70,8 @@ type CanaryRelease struct {
 	VampService  string            `json:"vampService"`
 	Destination  string            `json:"destination,omitempty"`
 	Port         *int              `json:"port,omitempty"`
+	UpdatePeriod *int              `json:"updatePeriod,omitempty"`
+	UpdateStep   *int              `json:"updateStep,omitempty"`
 	Subset       string            `json:"subset,omitempty"`
 	SubsetLabels map[string]string `json:"subsetLabels,omitempty"`
 	Policies     []PolicyReference `json:"policies,omitempty"`
