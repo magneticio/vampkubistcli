@@ -1,0 +1,98 @@
+# handler for adapter mygrpcadapter
+apiVersion: "config.istio.io/v1alpha2"
+kind: handler
+metadata:
+ name: vampadapterhandler
+ namespace: istio-system
+spec:
+ adapter: vampadapter
+ connection:
+   address: "vampadapter.logging:9000"
+ params:
+   file_path: "out.txt"
+---
+# instance for template logentry
+apiVersion: "config.istio.io/v1alpha2"
+kind: instance
+metadata:
+  name: vamplog
+  namespace: istio-system
+spec:
+  template: logentry
+  params:
+    severity: '"info"'
+    timestamp: request.time
+    variables:
+      source: source.labels["app"] | source.workload.name | "unknown"
+      user: source.user | "unknown"
+      destination: destination.labels["app"] | destination.name | destination.service.name | "unknown"
+      responseCode: response.code | 0
+      responseSize: response.size | 0
+      latency: response.duration | "0ms"
+      url: request.path | ""
+      cookies: request.headers["cookie"] | ""
+---
+
+# rule to dispatch to handler h1
+apiVersion: "config.istio.io/v1alpha2"
+kind: rule
+metadata:
+ name: vampadapterrule
+ namespace: istio-system
+spec:
+  match: "true" # match for all requests
+  actions:
+  - handler: vampadapterhandler.istio-system
+    instances:
+    - vamplog
+---
+# Fluentd Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: vampadapter
+  namespace: logging
+  labels:
+    app: vampadapter
+spec:
+  ports:
+  - name: vampadapter-tcp
+    port: 9000
+    protocol: TCP
+    targetPort: 9000
+  selector:
+    app: vampadapter
+---
+# Fluentd Deployment
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vampadapter
+  namespace: logging
+  labels:
+    app: vampadapter
+  annotations:
+    sidecar.istio.io/inject: "false"
+spec:
+  template:
+    metadata:
+      labels:
+        app: vampadapter
+    spec:
+      containers:
+      - name: vampadapter
+        image: magneticio/vampkubist-istio-adapter:4
+        ports:
+        - containerPort: 9000
+          protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: 9000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 9000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+      terminationGracePeriodSeconds: 30

@@ -30,7 +30,7 @@ var adapterserviceCmd = &cobra.Command{
 	Short: "accept logs of the mixer",
 	Long: AddAppName(`accept logs of the mixer
 Example:
-  $AppName adapterservice --port 38355
+  $AppName adapterservice --port 9000
     `),
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -55,6 +55,6 @@ Example:
 func init() {
 	rootCmd.AddCommand(adapterserviceCmd)
 
-	adapterserviceCmd.Flags().IntVarP(&PortInt, "port", "", 38355, "Port to run the adapter service")
+	adapterserviceCmd.Flags().IntVarP(&PortInt, "port", "", 9000, "Port to run the adapter service")
 
 }

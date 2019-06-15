@@ -5,6 +5,6 @@ RUN cd /root/src && CGO_ENABLED=0 go build -o vamp
 FROM alpine:3.9
 WORKDIR /app
 COPY --from=build-env /root/src/vamp /app/
-ENTRYPOINT ["./vamp", "adapterservice", "--port", "38355", "-v"]
+ENTRYPOINT ["./vamp", "adapterservice", "--port", "9000", "-v"]
 
-EXPOSE 38355
+EXPOSE 9000

@@ -217,7 +217,7 @@ func NewVampAdapter(addr string) (Server, error) {
 	if addr == "" {
 		addr = "0"
 	}
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", addr))
+	listener, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", addr))
 	if err != nil {
 		return nil, fmt.Errorf("unable to listen on socket: %v", err)
 	}
