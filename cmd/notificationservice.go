@@ -59,7 +59,7 @@ var notificationserviceCmd = &cobra.Command{
 			}
 			iconPath = tmpFile.Name()
 		}
-		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
+		restClient := client.NewRestClient(Config.Url, Config.RefreshToken, Config.APIVersion, logging.Verbose, Config.Cert)
 		notifications := make(chan models.Notification, 10)
 		notify := notificator.New(notificator.Options{
 			DefaultIcon: iconPath,

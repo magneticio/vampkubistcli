@@ -92,8 +92,8 @@ Example:
 			Config.Cert = CertString
 		}
 		if Token != "" {
-			Config.Token = Token
-			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
+			Config.RefreshToken = Token
+			restClient := client.NewRestClient(Config.Url, Config.RefreshToken, Config.APIVersion, logging.Verbose, Config.Cert)
 			isPong, err := restClient.Ping() // TODO: use an authorized endpoint to check token works
 			if !isPong {
 				return err
@@ -119,7 +119,7 @@ Example:
 			if err != nil {
 				return err
 			}
-			Config.Token = token
+			Config.RefreshToken = token
 		}
 		Config.Username = Username
 		fmt.Println("Login Successful.")

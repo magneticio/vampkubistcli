@@ -33,7 +33,7 @@ type config struct {
 	Url            string `yaml:"url,omitempty" json:"url,omitempty"`
 	Cert           string `yaml:"cert,omitempty" json:"cert,omitempty"`
 	Username       string `yaml:"username,omitempty" json:"username,omitempty"`
-	Token          string `yaml:"token,omitempty" json:"token,omitempty"`
+	RefreshToken   string `yaml:"token,omitempty" json:"token,omitempty"`
 	Project        string `yaml:"project,omitempty" json:"project,omitempty"`
 	Cluster        string `yaml:"cluster,omitempty" json:"cluster,omitempty"`
 	VirtualCluster string `yaml:"virtualcluster,omitempty" json:"virtualcluster,omitempty"`
@@ -155,7 +155,7 @@ func ReadConfig() error {
 		Config.VirtualCluster = VirtualCluster
 	}
 	if Token != "" {
-		Config.Token = Token
+		Config.RefreshToken = Token
 	}
 	if APIVersion != "" {
 		Config.APIVersion = APIVersion
