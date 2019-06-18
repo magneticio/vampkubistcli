@@ -49,16 +49,15 @@ func TestClientAuthToken(t *testing.T) {
 	})
 	defer ts.Close()
 
-	Token := ""
 	Cert := ""
 	Username := "test"
 	Password := "pass"
 	Version := "v1"
-	restClient := client.NewRestClient(ts.URL, Token, Version, logging.Verbose, Cert)
-	token, err := restClient.Login(Username, Password)
+	restClient := client.NewRestClient(ts.URL, Version, logging.Verbose, Cert)
+	err := restClient.Login(Username, Password)
 
 	assertError(t, err)
-	assertEqual(t, "Test-Refresh-Token", token)
+	assertEqual(t, "Test-Refresh-Token", restClient.RefreshToken)
 }
 
 func TestClientListErrorMessage(t *testing.T) {
@@ -77,11 +76,10 @@ func TestClientListErrorMessage(t *testing.T) {
 		}
 	})
 	defer ts.Close()
-	Token := "Test-Token"
 	Cert := ""
 	Version := "v1"
 	Verbose := false
-	restClient := client.NewRestClient(ts.URL, Token, Version, Verbose, Cert)
+	restClient := client.NewRestClient(ts.URL, Version, Verbose, Cert)
 	values := make(map[string]string)
 	values["project"] = "project"
 	values["cluster"] = "cluster"

@@ -54,7 +54,7 @@ var addCmd = &cobra.Command{
 			temporarayPassword := util.RandomString(50)
 			SourceFileType := "json"
 			Source := "{\"userName\":\"" + Username + "\",\"password\":\"" + temporarayPassword + "\"}"
-			restClient := client.NewRestClient(Config.Url, Config.RefreshToken, Config.APIVersion, logging.Verbose, Config.Cert)
+			restClient := client.ClientFromConfig(Config, logging.Verbose)
 			values := make(map[string]string)
 			values["project"] = Config.Project
 			values["cluster"] = Config.Cluster
@@ -65,7 +65,7 @@ var addCmd = &cobra.Command{
 				return createError
 			}
 			fmt.Printf("User created.\n")
-			token, loginError := restClient.Login(Username, temporarayPassword)
+			loginError := restClient.Login(Username, temporarayPassword)
 			if loginError != nil {
 				return loginError
 			}
@@ -74,11 +74,13 @@ var addCmd = &cobra.Command{
 
 			// Write the file is called after printing the output to handle avoid file write errors blocking user creation
 			if userConfigFilePath != "" {
-				userConfig := &config{
-					Url:          Config.Url,
-					Cert:         Config.Cert,
-					Username:     Username,
-					RefreshToken: token,
+				userConfig := &ClientConfig{
+					Url:            Config.Url,
+					Cert:           Config.Cert,
+					Username:       Username,
+					RefreshToken:   restClient.RefreshToken,
+					AccessToken:    restClient.AccessToken,
+					ExpirationTime: restClient.ExpirationTime,
 				}
 				writeConfigError := writeConfigToFile(userConfig, userConfigFilePath)
 				if writeConfigError != nil {
@@ -96,7 +98,7 @@ func init() {
 	addCmd.Flags().StringVarP(&userConfigFilePath, "user-config-output-path", "", "", "Generated user configuration file output path. Path should be in an existing folder.")
 }
 
-func writeConfigToFile(userConfig *config, filename string) error {
+func writeConfigToFile(userConfig *ClientConfig, filename string) error {
 	bs, marshallError := yaml.Marshal(userConfig)
 	if marshallError != nil {
 		return marshallError

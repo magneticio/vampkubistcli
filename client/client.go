@@ -16,6 +16,7 @@ package client
 
 import (
 	"bytes"
+	"cmd"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -80,12 +81,15 @@ var resourceMap map[string]string = map[string]string{
 }
 
 type restClient struct {
-	url	 string
-	version  string
-	username string
-	password string
-	token    string
-	certs    string
+	url            string
+	version        string
+	username       string
+	password       string
+	token          string
+	certs          string
+	refreshToken   string
+	expirationTime int64
+	config         *ClientConfig
 }
 
 type successResponse struct {
@@ -110,7 +114,7 @@ const defaultVersion = "v1"
 
 const defaultTimeout = 30 * time.Second
 
-func NewRestClient(url string, token string, version string, isVerbose bool, cert string) *restClient {
+func NewRestClient(url string, version string, isVerbose bool, cert string) *restClient {
 	if url == "" {
 		log.Fatal("URL can not be empty, check your configuration")
 	}
@@ -141,17 +145,32 @@ func NewRestClient(url string, token string, version string, isVerbose bool, cer
 	logging.Info("Rest client base url: %v\n", url)
 	client := &restClient{
 		url:     url,
-		token:   token,
 		version: version,
 		certs:   cert,
 	}
-	if token != "" {
-		_, err := client.RefreshToken(token)
+	return client
+}
+
+func ClientFromConfig(cfg *ClientConfig, isVerbose bool) *restClient {
+	client := NewRestClient(cfg.Url, cfg.APIVersion, isVerbose, cfg.Cert)
+	client.config = cfg
+	client.token = cfg.AccessToken
+	client.refreshToken = cfg.RefreshToken
+	client.expirationTime = cfg.ExpirationTime
+	return client
+}
+
+func (s *restClient) refreshTokenIfNeeded() {
+	if (time.Now().Unix() + 60) > s.expirationTime {
+		logging.Info("Access token is expired - refreshing...")
+		if cfg.RefreshToken == "" {
+			log.Fatal("Cannot refresh token - current refresh token is empty")
+		}
+		err := s.RefreshToken()
 		if err != nil {
 			log.Fatal("Cannot refresh token - ", err)
 		}
 	}
-	return client
 }
 
 /*
@@ -201,39 +220,34 @@ func ResourceTypeConversion(resource string) string {
 
 }
 
-func (s *restClient) Login(username string, password string) (string, error) {
-	(*s).username = username
-	(*s).password = password
-	url := (*s).url + "/oauth/access_token"
-	// fmt.Printf("user login with username: %v password: %v\n", username, password)
-	body := "username=" + username + "&password=" + password + "&client_id=frontend&client_secret=&grant_type=password"
-	resp, err := resty.R().
-		SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
-		SetHeader("Accept", "application/json").
-		SetBody([]byte(body)).
-		SetResult(&authSuccess{}).
-		SetError(&errorResponse{}).
-		Post(url)
-
-	if err != nil {
-		return "", err
-	}
-
-	if resp != nil {
-		if resp.IsError() {
-			return "", errors.New(string(resp.Body()))
+func (s *restClient) updateConfig() {
+	if s.config != nill {
+		s.config.AccessToken = s.token
+		s.config.RefreshToken = s.refreshToken
+		s.config.ExpirationTime = s.expirationTime
+		writeConfigError := WriteConfigFile()
+		if writeConfigError != nil {
+			log.Fatal("Cannot save updated refresh token to config")
 		}
-		(*s).token = resp.Result().(*authSuccess).AccessToken
-		refreshToken := resp.Result().(*authSuccess).RefreshToken
-		return refreshToken, nil
 	}
-
-	return "", errors.New("Token retrievel failed")
 }
 
-func (s *restClient) RefreshToken(refreshToken string) (string, error) {
+func (s *restClient) parseTokenResponse(resp *authSuccess) {
+	(*s).token = resp.AccessToken
+	(*s).refreshToken = resp.RefreshToken
+	expiresIn := resp.ExpiresIn
+	if expiresIn != "" {
+		if tm, err := strconv.Atoi(expiresIn); err == nil {
+			logging.Error("Cannot convert expiresIn response field %s to int", expiresIn)
+		} else {
+			(*s).expirationTime = time.Now().Unix() + tm
+		}
+	}
+	s.updateConfig()
+}
+
+func (s *restClient) auth(body string) error {
 	url := (*s).url + "/oauth/access_token"
-	body := "client_id=frontend&client_secret=&grant_type=refresh_token&refresh_token=" + refreshToken
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
 		SetHeader("Accept", "application/json").
@@ -248,13 +262,25 @@ func (s *restClient) RefreshToken(refreshToken string) (string, error) {
 
 	if resp != nil {
 		if resp.IsError() {
-			return "", errors.New(string(resp.Body()))
+			return errors.New(string(resp.Body()))
 		}
-		(*s).token = resp.Result().(*authSuccess).AccessToken
-		return (*s).token, nil
+		parseTokenResponse(resp.Result().(*authSuccess))
+		return nil
 	}
 
-	return "", errors.New("Token retrievel failed")
+	return errors.New("Authentication failed")
+}
+
+func (s *restClient) Login(username string, password string) error {
+	(*s).username = username
+	(*s).password = password
+	body := "username=" + username + "&password=" + password + "&client_id=frontend&client_secret=&grant_type=password"
+	return auth(body)
+}
+
+func (s *restClient) RefreshToken() error {
+	body := "client_id=frontend&client_secret=&grant_type=refresh_token&refresh_token=" + s.refreshToken
+	return auth(body)
 }
 
 func getUrlForResource(base string, version string, resourceName string, subCommand string, name string, values map[string]string) (string, error) {
@@ -332,48 +358,56 @@ func (s *restClient) Update(resourceName string, name string, source string, sou
 
 func (s *restClient) Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error) {
 
-	if sourceType == "yaml" {
-		json, err := yaml.YAMLToJSON([]byte(source))
-		if err != nil {
-			return false, err
+	apply := func() (*resty.Response, error) {
+		s.refreshTokenIfNeeded()
+		
+		if sourceType == "yaml" {
+			json, err := yaml.YAMLToJSON([]byte(source))
+			if err != nil {
+				return false, err
+			}
+			source = string(json)
 		}
-		source = string(json)
+
+		body := []byte(source)
+
+		version, jsonErr := getVersionFromResource(body)
+		if jsonErr != nil {
+			return false, jsonErr
+		}
+
+		if version == "" {
+			version = (*s).version
+		}
+
+		url, _ := getUrlForResource((*s).url, version, resourceName, "", name, values)
+		logging.Info("Requesting url: %v\n", url)
+		var resp *resty.Response
+		var err error
+		if update {
+			resp, err = resty.R().
+				SetHeader("Content-Type", "application/json").
+				SetHeader("Accept", "application/json").
+				SetAuthToken((*s).token).
+				SetBody(body).
+				SetResult(&successResponse{}).
+				SetError(&errorResponse{}).
+				Put(url)
+		} else {
+			resp, err = resty.R().
+				SetHeader("Content-Type", "application/json").
+				SetHeader("Accept", "application/json").
+				SetAuthToken((*s).token).
+				SetBody(body).
+				SetResult(&successResponse{}).
+				SetError(&errorResponse{}).
+				Post(url)
+		}
+
+		return resp, err
 	}
 
-	body := []byte(source)
-
-	version, jsonErr := getVersionFromResource(body)
-	if jsonErr != nil {
-		return false, jsonErr
-	}
-
-	if version == "" {
-		version = (*s).version
-	}
-
-	url, _ := getUrlForResource((*s).url, version, resourceName, "", name, values)
-	logging.Info("Requesting url: %v\n", url)
-	var resp *resty.Response
-	var err error
-	if update {
-		resp, err = resty.R().
-			SetHeader("Content-Type", "application/json").
-			SetHeader("Accept", "application/json").
-			SetAuthToken((*s).token).
-			SetBody(body).
-			SetResult(&successResponse{}).
-			SetError(&errorResponse{}).
-			Put(url)
-	} else {
-		resp, err = resty.R().
-			SetHeader("Content-Type", "application/json").
-			SetHeader("Accept", "application/json").
-			SetAuthToken((*s).token).
-			SetBody(body).
-			SetResult(&successResponse{}).
-			SetError(&errorResponse{}).
-			Post(url)
-	}
+	resp, err := fallbackToRefreshToken(apply)
 
 	if err != nil {
 		return false, err
@@ -383,7 +417,22 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 		return false, getError(resp)
 	}
 	return true, nil
+}
 
+func (s *restClient) fallbackToRefreshToken(f func() (*resty.Response, error)) (*resty.Response, error) {
+	resp, err := f()
+	if err == nil && resp.IsError() {
+		if resp.StatusCode == 401 {
+			logging.Info("Got 401, refreshing token...")
+			if err := s.RefreshToken(); err != nil {
+				log.Fatal("Cannot refresh token - ", err)
+			}
+			return f()
+		} else {
+			return resp, getError(resp)
+		}
+	}
+	return resp, err
 }
 
 func (s *restClient) Delete(resourceName string, name string, values map[string]string) (bool, error) {

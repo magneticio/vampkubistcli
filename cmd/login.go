@@ -48,7 +48,7 @@ var loginCmd = &cobra.Command{
 Example:
   Logging in with using username and password:
   $AppName login --url https://1.2.3.4:8888 --user username --password password
-  Logging in with an existing token:
+  Logging in with an existing access token:
   $AppName login --url https://1.2.3.4:8888 --token dXNlcjE6ZnJvbnRlbmQ6MTU0NzU2MDc5ODcyMzo5OHJhcFRydEloZXBEVW1PV0F6UQ==
 
   It is also possible to pass certificate with cert parameter
@@ -92,8 +92,8 @@ Example:
 			Config.Cert = CertString
 		}
 		if Token != "" {
-			Config.RefreshToken = Token
-			restClient := client.NewRestClient(Config.Url, Config.RefreshToken, Config.APIVersion, logging.Verbose, Config.Cert)
+			Config.AccessToken = Token
+			restClient := client.ClientFromConfig(Config, logging.Verbose)
 			isPong, err := restClient.Ping() // TODO: use an authorized endpoint to check token works
 			if !isPong {
 				return err
@@ -114,12 +114,14 @@ Example:
 					return errors.New("Password is required")
 				}
 			}
-			restClient := client.NewRestClient(Config.Url, "", Config.APIVersion, logging.Verbose, Config.Cert)
-			token, err := restClient.Login(Username, Password)
+			restClient := client.ClientFromConfig(Config, logging.Verbose)
+			err := restClient.Login(Username, Password)
 			if err != nil {
 				return err
 			}
-			Config.RefreshToken = token
+			Config.RefreshToken = restClient.RefreshToken
+			Config.AccessToken = restClient.AccessToken
+			Config.ExpirationTime = restClient.ExpirationTime
 		}
 		Config.Username = Username
 		fmt.Println("Login Successful.")

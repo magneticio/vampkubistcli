@@ -29,11 +29,13 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-type config struct {
+type ClientConfig struct {
 	Url            string `yaml:"url,omitempty" json:"url,omitempty"`
 	Cert           string `yaml:"cert,omitempty" json:"cert,omitempty"`
 	Username       string `yaml:"username,omitempty" json:"username,omitempty"`
-	RefreshToken   string `yaml:"token,omitempty" json:"token,omitempty"`
+	RefreshToken   string `yaml:"refresh_token,omitempty" json:"refresh_token,omitempty"`
+	AccessToken    string `yaml:"access_token,omitempty" json:"access_token,omitempty"`
+	ExpirationTime int64  `yaml:"expiration_time,omitempty" json:"expiration_time,omitempty"`
 	Project        string `yaml:"project,omitempty" json:"project,omitempty"`
 	Cluster        string `yaml:"cluster,omitempty" json:"cluster,omitempty"`
 	VirtualCluster string `yaml:"virtualcluster,omitempty" json:"virtualcluster,omitempty"`
@@ -41,7 +43,7 @@ type config struct {
 }
 
 var cfgFile string
-var Config config
+var Config ClientConfig
 var Project string
 var Cluster string
 var VirtualCluster string

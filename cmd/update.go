@@ -72,7 +72,7 @@ Example:
 			// fmt.Println(Source)
 			SourceFileType = "json"
 		}
-		restClient := client.NewRestClient(Config.Url, Config.RefreshToken, Config.APIVersion, logging.Verbose, Config.Cert)
+		restClient := client.ClientFromConfig(Config, logging.Verbose)
 		values := make(map[string]string)
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster

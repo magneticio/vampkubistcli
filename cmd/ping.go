@@ -30,7 +30,7 @@ var pingCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		restClient := client.NewRestClient(Config.Url, Config.RefreshToken, Config.APIVersion, logging.Verbose, Config.Cert)
+		restClient := client.ClientFromConfig(Config, logging.Verbose)		
 		isPong, err := restClient.Ping()
 		if !isPong {
 			return err
