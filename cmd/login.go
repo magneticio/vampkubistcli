@@ -126,7 +126,7 @@ Example:
 		}
 		config.Config.Username = Username
 		fmt.Println("Login Successful.")
-		writeConfigError := config.WriteConfigFile()
+		writeConfigError := config.Config.WriteConfigFile()
 		if writeConfigError != nil {
 			return writeConfigError
 		}

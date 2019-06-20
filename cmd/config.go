@@ -40,7 +40,7 @@ To set configuration parameters:
 		}
 		function := args[0]
 		if function == "set" {
-			writeConfigError := config.WriteConfigFile()
+			writeConfigError := config.Config.WriteConfigFile()
 			if writeConfigError != nil {
 				return writeConfigError
 			}

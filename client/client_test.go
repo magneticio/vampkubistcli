@@ -57,7 +57,7 @@ func TestClientAuthToken(t *testing.T) {
 	err := restClient.Login(Username, Password)
 
 	assertError(t, err)
-	assertEqual(t, "Test-Refresh-TokenAAAAAAAAAAA", restClient.RefreshToken())
+	assertEqual(t, "Test-Refresh-Token", restClient.RefreshToken())
 }
 
 func TestClientListErrorMessage(t *testing.T) {

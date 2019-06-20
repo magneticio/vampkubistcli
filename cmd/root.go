@@ -41,8 +41,6 @@ var Hosts []string
 
 var kubeConfigPath string
 
-var rectClientConfig *config.RestClientConfig
-
 // version should be in format d.d.d where d is a decimal number
 const Version string = "v0.0.33"
 
@@ -80,7 +78,7 @@ func Execute() {
 func init() {
 	logging.Init(os.Stdout, os.Stderr)
 
-	cobra.OnInitialize(func() { config.RestClientCfg.InitConfig })
+	cobra.OnInitialize(func() { config.Config.InitConfig() })
 
 	if Project != "" {
 		config.Config.Project = Project
@@ -102,7 +100,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&config.RestClientCfg.CfgFile, "config", "", config.AddAppName("config file (default is $HOME/.$AppName/config.yaml)"))
+	rootCmd.PersistentFlags().StringVar(&config.Config.CfgFile, "config", "", config.AddAppName("config file (default is $HOME/.$AppName/config.yaml)"))
 	rootCmd.PersistentFlags().StringVarP(&Project, "project", "p", "", "active project")
 	rootCmd.PersistentFlags().StringVarP(&Cluster, "cluster", "c", "", "active cluster")
 	rootCmd.PersistentFlags().StringVarP(&VirtualCluster, "virtualcluster", "r", "", "active virtual cluster")

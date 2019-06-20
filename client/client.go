@@ -163,11 +163,11 @@ func NewRestClient(url string, version string, isVerbose bool, cert string) *res
 }
 
 func ClientFromConfig(cfg *config.RestClientConfig, isVerbose bool) *restClient {
-	client := NewRestClient(cfg.Config.Url, cfg.Config.APIVersion, isVerbose, cfg.Config.Cert)
+	client := NewRestClient(cfg.Url, cfg.APIVersion, isVerbose, cfg.Cert)
 	client.config = cfg
-	client.token = cfg.Config.AccessToken
-	client.refreshToken = cfg.Config.RefreshToken
-	client.expirationTime = cfg.Config.ExpirationTime
+	client.token = cfg.AccessToken
+	client.refreshToken = cfg.RefreshToken
+	client.expirationTime = cfg.ExpirationTime
 	return client
 }
 
@@ -233,9 +233,9 @@ func ResourceTypeConversion(resource string) string {
 
 func (s *restClient) updateConfig() {
 	if s.config != nil {
-		s.config.Config.AccessToken = s.token
-		s.config.Config.RefreshToken = s.refreshToken
-		s.config.Config.ExpirationTime = s.expirationTime
+		s.config.AccessToken = s.token
+		s.config.RefreshToken = s.refreshToken
+		s.config.ExpirationTime = s.expirationTime
 		writeConfigError := s.config.WriteConfigFile()
 		if writeConfigError != nil {
 			log.Fatal("Cannot save updated refresh token to config")

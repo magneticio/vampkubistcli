@@ -39,15 +39,15 @@ type ClientConfig struct {
 	APIVersion     string `yaml:"apiversion,omitempty" json:"apiversion,omitempty"`
 }
 
-var Config ClientConfig
+//var Config ClientConfig
 
 // RestClientConfig provides fields and methods for client configuration manipulation
 type RestClientConfig struct {
 	CfgFile string
-	Config ClientConfig
+	ClientConfig
 }
 
-var RestClientCfg = RestClientConfig{}
+var Config = RestClientConfig{}
 var AppName string = InitAppName()
 
 func (rcc *RestClientConfig) readConfig() error {
@@ -56,7 +56,7 @@ func (rcc *RestClientConfig) readConfig() error {
 	if marshalError != nil {
 		return marshalError
 	}
-	unmarshalError := yaml.Unmarshal(bs, &rcc.Config)
+	unmarshalError := yaml.Unmarshal(bs, &rcc.ClientConfig)
 	if unmarshalError != nil {
 		return unmarshalError
 	}
@@ -64,7 +64,7 @@ func (rcc *RestClientConfig) readConfig() error {
 }
 
 func (rcc *RestClientConfig) WriteConfigFile() error {
-	bs, err := yaml.Marshal(rcc.Config)
+	bs, err := yaml.Marshal(rcc.ClientConfig)
 	if err != nil {
 		logging.Error("unable to marshal config to YAML: %v\n", err)
 		return err
