@@ -25,6 +25,7 @@ import (
 	"strings"
 )
 
+// ClientConfig respresents serializable client configuration
 type ClientConfig struct {
 	Url            string `yaml:"url,omitempty" json:"url,omitempty"`
 	Cert           string `yaml:"cert,omitempty" json:"cert,omitempty"`
@@ -38,35 +39,41 @@ type ClientConfig struct {
 	APIVersion     string `yaml:"apiversion,omitempty" json:"apiversion,omitempty"`
 }
 
-var CfgFile string
 var Config ClientConfig
 
+// RestClientConfig provides fields and methods for client configuration manipulation
+type RestClientConfig struct {
+	CfgFile string
+	Config ClientConfig
+}
+
+var RestClientCfg = RestClientConfig{}
 var AppName string = InitAppName()
 
-func ReadConfig() error {
+func (rcc *RestClientConfig) readConfig() error {
 	c := viper.AllSettings()
 	bs, marshalError := yaml.Marshal(c)
 	if marshalError != nil {
 		return marshalError
 	}
-	unmarshalError := yaml.Unmarshal(bs, &Config)
+	unmarshalError := yaml.Unmarshal(bs, &rcc.Config)
 	if unmarshalError != nil {
 		return unmarshalError
 	}
 	return nil
 }
 
-func WriteConfigFile() error {
-	bs, err := yaml.Marshal(Config)
+func (rcc *RestClientConfig) WriteConfigFile() error {
+	bs, err := yaml.Marshal(rcc.Config)
 	if err != nil {
 		logging.Error("unable to marshal config to YAML: %v\n", err)
 		return err
 	}
 	filename := viper.ConfigFileUsed()
 	if filename == "" {
-		if CfgFile != "" {
+		if rcc.CfgFile != "" {
 			// Use config file from the flag.
-			filename = CfgFile
+			filename = rcc.CfgFile
 		} else {
 			// Find home directory.
 			home, err := homedir.Dir()
@@ -93,16 +100,16 @@ func WriteConfigFile() error {
 	return nil
 }
 
-// initConfig reads in config file and ENV variables if set.
-func InitConfig() {
+// InitConfig reads in config file and ENV variables if set.
+func (rcc *RestClientConfig) InitConfig() {
 	viper.AutomaticEnv() // read in environment variables that match
-	if CfgFile == "" {
-		CfgFile = viper.GetString("config")
+	if rcc.CfgFile == "" {
+		rcc.CfgFile = viper.GetString("config")
 	}
-	logging.Info("Using Config file path: %v\n", CfgFile)
-	if CfgFile != "" {
+	logging.Info("Using Config file path: %v\n", rcc.CfgFile)
+	if rcc.CfgFile != "" {
 		// Use config file from the flag.
-		viper.SetConfigFile(CfgFile)
+		viper.SetConfigFile(rcc.CfgFile)
 	} else {
 		// Find home directory.
 		home, homeDirError := homedir.Dir()
@@ -122,7 +129,7 @@ func InitConfig() {
 		logging.Error("Config can not be read due to error: %v\n", err)
 	}
 
-	ReadConfig()
+	rcc.readConfig()
 }
 
 /*

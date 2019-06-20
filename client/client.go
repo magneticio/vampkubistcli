@@ -89,7 +89,7 @@ type restClient struct {
 	certs          string
 	refreshToken   string
 	expirationTime int64
-	config         *config.ClientConfig
+	config         *config.RestClientConfig
 }
 
 func (s *restClient) AccessToken() string {
@@ -155,20 +155,19 @@ func NewRestClient(url string, version string, isVerbose bool, cert string) *res
 	// default timeout of golang is very long
 	resty.SetTimeout(defaultTimeout)
 	logging.Info("Rest client base url: %v\n", url)
-	client := &restClient{
+	return &restClient{
 		url:     url,
 		version: version,
 		certs:   cert,
 	}
-	return client
 }
 
-func ClientFromConfig(cfg *config.ClientConfig, isVerbose bool) *restClient {
-	client := NewRestClient(cfg.Url, cfg.APIVersion, isVerbose, cfg.Cert)
+func ClientFromConfig(cfg *config.RestClientConfig, isVerbose bool) *restClient {
+	client := NewRestClient(cfg.Config.Url, cfg.Config.APIVersion, isVerbose, cfg.Config.Cert)
 	client.config = cfg
-	client.token = cfg.AccessToken
-	client.refreshToken = cfg.RefreshToken
-	client.expirationTime = cfg.ExpirationTime
+	client.token = cfg.Config.AccessToken
+	client.refreshToken = cfg.Config.RefreshToken
+	client.expirationTime = cfg.Config.ExpirationTime
 	return client
 }
 
@@ -234,10 +233,10 @@ func ResourceTypeConversion(resource string) string {
 
 func (s *restClient) updateConfig() {
 	if s.config != nil {
-		s.config.AccessToken = s.token
-		s.config.RefreshToken = s.refreshToken
-		s.config.ExpirationTime = s.expirationTime
-		writeConfigError := config.WriteConfigFile()
+		s.config.Config.AccessToken = s.token
+		s.config.Config.RefreshToken = s.refreshToken
+		s.config.Config.ExpirationTime = s.expirationTime
+		writeConfigError := s.config.WriteConfigFile()
 		if writeConfigError != nil {
 			log.Fatal("Cannot save updated refresh token to config")
 		}
