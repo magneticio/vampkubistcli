@@ -45,7 +45,7 @@ Example:
 		}
 		Type = args[0]
 		Name = args[1]
-		Source := config.SourceString
+		Source := SourceString
 		if Source == "" {
 			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
@@ -71,9 +71,9 @@ Example:
 			}
 			Source = string(SourceRaw)
 			// fmt.Println(Source)
-			config.SourceFileType = "json"
+			SourceFileType = "json"
 		}
-		restClient := client.ClientFromConfig(config.Config, logging.Verbose)
+		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
 		values := make(map[string]string)
 		values["project"] = config.Config.Project
 		values["cluster"] = config.Config.Cluster

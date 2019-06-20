@@ -116,7 +116,7 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 		}
 		Source := string(SourceRaw)
 		SourceFileType = "json"
-		restClient := client.ClientFromConfig(config.Config, logging.Verbose)
+		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
 		values := make(map[string]string)
 		values["project"] = config.Config.Project
 		values["cluster"] = config.Config.Cluster
