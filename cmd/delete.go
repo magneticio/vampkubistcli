@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/spf13/cobra"
 )
@@ -27,7 +28,7 @@ import (
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Deletes a resource",
-	Long: AddAppName(`To delete a resource
+	Long: config.AddAppName(`To delete a resource
 Run as $AppName delete resourceType ResourceName
 
 Example:
@@ -42,11 +43,11 @@ Example:
 		Type = args[0]
 		Name = args[1]
 		// fmt.Println("delete called for type " + Type + " with name " + Name)
-		restClient := client.ClientFromConfig(Config, logging.Verbose)		
+		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
 		values := make(map[string]string)
-		values["project"] = Config.Project
-		values["cluster"] = Config.Cluster
-		values["virtual_cluster"] = Config.VirtualCluster
+		values["project"] = config.Config.Project
+		values["cluster"] = config.Config.Cluster
+		values["virtual_cluster"] = config.Config.VirtualCluster
 		values["application"] = Application
 		isDeleted, deleteError := restClient.Delete(Type, Name, values)
 		if !isDeleted {

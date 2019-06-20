@@ -20,6 +20,7 @@ import (
 	"syscall"
 
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
@@ -33,7 +34,7 @@ var Cert string
 
 var initial bool
 
-var WelcomeText = AddAppName(`
+var WelcomeText = config.AddAppName(`
   Welcome to $AppName
   It is recommeded to update your password with
   $AppName passwd
@@ -44,7 +45,7 @@ var WelcomeText = AddAppName(`
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "login to a vamp service",
-	Long: AddAppName(`Login to a vamp service:
+	Long: config.AddAppName(`Login to a vamp service:
 Example:
   Logging in with using username and password:
   $AppName login --url https://1.2.3.4:8888 --user username --password password
@@ -69,31 +70,31 @@ Example:
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if Url != "" {
-			Config.Url = Url
+			config.Config.Url = Url
 		}
-		if Config.Url == "" {
+		if config.Config.Url == "" {
 			return errors.New("A Vamp Service url should be provided by url flag")
 		}
-		CertString := Cert
+		certString := Cert
 		if Cert != "" {
-			certError := util.VerifyCertForHost(Config.Url, Cert)
+			certError := util.VerifyCertForHost(config.Config.Url, Cert)
 			if certError != nil {
 				b, err := util.UseSourceUrl(Cert)
 				if err != nil {
 					fmt.Printf("Warning: %v\n", err)
 					b = Cert
 				}
-				certVerifyError := util.VerifyCertForHost(Config.Url, b)
+				certVerifyError := util.VerifyCertForHost(config.Config.Url, b)
 				if certVerifyError != nil {
 					return certVerifyError
 				}
-				CertString = string(b)
+				certString = string(b)
 			}
-			Config.Cert = CertString
+			config.Config.Cert = certString
 		}
 		if Token != "" {
-			Config.AccessToken = Token
-			restClient := client.ClientFromConfig(Config, logging.Verbose)
+			config.Config.AccessToken = Token
+			restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
 			isPong, err := restClient.Ping() // TODO: use an authorized endpoint to check token works
 			if !isPong {
 				return err
@@ -114,18 +115,18 @@ Example:
 					return errors.New("Password is required")
 				}
 			}
-			restClient := client.ClientFromConfig(Config, logging.Verbose)
+			restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
 			err := restClient.Login(Username, Password)
 			if err != nil {
 				return err
 			}
-			Config.RefreshToken = restClient.RefreshToken
-			Config.AccessToken = restClient.AccessToken
-			Config.ExpirationTime = restClient.ExpirationTime
+			config.Config.RefreshToken = restClient.RefreshToken()
+			config.Config.AccessToken = restClient.AccessToken()
+			config.Config.ExpirationTime = restClient.ExpirationTime()
 		}
-		Config.Username = Username
+		config.Config.Username = Username
 		fmt.Println("Login Successful.")
-		writeConfigError := WriteConfigFile()
+		writeConfigError := config.WriteConfigFile()
 		if writeConfigError != nil {
 			return writeConfigError
 		}

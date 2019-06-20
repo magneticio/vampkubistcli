@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
@@ -28,7 +29,7 @@ import (
 var mergeCmd = &cobra.Command{
 	Use:   "merge",
 	Short: "Merges a resource",
-	Long: AddAppName(`To merge a resource
+	Long: config.AddAppName(`To merge a resource
 Run as $AppName merge resourceType ResourceName
 
 Example:
@@ -42,27 +43,26 @@ Example:
 		}
 		Type = args[0]
 		Name = args[1]
-		Source := SourceString
-		if Source == "" {
+		source := SourceString
+		if source == "" {
 			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
 				return err
 			}
-			Source = string(b)
+			source = string(b)
 		}
-
-		restClient := client.NewRestClient(Config.Url, Config.RefreshToken, Config.APIVersion, logging.Verbose, Config.Cert)
+		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
 		values := make(map[string]string)
-		values["project"] = Config.Project
-		values["cluster"] = Config.Cluster
-		values["virtual_cluster"] = Config.VirtualCluster
+		values["project"] = config.Config.Project
+		values["cluster"] = config.Config.Cluster
+		values["virtual_cluster"] = config.Config.VirtualCluster
 		values["application"] = Application
 		spec, getSpecError := restClient.GetSpec(Type, Name, SourceFileType, values)
 		if getSpecError != nil {
 			return getSpecError
 		}
 
-		updatedSource, mergeError := util.Merge(spec, Source, SourceFileType)
+		updatedSource, mergeError := util.Merge(spec, source, SourceFileType)
 		if mergeError != nil {
 			return mergeError
 		}

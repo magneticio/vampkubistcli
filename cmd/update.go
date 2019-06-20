@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	"github.com/magneticio/vampkubistcli/util"
@@ -30,7 +31,7 @@ import (
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Updates a resource",
-	Long: AddAppName(`To update a resource
+	Long: config.AddAppName(`To update a resource
 Run as $AppName update resourceType ResourceName
 
 Example:
@@ -44,7 +45,7 @@ Example:
 		}
 		Type = args[0]
 		Name = args[1]
-		Source := SourceString
+		Source := config.SourceString
 		if Source == "" {
 			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
@@ -70,13 +71,13 @@ Example:
 			}
 			Source = string(SourceRaw)
 			// fmt.Println(Source)
-			SourceFileType = "json"
+			config.SourceFileType = "json"
 		}
-		restClient := client.ClientFromConfig(Config, logging.Verbose)
+		restClient := client.ClientFromConfig(config.Config, logging.Verbose)
 		values := make(map[string]string)
-		values["project"] = Config.Project
-		values["cluster"] = Config.Cluster
-		values["virtual_cluster"] = Config.VirtualCluster
+		values["project"] = config.Config.Project
+		values["cluster"] = config.Config.Cluster
+		values["virtual_cluster"] = config.Config.VirtualCluster
 		values["application"] = Application
 		isUpdated, updateError := restClient.Update(Type, Name, Source, SourceFileType, values)
 		if !isUpdated {
@@ -105,5 +106,4 @@ func init() {
 	updateCmd.Flags().StringVarP(&SourceFile, "file", "f", "", "Source from file")
 	updateCmd.Flags().StringVarP(&SourceFileType, "input", "i", "yaml", "Source file type yaml or json")
 	updateCmd.Flags().StringSliceVarP(&Hosts, "host", "", []string{}, "host to add to vamp service, Comma separated lists are supported")
-
 }

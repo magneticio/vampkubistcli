@@ -17,6 +17,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
 )
@@ -25,7 +26,7 @@ import (
 var convertCmd = &cobra.Command{
 	Use:   "convert",
 	Short: "convert json to yaml and yam to json",
-	Long: AddAppName(`Convert is an utility method for easy convertion between json and yaml.
+	Long: config.AddAppName(`Convert is an utility method for easy convertion between json and yaml.
     $AppName supports both json and yaml but if you like to convert them.
     Example converting json to yaml:
     $AppName convert -i json -f filepath.json
@@ -34,15 +35,15 @@ var convertCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		Source := SourceString
-		if Source == "" {
+		source := SourceString
+		if source == "" {
 			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
 				return err
 			}
-			Source = string(b)
+			source = string(b)
 		}
-		result, err := util.Convert(SourceFileType, OutputType, Source)
+		result, err := util.Convert(SourceFileType, OutputType, source)
 		if err == nil {
 			fmt.Printf(result)
 			return nil

@@ -16,7 +16,6 @@ package client
 
 import (
 	"bytes"
-	"cmd"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -32,6 +31,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/gorilla/websocket"
+	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	"gopkg.in/resty.v1"
@@ -89,7 +89,19 @@ type restClient struct {
 	certs          string
 	refreshToken   string
 	expirationTime int64
-	config         *ClientConfig
+	config         *config.ClientConfig
+}
+
+func (s *restClient) AccessToken() string {
+	return s.token
+}
+
+func (s *restClient) RefreshToken() string {
+	return s.refreshToken
+}
+
+func (s *restClient) ExpirationTime() int64 {
+	return s.expirationTime
 }
 
 type successResponse struct {
@@ -151,7 +163,7 @@ func NewRestClient(url string, version string, isVerbose bool, cert string) *res
 	return client
 }
 
-func ClientFromConfig(cfg *ClientConfig, isVerbose bool) *restClient {
+func ClientFromConfig(cfg *config.ClientConfig, isVerbose bool) *restClient {
 	client := NewRestClient(cfg.Url, cfg.APIVersion, isVerbose, cfg.Cert)
 	client.config = cfg
 	client.token = cfg.AccessToken
@@ -163,10 +175,10 @@ func ClientFromConfig(cfg *ClientConfig, isVerbose bool) *restClient {
 func (s *restClient) refreshTokenIfNeeded() {
 	if (time.Now().Unix() + 60) > s.expirationTime {
 		logging.Info("Access token is expired - refreshing...")
-		if cfg.RefreshToken == "" {
+		if s.refreshToken == "" {
 			log.Fatal("Cannot refresh token - current refresh token is empty")
 		}
-		err := s.RefreshToken()
+		err := s.RefreshTokens()
 		if err != nil {
 			log.Fatal("Cannot refresh token - ", err)
 		}
@@ -221,11 +233,11 @@ func ResourceTypeConversion(resource string) string {
 }
 
 func (s *restClient) updateConfig() {
-	if s.config != nill {
+	if s.config != nil {
 		s.config.AccessToken = s.token
 		s.config.RefreshToken = s.refreshToken
 		s.config.ExpirationTime = s.expirationTime
-		writeConfigError := WriteConfigFile()
+		writeConfigError := config.WriteConfigFile()
 		if writeConfigError != nil {
 			log.Fatal("Cannot save updated refresh token to config")
 		}
@@ -236,12 +248,8 @@ func (s *restClient) parseTokenResponse(resp *authSuccess) {
 	(*s).token = resp.AccessToken
 	(*s).refreshToken = resp.RefreshToken
 	expiresIn := resp.ExpiresIn
-	if expiresIn != "" {
-		if tm, err := strconv.Atoi(expiresIn); err == nil {
-			logging.Error("Cannot convert expiresIn response field %s to int", expiresIn)
-		} else {
-			(*s).expirationTime = time.Now().Unix() + tm
-		}
+	if expiresIn != 0 {
+		(*s).expirationTime = time.Now().Unix() + expiresIn
 	}
 	s.updateConfig()
 }
@@ -257,14 +265,14 @@ func (s *restClient) auth(body string) error {
 		Post(url)
 
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	if resp != nil {
 		if resp.IsError() {
 			return errors.New(string(resp.Body()))
 		}
-		parseTokenResponse(resp.Result().(*authSuccess))
+		s.parseTokenResponse(resp.Result().(*authSuccess))
 		return nil
 	}
 
@@ -275,12 +283,12 @@ func (s *restClient) Login(username string, password string) error {
 	(*s).username = username
 	(*s).password = password
 	body := "username=" + username + "&password=" + password + "&client_id=frontend&client_secret=&grant_type=password"
-	return auth(body)
+	return s.auth(body)
 }
 
-func (s *restClient) RefreshToken() error {
+func (s *restClient) RefreshTokens() error {
 	body := "client_id=frontend&client_secret=&grant_type=refresh_token&refresh_token=" + s.refreshToken
-	return auth(body)
+	return s.auth(body)
 }
 
 func getUrlForResource(base string, version string, resourceName string, subCommand string, name string, values map[string]string) (string, error) {
@@ -360,11 +368,11 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 
 	apply := func() (*resty.Response, error) {
 		s.refreshTokenIfNeeded()
-		
+
 		if sourceType == "yaml" {
 			json, err := yaml.YAMLToJSON([]byte(source))
 			if err != nil {
-				return false, err
+				return nil, err
 			}
 			source = string(json)
 		}
@@ -373,7 +381,7 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 
 		version, jsonErr := getVersionFromResource(body)
 		if jsonErr != nil {
-			return false, jsonErr
+			return nil, jsonErr
 		}
 
 		if version == "" {
@@ -407,7 +415,7 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 		return resp, err
 	}
 
-	resp, err := fallbackToRefreshToken(apply)
+	resp, err := s.fallbackToRefreshToken(apply)
 
 	if err != nil {
 		return false, err
@@ -422,9 +430,9 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 func (s *restClient) fallbackToRefreshToken(f func() (*resty.Response, error)) (*resty.Response, error) {
 	resp, err := f()
 	if err == nil && resp.IsError() {
-		if resp.StatusCode == 401 {
+		if resp.StatusCode() == 401 {
 			logging.Info("Got 401, refreshing token...")
-			if err := s.RefreshToken(); err != nil {
+			if err := s.RefreshTokens(); err != nil {
 				log.Fatal("Cannot refresh token - ", err)
 			}
 			return f()

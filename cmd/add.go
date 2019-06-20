@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
@@ -33,7 +34,7 @@ var userConfigFilePath string
 var addCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Add a new user",
-	Long: AddAppName(`Add a new user:
+	Long: config.AddAppName(`Add a new user:
     $AppName add user username
     This will print command to login for a new user.
     It is also possible to generate login configuration file for added user:
@@ -49,38 +50,38 @@ var addCmd = &cobra.Command{
 		Name = args[1]
 
 		if Type == "user" {
-			Username := strings.ToLower(Name)
+			username := strings.ToLower(Name)
 			// TODO: this is a temporary workaround it will be handled in the backend
 			temporarayPassword := util.RandomString(50)
-			SourceFileType := "json"
-			Source := "{\"userName\":\"" + Username + "\",\"password\":\"" + temporarayPassword + "\"}"
-			restClient := client.ClientFromConfig(Config, logging.Verbose)
+			sourceFileType := "json"
+			source := "{\"userName\":\"" + Username + "\",\"password\":\"" + temporarayPassword + "\"}"
+			restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
 			values := make(map[string]string)
-			values["project"] = Config.Project
-			values["cluster"] = Config.Cluster
-			values["virtual_cluster"] = Config.VirtualCluster
+			values["project"] = config.Config.Project
+			values["cluster"] = config.Config.Cluster
+			values["virtual_cluster"] = config.Config.VirtualCluster
 			values["application"] = Application
-			isCreated, createError := restClient.Create(Type, Name, Source, SourceFileType, values)
+			isCreated, createError := restClient.Create(Type, Name, source, sourceFileType, values)
 			if !isCreated {
 				return createError
 			}
 			fmt.Printf("User created.\n")
-			loginError := restClient.Login(Username, temporarayPassword)
+			loginError := restClient.Login(username, temporarayPassword)
 			if loginError != nil {
 				return loginError
 			}
 			fmt.Printf("User can login with:\n")
-			fmt.Printf("%v login --url %v --user %v --initial --token %v --cert <<EOF \"%v\"\nEOF\n", AppName, Config.Url, Username, token, Config.Cert)
+			fmt.Printf("%v login --url %v --user %v --initial --token %v --cert <<EOF \"%v\"\nEOF\n", config.AppName, config.Config.Url, username, restClient.AccessToken(), config.Config.Cert)
 
 			// Write the file is called after printing the output to handle avoid file write errors blocking user creation
 			if userConfigFilePath != "" {
-				userConfig := &ClientConfig{
-					Url:            Config.Url,
-					Cert:           Config.Cert,
-					Username:       Username,
-					RefreshToken:   restClient.RefreshToken,
-					AccessToken:    restClient.AccessToken,
-					ExpirationTime: restClient.ExpirationTime,
+				userConfig := &config.ClientConfig{
+					Url:            config.Config.Url,
+					Cert:           config.Config.Cert,
+					Username:       username,
+					RefreshToken:   restClient.RefreshToken(),
+					AccessToken:    restClient.AccessToken(),
+					ExpirationTime: restClient.ExpirationTime(),
 				}
 				writeConfigError := writeConfigToFile(userConfig, userConfigFilePath)
 				if writeConfigError != nil {
@@ -98,7 +99,7 @@ func init() {
 	addCmd.Flags().StringVarP(&userConfigFilePath, "user-config-output-path", "", "", "Generated user configuration file output path. Path should be in an existing folder.")
 }
 
-func writeConfigToFile(userConfig *ClientConfig, filename string) error {
+func writeConfigToFile(userConfig *config.ClientConfig, filename string) error {
 	bs, marshallError := yaml.Marshal(userConfig)
 	if marshallError != nil {
 		return marshallError
