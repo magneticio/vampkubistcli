@@ -34,7 +34,7 @@ $AppName vamp revoke permission --user user1 -p project -c cluster -r virtualclu
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		restClient := client.ClientFromConfig(config.Config, logging.Verbose)
+		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
 		values := make(map[string]string)
 		values["project"] = Project
 		values["cluster"] = Cluster
