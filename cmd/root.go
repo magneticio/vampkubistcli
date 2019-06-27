@@ -42,7 +42,7 @@ var Hosts []string
 var kubeConfigPath string
 
 // version should be in format d.d.d where d is a decimal number
-const Version string = "v0.0.35"
+const Version string = "v0.0.37"
 
 // Backend version is the version this client is tested with
 const BackendVersion string = "0.7.12"
@@ -78,23 +78,24 @@ func Execute() {
 func init() {
 	logging.Init(os.Stdout, os.Stderr)
 
-	cobra.OnInitialize(func() { config.Config.InitConfig() })
-
-	if Project != "" {
-		config.Config.Project = Project
-	}
-	if Cluster != "" {
-		config.Config.Cluster = Cluster
-	}
-	if VirtualCluster != "" {
-		config.Config.VirtualCluster = VirtualCluster
-	}
-	if Token != "" {
-		config.Config.RefreshToken = Token
-	}
-	if APIVersion != "" {
-		config.Config.APIVersion = APIVersion
-	}
+	cobra.OnInitialize(func() {
+		config.Config.InitConfig()
+		if Project != "" {
+			config.Config.Project = Project
+		}
+		if Cluster != "" {
+			config.Config.Cluster = Cluster
+		}
+		if VirtualCluster != "" {
+			config.Config.VirtualCluster = VirtualCluster
+		}
+		if Token != "" {
+			config.Config.RefreshToken = Token
+		}
+		if APIVersion != "" {
+			config.Config.APIVersion = APIVersion
+		}
+	})
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,

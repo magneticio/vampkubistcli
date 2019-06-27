@@ -66,7 +66,8 @@ var addCmd = &cobra.Command{
 				return createError
 			}
 			fmt.Printf("User created.\n")
-			loginError := restClient.Login(username, temporarayPassword)
+			restClient2 := client.NewRestClient(config.Config.Url, config.Config.APIVersion, logging.Verbose, config.Config.Cert)
+			loginError := restClient2.Login(username, temporarayPassword)
 			if loginError != nil {
 				return loginError
 			}
@@ -79,9 +80,9 @@ var addCmd = &cobra.Command{
 					Url:            config.Config.Url,
 					Cert:           config.Config.Cert,
 					Username:       username,
-					RefreshToken:   restClient.RefreshToken(),
-					AccessToken:    restClient.AccessToken(),
-					ExpirationTime: restClient.ExpirationTime(),
+					RefreshToken:   restClient2.RefreshToken(),
+					AccessToken:    restClient2.AccessToken(),
+					ExpirationTime: restClient2.ExpirationTime(),
 				}
 				writeConfigError := writeConfigToFile(userConfig, userConfigFilePath)
 				if writeConfigError != nil {
