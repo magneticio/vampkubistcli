@@ -39,8 +39,6 @@ type ClientConfig struct {
 	APIVersion     string `yaml:"apiversion,omitempty" json:"apiversion,omitempty"`
 }
 
-//var Config ClientConfig
-
 // RestClientConfig provides fields and methods for client configuration manipulation
 type RestClientConfig struct {
 	CfgFile string

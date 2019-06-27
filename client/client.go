@@ -172,18 +172,13 @@ func ClientFromConfig(cfg *config.RestClientConfig, isVerbose bool) *restClient 
 	return client
 }
 
-func (s *restClient) refreshTokenIfNeeded() {
-	// refresh token if there is expiration time and token will be expired in less than 1 sec
-	if (s.expirationTime > 0) && ((time.Now().Unix() + 1) > s.expirationTime) {
+func (s *restClient) RefreshTokenIfNeeded(epoch interface{ Unix() int64 }) error {
+	// refresh token if it will expire in less than 1 sec
+	if (s.refreshToken != "") && (s.expirationTime > 0) && (epoch.Unix() > s.expirationTime-1) {
 		logging.Info("Access token is expired - refreshing...")
-		if s.refreshToken == "" {
-			log.Fatal("Cannot refresh token - current refresh token is empty")
-		}
-		err := s.RefreshTokens()
-		if err != nil {
-			log.Fatal("Cannot refresh token - ", err)
-		}
+		return s.RefreshTokens()
 	}
+	return nil
 }
 
 /*
@@ -233,7 +228,7 @@ func ResourceTypeConversion(resource string) string {
 
 }
 
-func (s *restClient) updateConfig() {
+func (s *restClient) UpdateConfig() {
 	if s.config != nil {
 		s.config.AccessToken = s.token
 		s.config.RefreshToken = s.refreshToken
@@ -252,7 +247,7 @@ func (s *restClient) parseTokenResponse(resp *authSuccess) {
 	if expiresIn != 0 {
 		(*s).expirationTime = time.Now().Unix() + expiresIn
 	}
-	s.updateConfig()
+	s.UpdateConfig()
 }
 
 func (s *restClient) auth(body string) error {
@@ -366,8 +361,12 @@ func (s *restClient) Update(resourceName string, name string, source string, sou
 }
 
 func (s *restClient) fallbackToRefreshToken(f func() (*resty.Response, error)) (*resty.Response, error) {
-	s.refreshTokenIfNeeded()
-	resp, err := f()
+	err := s.RefreshTokenIfNeeded(time.Now())
+	if err != nil {
+		log.Fatal("Cannot refresh token - ", err)
+	}
+	var resp *resty.Response
+	resp, err = f()
 	if err == nil && resp.IsError() {
 		if resp.StatusCode() == 401 {
 			logging.Info("Got 401, refreshing token...")
