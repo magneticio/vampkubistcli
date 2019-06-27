@@ -21,6 +21,7 @@ import (
 	"strconv"
 
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	"github.com/spf13/cobra"
@@ -39,7 +40,7 @@ var ReleaseType string
 var releaseCmd = &cobra.Command{
 	Use:   "release",
 	Short: "Release a new subset with labels",
-	Long: AddAppName(`eg.:
+	Long: config.AddAppName(`eg.:
 $AppName release shop-vamp-service --destination shop-destination --port port --subset subset2 -l version=version2 --type time`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -115,12 +116,11 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 		}
 		Source := string(SourceRaw)
 		SourceFileType = "json"
-
-		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
+		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
 		values := make(map[string]string)
-		values["project"] = Config.Project
-		values["cluster"] = Config.Cluster
-		values["virtual_cluster"] = Config.VirtualCluster
+		values["project"] = config.Config.Project
+		values["cluster"] = config.Config.Cluster
+		values["virtual_cluster"] = config.Config.VirtualCluster
 		values["application"] = Application
 		isCreated, createError := restClient.Create(Type, VampService, Source, SourceFileType, values)
 		if !isCreated {

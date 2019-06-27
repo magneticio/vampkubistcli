@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/spf13/cobra"
 )
@@ -27,13 +28,13 @@ import (
 var revokeCmd = &cobra.Command{
 	Use:   "revoke",
 	Short: "Revoke a role or permission of a user for an object",
-	Long: AddAppName(`Usage:
+	Long: config.AddAppName(`Usage:
 $AppName revoke --user user1 --role admin -p default
 $AppName vamp revoke permission --user user1 -p project -c cluster -r virtualcluster -a application --kind deployment --name deploymentname`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
+		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
 		values := make(map[string]string)
 		values["project"] = Project
 		values["cluster"] = Cluster

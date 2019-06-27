@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
 )
@@ -26,7 +27,7 @@ var Path string
 var downloadCmd = &cobra.Command{
 	Use:   "download",
 	Short: "Download a resource from url",
-	Long: AddAppName(`Utility method for downloading resources:
+	Long: config.AddAppName(`Utility method for downloading resources:
     eg:.
     $AppName download --url URL --path path-of-file`),
 	SilenceUsage:  true,

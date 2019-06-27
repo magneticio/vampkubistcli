@@ -21,6 +21,7 @@ import (
 	b64 "encoding/base64"
 
 	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/kubernetes"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
@@ -32,7 +33,7 @@ import (
 var bootstrapCmd = &cobra.Command{
 	Use:   "bootstrap",
 	Short: "bootstrap a resource if it is applicable",
-	Long: AddAppName(`Bootstrap is currently only supported for clusters
+	Long: config.AddAppName(`Bootstrap is currently only supported for clusters
     When you want to bootstrap a new cluster with vamp.
     Make sure kube config setup and active locally.
     Then run:
@@ -68,15 +69,15 @@ var bootstrapCmd = &cobra.Command{
 			if err_marshall != nil {
 				return err_marshall
 			}
-			Source := string(SourceRaw)
+			source := string(SourceRaw)
 			SourceFileType = "json"
-			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
+			restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
 			values := make(map[string]string)
-			values["project"] = Config.Project
-			values["cluster"] = Config.Cluster
-			values["virtual_cluster"] = Config.VirtualCluster
+			values["project"] = config.Config.Project
+			values["cluster"] = config.Config.Cluster
+			values["virtual_cluster"] = config.Config.VirtualCluster
 			values["application"] = Application
-			isCreated, err_create := restClient.Create(Type, Name, Source, SourceFileType, values)
+			isCreated, err_create := restClient.Create(Type, Name, source, SourceFileType, values)
 			if !isCreated {
 				return err_create
 			}

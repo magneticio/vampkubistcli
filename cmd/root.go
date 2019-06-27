@@ -16,32 +16,14 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strings"
 
+	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	yaml "gopkg.in/yaml.v2"
 )
 
-type config struct {
-	Url            string `yaml:"url,omitempty" json:"url,omitempty"`
-	Cert           string `yaml:"cert,omitempty" json:"cert,omitempty"`
-	Username       string `yaml:"username,omitempty" json:"username,omitempty"`
-	Token          string `yaml:"token,omitempty" json:"token,omitempty"`
-	Project        string `yaml:"project,omitempty" json:"project,omitempty"`
-	Cluster        string `yaml:"cluster,omitempty" json:"cluster,omitempty"`
-	VirtualCluster string `yaml:"virtualcluster,omitempty" json:"virtualcluster,omitempty"`
-	APIVersion     string `yaml:"apiversion,omitempty" json:"apiversion,omitempty"`
-}
-
-var cfgFile string
-var Config config
 var Project string
 var Cluster string
 var VirtualCluster string
@@ -60,35 +42,16 @@ var Hosts []string
 var kubeConfigPath string
 
 // version should be in format d.d.d where d is a decimal number
-const Version string = "v0.0.33"
-
-var AppName string = InitAppName()
+const Version string = "v0.0.34"
 
 // Backend version is the version this client is tested with
 const BackendVersion string = "0.7.12"
 
-/*
-Application name can change over time so it is made parameteric
-*/
-func AddAppName(str string) string {
-	return strings.Replace(str, "$AppName", AppName, -1)
-}
-
-/*
-Application name is automacially set to the calling name
-*/
-func InitAppName() string {
-	if len(os.Args) > 0 {
-		return os.Args[0]
-	}
-	return "vamp"
-}
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   AddAppName("$AppName"),
+	Use:   config.AddAppName("$AppName"),
 	Short: "A command line client for vamp",
-	Long: AddAppName(`A command line client for vamp:
+	Long: config.AddAppName(`A command line client for vamp:
   Usage usually follows:
   $AppName create resourceType resourceName -f filepath.yaml
   $AppName update resourceType resourceName -f filepath.yaml
@@ -113,16 +76,31 @@ func Execute() {
 }
 
 func init() {
-
 	logging.Init(os.Stdout, os.Stderr)
 
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(func() { config.Config.InitConfig() })
+
+	if Project != "" {
+		config.Config.Project = Project
+	}
+	if Cluster != "" {
+		config.Config.Cluster = Cluster
+	}
+	if VirtualCluster != "" {
+		config.Config.VirtualCluster = VirtualCluster
+	}
+	if Token != "" {
+		config.Config.RefreshToken = Token
+	}
+	if APIVersion != "" {
+		config.Config.APIVersion = APIVersion
+	}
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", AddAppName("config file (default is $HOME/.$AppName/config.yaml)"))
+	rootCmd.PersistentFlags().StringVar(&config.Config.CfgFile, "config", "", config.AddAppName("config file (default is $HOME/.$AppName/config.yaml)"))
 	rootCmd.PersistentFlags().StringVarP(&Project, "project", "p", "", "active project")
 	rootCmd.PersistentFlags().StringVarP(&Cluster, "cluster", "c", "", "active cluster")
 	rootCmd.PersistentFlags().StringVarP(&VirtualCluster, "virtualcluster", "r", "", "active virtual cluster")
@@ -132,102 +110,4 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&logging.Verbose, "verbose", "v", false, "Verbose")
 
 	viper.BindEnv("config", "CONFIG")
-
-}
-
-func ReadConfig() error {
-	c := viper.AllSettings()
-	bs, marshalError := yaml.Marshal(c)
-	if marshalError != nil {
-		return marshalError
-	}
-	unmarshalError := yaml.Unmarshal(bs, &Config)
-	if unmarshalError != nil {
-		return unmarshalError
-	}
-	if Project != "" {
-		Config.Project = Project
-	}
-	if Cluster != "" {
-		Config.Cluster = Cluster
-	}
-	if VirtualCluster != "" {
-		Config.VirtualCluster = VirtualCluster
-	}
-	if Token != "" {
-		Config.Token = Token
-	}
-	if APIVersion != "" {
-		Config.APIVersion = APIVersion
-	}
-	return nil
-}
-
-func WriteConfigFile() error {
-	bs, err := yaml.Marshal(Config)
-	if err != nil {
-		logging.Error("unable to marshal config to YAML: %v\n", err)
-		return err
-	}
-	filename := viper.ConfigFileUsed()
-	if filename == "" {
-		if cfgFile != "" {
-			// Use config file from the flag.
-			filename = cfgFile
-		} else {
-			// Find home directory.
-			home, err := homedir.Dir()
-			if err != nil {
-				logging.Error("Can not get home dir with error: %v\n", err)
-				return err
-			}
-			path := filepath.FromSlash(home + AddAppName("/.$AppName"))
-			if _, err := os.Stat(path); os.IsNotExist(err) {
-				os.Mkdir(path, os.ModePerm)
-				// If there is a problem here try using MkdirAll
-			}
-			filename = filepath.FromSlash(path + "/" + "config.yaml")
-		}
-		// Solves the problem if there is no file viper.ConfigFileUsed() return empty
-		os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0644)
-	}
-
-	logging.Info("Writing config to config file path: %v\n", filename)
-	writeFileError := ioutil.WriteFile(filename, bs, 0644)
-	if writeFileError != nil {
-		return writeFileError
-	}
-	return nil
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	viper.AutomaticEnv() // read in environment variables that match
-	if cfgFile == "" {
-		cfgFile = viper.GetString("config")
-	}
-	logging.Info("Using Config file path: %v\n", cfgFile)
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, homeDirError := homedir.Dir()
-		if homeDirError != nil {
-			logging.Error("Can not find home Directory: %v\n", homeDirError)
-			os.Exit(1)
-		}
-		// Search config in home directory with name ".$AppName" (without extension).
-		path := filepath.FromSlash(home + AddAppName("/.$AppName"))
-		viper.AddConfigPath(path)
-		viper.SetConfigName("config")
-	}
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		logging.Info("Using config file: %v\n", viper.ConfigFileUsed())
-	} else {
-		logging.Error("Config can not be read due to error: %v\n", err)
-	}
-
-	ReadConfig()
 }

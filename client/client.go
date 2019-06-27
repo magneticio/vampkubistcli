@@ -31,6 +31,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/gorilla/websocket"
+	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	"gopkg.in/resty.v1"
@@ -80,12 +81,27 @@ var resourceMap map[string]string = map[string]string{
 }
 
 type restClient struct {
-	url      string
-	version  string
-	username string
-	password string
-	token    string
-	certs    string
+	url            string
+	version        string
+	username       string
+	password       string
+	token          string
+	certs          string
+	refreshToken   string
+	expirationTime int64
+	config         *config.RestClientConfig
+}
+
+func (s *restClient) AccessToken() string {
+	return s.token
+}
+
+func (s *restClient) RefreshToken() string {
+	return s.refreshToken
+}
+
+func (s *restClient) ExpirationTime() int64 {
+	return s.expirationTime
 }
 
 type successResponse struct {
@@ -110,7 +126,7 @@ const defaultVersion = "v1"
 
 const defaultTimeout = 30 * time.Second
 
-func NewRestClient(url string, token string, version string, isVerbose bool, cert string) *restClient {
+func NewRestClient(url string, version string, isVerbose bool, cert string) *restClient {
 	if url == "" {
 		log.Fatal("URL can not be empty, check your configuration")
 	}
@@ -141,10 +157,28 @@ func NewRestClient(url string, token string, version string, isVerbose bool, cer
 	logging.Info("Rest client base url: %v\n", url)
 	return &restClient{
 		url:     url,
-		token:   token,
 		version: version,
 		certs:   cert,
 	}
+}
+
+// ClientFromConfig creates new restClient based on provided config
+func ClientFromConfig(cfg *config.RestClientConfig, isVerbose bool) *restClient {
+	client := NewRestClient(cfg.Url, cfg.APIVersion, isVerbose, cfg.Cert)
+	client.config = cfg
+	client.token = cfg.AccessToken
+	client.refreshToken = cfg.RefreshToken
+	client.expirationTime = cfg.ExpirationTime
+	return client
+}
+
+func (s *restClient) RefreshTokenIfNeeded(epoch interface{ Unix() int64 }) error {
+	// refresh token if it will expire in less than 1 sec
+	if (s.refreshToken != "") && (s.expirationTime > 0) && (epoch.Unix() > s.expirationTime-1) {
+		logging.Info("Access token is expired - refreshing...")
+		return s.RefreshTokens()
+	}
+	return nil
 }
 
 /*
@@ -194,12 +228,30 @@ func ResourceTypeConversion(resource string) string {
 
 }
 
-func (s *restClient) Login(username string, password string) (string, error) {
-	(*s).username = username
-	(*s).password = password
+func (s *restClient) UpdateConfig() {
+	if s.config != nil {
+		s.config.AccessToken = s.token
+		s.config.RefreshToken = s.refreshToken
+		s.config.ExpirationTime = s.expirationTime
+		writeConfigError := s.config.WriteConfigFile()
+		if writeConfigError != nil {
+			log.Fatal("Cannot save updated refresh token to config")
+		}
+	}
+}
+
+func (s *restClient) parseTokenResponse(resp *authSuccess) {
+	(*s).token = resp.AccessToken
+	(*s).refreshToken = resp.RefreshToken
+	expiresIn := resp.ExpiresIn
+	if expiresIn != 0 {
+		(*s).expirationTime = time.Now().Unix() + expiresIn
+	}
+	s.UpdateConfig()
+}
+
+func (s *restClient) auth(body string) error {
 	url := (*s).url + "/oauth/access_token"
-	// fmt.Printf("user login with username: %v password: %v\n", username, password)
-	body := "username=" + username + "&password=" + password + "&client_id=frontend&client_secret=&grant_type=password"
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
 		SetHeader("Accept", "application/json").
@@ -209,19 +261,30 @@ func (s *restClient) Login(username string, password string) (string, error) {
 		Post(url)
 
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	if resp != nil {
 		if resp.IsError() {
-			return "", errors.New(string(resp.Body()))
+			return errors.New(string(resp.Body()))
 		}
-		(*s).token = resp.Result().(*authSuccess).AccessToken
-		return (*s).token, nil
+		s.parseTokenResponse(resp.Result().(*authSuccess))
+		return nil
 	}
 
-	return "", errors.New("Token retrievel failed")
+	return errors.New("Authentication failed")
+}
 
+func (s *restClient) Login(username string, password string) error {
+	(*s).username = username
+	(*s).password = password
+	body := "username=" + username + "&password=" + password + "&client_id=frontend&client_secret=&grant_type=password"
+	return s.auth(body)
+}
+
+func (s *restClient) RefreshTokens() error {
+	body := "client_id=frontend&client_secret=&grant_type=refresh_token&refresh_token=" + s.refreshToken
+	return s.auth(body)
 }
 
 func getUrlForResource(base string, version string, resourceName string, subCommand string, name string, values map[string]string) (string, error) {
@@ -297,50 +360,74 @@ func (s *restClient) Update(resourceName string, name string, source string, sou
 	return (*s).Apply(resourceName, name, source, sourceType, values, true)
 }
 
+func (s *restClient) fallbackToRefreshToken(f func() (*resty.Response, error)) (*resty.Response, error) {
+	err := s.RefreshTokenIfNeeded(time.Now())
+	if err != nil {
+		log.Fatal("Cannot refresh token - ", err)
+	}
+	var resp *resty.Response
+	resp, err = f()
+	if err == nil && resp.IsError() {
+		if resp.StatusCode() == 401 {
+			logging.Info("Got 401, refreshing token...")
+			if err := s.RefreshTokens(); err != nil {
+				log.Fatal("Cannot refresh token - ", err)
+			}
+			return f()
+		}
+		return resp, getError(resp)
+	}
+	return resp, err
+}
+
 func (s *restClient) Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error) {
 
-	if sourceType == "yaml" {
-		json, err := yaml.YAMLToJSON([]byte(source))
-		if err != nil {
-			return false, err
+	resp, err := s.fallbackToRefreshToken(func() (*resty.Response, error) {
+		if sourceType == "yaml" {
+			json, err := yaml.YAMLToJSON([]byte(source))
+			if err != nil {
+				return nil, err
+			}
+			source = string(json)
 		}
-		source = string(json)
-	}
 
-	body := []byte(source)
+		body := []byte(source)
 
-	version, jsonErr := getVersionFromResource(body)
-	if jsonErr != nil {
-		return false, jsonErr
-	}
+		version, jsonErr := getVersionFromResource(body)
+		if jsonErr != nil {
+			return nil, jsonErr
+		}
 
-	if version == "" {
-		version = (*s).version
-	}
+		if version == "" {
+			version = (*s).version
+		}
 
-	url, _ := getUrlForResource((*s).url, version, resourceName, "", name, values)
-	logging.Info("Requesting url: %v\n", url)
-	var resp *resty.Response
-	var err error
-	if update {
-		resp, err = resty.R().
-			SetHeader("Content-Type", "application/json").
-			SetHeader("Accept", "application/json").
-			SetAuthToken((*s).token).
-			SetBody(body).
-			SetResult(&successResponse{}).
-			SetError(&errorResponse{}).
-			Put(url)
-	} else {
-		resp, err = resty.R().
-			SetHeader("Content-Type", "application/json").
-			SetHeader("Accept", "application/json").
-			SetAuthToken((*s).token).
-			SetBody(body).
-			SetResult(&successResponse{}).
-			SetError(&errorResponse{}).
-			Post(url)
-	}
+		url, _ := getUrlForResource((*s).url, version, resourceName, "", name, values)
+		logging.Info("Requesting url: %v\n", url)
+		var resp *resty.Response
+		var err error
+		if update {
+			resp, err = resty.R().
+				SetHeader("Content-Type", "application/json").
+				SetHeader("Accept", "application/json").
+				SetAuthToken((*s).token).
+				SetBody(body).
+				SetResult(&successResponse{}).
+				SetError(&errorResponse{}).
+				Put(url)
+		} else {
+			resp, err = resty.R().
+				SetHeader("Content-Type", "application/json").
+				SetHeader("Accept", "application/json").
+				SetAuthToken((*s).token).
+				SetBody(body).
+				SetResult(&successResponse{}).
+				SetError(&errorResponse{}).
+				Post(url)
+		}
+
+		return resp, err
+	})
 
 	if err != nil {
 		return false, err
@@ -350,19 +437,20 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 		return false, getError(resp)
 	}
 	return true, nil
-
 }
 
 func (s *restClient) Delete(resourceName string, name string, values map[string]string) (bool, error) {
 	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "", name, values)
 
-	resp, err := resty.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
-		SetResult(&successResponse{}).
-		SetError(&errorResponse{}).
-		Delete(url)
+	resp, err := s.fallbackToRefreshToken(func() (*resty.Response, error) {
+		return resty.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Accept", "application/json").
+			SetAuthToken((*s).token).
+			SetResult(&successResponse{}).
+			SetError(&errorResponse{}).
+			Delete(url)
+	})
 
 	if err != nil {
 		return false, err
@@ -378,12 +466,14 @@ func (s *restClient) Delete(resourceName string, name string, values map[string]
 func (s *restClient) GetSpec(resourceName string, name string, outputFormat string, values map[string]string) (string, error) {
 	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "", name, values)
 
-	resp, getResourceError := resty.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
-		SetError(&errorResponse{}).
-		Get(url)
+	resp, getResourceError := s.fallbackToRefreshToken(func() (*resty.Response, error) {
+		return resty.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Accept", "application/json").
+			SetAuthToken((*s).token).
+			SetError(&errorResponse{}).
+			Get(url)
+	})
 
 	if getResourceError != nil {
 		return "", getResourceError
@@ -426,13 +516,15 @@ func (s *restClient) GetSpec(resourceName string, name string, outputFormat stri
 func (s *restClient) Get(resourceName string, name string, outputFormat string, values map[string]string) (string, error) {
 	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "", name, values)
 
-	resp, err := resty.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
-		// SetResult(&successResponse{}). On get Success will be parsed manually
-		SetError(&errorResponse{}).
-		Get(url)
+	resp, err := s.fallbackToRefreshToken(func() (*resty.Response, error) {
+		return resty.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Accept", "application/json").
+			SetAuthToken((*s).token).
+			// SetResult(&successResponse{}). On get Success will be parsed manually
+			SetError(&errorResponse{}).
+			Get(url)
+	})
 
 	if err != nil {
 		return "", err
@@ -463,13 +555,15 @@ func (s *restClient) Get(resourceName string, name string, outputFormat string, 
 func (s *restClient) List(resourceName string, outputFormat string, values map[string]string, simple bool) (string, error) {
 	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "list", "", values)
 
-	resp, err := resty.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
-		// SetResult(&successResponse{}). On Success list output will be parsed
-		SetError(&errorResponse{}).
-		Get(url)
+	resp, err := s.fallbackToRefreshToken(func() (*resty.Response, error) {
+		return resty.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Accept", "application/json").
+			SetAuthToken((*s).token).
+			// SetResult(&successResponse{}). On Success list output will be parsed
+			SetError(&errorResponse{}).
+			Get(url)
+	})
 
 	if err != nil {
 		return "", err
@@ -527,14 +621,16 @@ func (s *restClient) UpdateUserPermission(username string, permission string, va
 		EditAccess: strings.Contains(permission, "a"),
 	}
 
-	resp, err := resty.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
-		SetBody(permissionBody).
-		SetResult(&successResponse{}).
-		SetError(&errorResponse{}).
-		Post(url)
+	resp, err := s.fallbackToRefreshToken(func() (*resty.Response, error) {
+		return resty.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Accept", "application/json").
+			SetAuthToken((*s).token).
+			SetBody(permissionBody).
+			SetResult(&successResponse{}).
+			SetError(&errorResponse{}).
+			Post(url)
+	})
 
 	if err != nil {
 		return false, err
@@ -550,13 +646,15 @@ func (s *restClient) UpdateUserPermission(username string, permission string, va
 func (s *restClient) RemovePermissionFromUser(username string, values map[string]string) (bool, error) {
 	url, _ := getUrlForResource((*s).url, (*s).version, "user-access-permission", "", "", values)
 	url += "&user_name=" + username
-	resp, err := resty.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
-		SetResult(&authSuccess{}).
-		SetError(&errorResponse{}).
-		Delete(url)
+	resp, err := s.fallbackToRefreshToken(func() (*resty.Response, error) {
+		return resty.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Accept", "application/json").
+			SetAuthToken((*s).token).
+			SetResult(&authSuccess{}).
+			SetError(&errorResponse{}).
+			Delete(url)
+	})
 
 	if err != nil {
 		return false, err
@@ -572,13 +670,15 @@ func (s *restClient) RemovePermissionFromUser(username string, values map[string
 func (s *restClient) AddRoleToUser(username string, rolename string, values map[string]string) (bool, error) {
 	url, _ := getUrlForResource((*s).url, (*s).version, "user-access-role", "", "", values)
 	url += "&user_name=" + username + "&role_name=" + rolename
-	resp, err := resty.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
-		SetResult(&successResponse{}).
-		SetError(&errorResponse{}).
-		Post(url)
+	resp, err := s.fallbackToRefreshToken(func() (*resty.Response, error) {
+		return resty.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Accept", "application/json").
+			SetAuthToken((*s).token).
+			SetResult(&successResponse{}).
+			SetError(&errorResponse{}).
+			Post(url)
+	})
 
 	if err != nil {
 		return false, err
@@ -594,13 +694,15 @@ func (s *restClient) AddRoleToUser(username string, rolename string, values map[
 func (s *restClient) RemoveRoleFromUser(username string, rolename string, values map[string]string) (bool, error) {
 	url, _ := getUrlForResource((*s).url, (*s).version, "user-access-role", "", "", values)
 	url += "&user_name=" + username + "&role_name=" + rolename
-	resp, err := resty.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
-		SetResult(&authSuccess{}).
-		SetError(&errorResponse{}).
-		Delete(url)
+	resp, err := s.fallbackToRefreshToken(func() (*resty.Response, error) {
+		return resty.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Accept", "application/json").
+			SetAuthToken((*s).token).
+			SetResult(&authSuccess{}).
+			SetError(&errorResponse{}).
+			Delete(url)
+	})
 
 	if err != nil {
 		return false, err
