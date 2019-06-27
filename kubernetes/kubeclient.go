@@ -33,10 +33,11 @@ import (
 // Golang does't support struct constants
 // Default values for an installation config
 var DefaultVampConfig = models.VampConfig{
-	DatabaseName: "vamp",
-	ImageName:    "magneticio/vampkubist",
-	ImageTag:     "0.7.8",
-	Mode:         "IN_CLUSTER",
+	DatabaseName:          "vamp",
+	ImageName:             "magneticio/vampkubist",
+	ImageTag:              "0.7.8",
+	Mode:                  "IN_CLUSTER",
+	AccessTokenExpiration: "10m",
 }
 
 // This is shared between installation and credentials, it is currently not configurable
@@ -71,6 +72,10 @@ func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.Vamp
 		config.Mode != "OUT_OF_CLUSTER" {
 		config.Mode = DefaultVampConfig.Mode
 		fmt.Printf("Vamp Mode set to default value: %v\n", config.Mode)
+	}
+	if config.AccessTokenExpiration == "" {
+		config.AccessTokenExpiration = DefaultVampConfig.AccessTokenExpiration
+		fmt.Printf("Access token expiration set to default value: %v\n", config.AccessTokenExpiration)
 	}
 	return config, nil
 }
@@ -535,7 +540,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 								},
 								{
 									Name:  "OAUTH_TOKEN_EXPIRATION",
-									Value: config.OauthTokenExpiration,
+									Value: config.AccessTokenExpiration,
 								},
 							},
 						},
