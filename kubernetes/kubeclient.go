@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	apiutil "k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
@@ -445,6 +446,10 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 		fmt.Printf("Warning: %v\n", paswordSecretErr.Error())
 		return nil, nil, nil, paswordSecretErr
 	}
+
+	maxSurge := apiutil.FromInt(1)
+	maxUnavailable := apiutil.FromInt(0)
+
 	vampDeployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "vamp",
@@ -461,6 +466,13 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 					"deployment": "vamp",
 				},
 			},
+			Strategy: appsv1.DeploymentStrategy{
+				Type: appsv1.RollingUpdateDeploymentStrategyType,
+				RollingUpdate: &appsv1.RollingUpdateDeployment{
+					MaxSurge:       &maxSurge,
+					MaxUnavailable: &maxUnavailable,
+				},
+			},
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
@@ -473,6 +485,13 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 						{
 							Name:  "vamp",
 							Image: config.ImageName + ":" + config.ImageTag,
+							Lifecycle: &corev1.Lifecycle{
+								PreStop: &corev1.Handler{
+									Exec: &corev1.ExecAction{
+										Command: []string{"/bin/bash", "-c", "sleep 20"},
+									},
+								},
+							},
 							Ports: []apiv1.ContainerPort{
 								{
 									Protocol:      apiv1.ProtocolTCP,
@@ -482,6 +501,30 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 									Protocol:      apiv1.ProtocolTCP,
 									ContainerPort: 5701,
 								},
+							},
+							ReadinessProbe: &apiv1.Probe{
+								Handler: apiv1.Handler{
+									HTTPGet: &apiv1.HTTPGetAction{
+										Path: "/ready",
+										Port: apiutil.FromInt(8889),
+									},
+								},
+								InitialDelaySeconds: 10,
+								PeriodSeconds:       6,
+								SuccessThreshold:    2,
+								TimeoutSeconds:      2,
+								FailureThreshold:    1,
+							},
+							LivenessProbe: &apiv1.Probe{
+								Handler: apiv1.Handler{
+									HTTPGet: &apiv1.HTTPGetAction{
+										Path: "/",
+										Port: apiutil.FromInt(8889),
+									},
+								},
+								InitialDelaySeconds: 90,
+								PeriodSeconds:       5,
+								TimeoutSeconds:      2,
 							},
 							Env: []apiv1.EnvVar{
 								{
