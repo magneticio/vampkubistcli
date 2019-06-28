@@ -45,7 +45,7 @@ Example:
 		}
 		Type = args[0]
 		Name = args[1]
-		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
 		values := make(map[string]string)
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster

@@ -41,7 +41,7 @@ func TestClientAuthToken(t *testing.T) {
 			switch r.URL.Path {
 			case "/oauth/access_token":
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(`{"token_type": "Bearer","access_token": "Test-Access-Token","expires_in": 3599,"refresh_token": "Test-Refresh-Token"}`))
+				_, _ = w.Write([]byte(`{"token_type": "Bearer","access_token": "Test-Access-Token","expires_in": 3599,"refresh_token": "Test-Access-Token"}`))
 			default:
 				t.Logf("Unhandled Path: %v", r.URL.Path)
 			}
@@ -54,7 +54,7 @@ func TestClientAuthToken(t *testing.T) {
 	Username := "test"
 	Password := "pass"
 	Version := "v1"
-	restClient := client.NewRestClient(ts.URL, Token, Version, logging.Verbose, Cert)
+	restClient := client.NewRestClient(ts.URL, Token, Version, logging.Verbose, Cert, nil)
 	token, err := restClient.Login(Username, Password)
 
 	assertError(t, err)
@@ -81,7 +81,7 @@ func TestClientListErrorMessage(t *testing.T) {
 	Cert := ""
 	Version := "v1"
 	Verbose := false
-	restClient := client.NewRestClient(ts.URL, Token, Version, Verbose, Cert)
+	restClient := client.NewRestClient(ts.URL, Token, Version, Verbose, Cert, nil)
 	values := make(map[string]string)
 	values["project"] = "project"
 	values["cluster"] = "cluster"

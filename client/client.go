@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"log"
 	"net/url"
 	"os"
 	"os/signal"
@@ -79,13 +78,15 @@ var resourceMap map[string]string = map[string]string{
 	"permissions":      "permission",
 }
 
-type restClient struct {
-	url      string
-	version  string
-	username string
-	password string
-	token    string
-	certs    string
+type RestClient struct {
+	URL            string
+	Version        string
+	Username       string
+	Password       string
+	Certs          string
+	RefreshToken   string
+	ExpirationTime int64
+	TokenStore     *TokenStore
 }
 
 type successResponse struct {
@@ -110,9 +111,10 @@ const defaultVersion = "v1"
 
 const defaultTimeout = 30 * time.Second
 
-func NewRestClient(url string, token string, version string, isVerbose bool, cert string) *restClient {
+func NewRestClient(url string, token string, version string, isVerbose bool, cert string, tokenStore *TokenStore) *RestClient {
 	if url == "" {
-		log.Fatal("URL can not be empty, check your configuration")
+		logging.Error("URL can not be empty, check your configuration")
+		return nil
 	}
 	url = strings.TrimRight(url, "/") // Url should end without a /
 	resty.SetDebug(isVerbose)
@@ -125,13 +127,15 @@ func NewRestClient(url string, token string, version string, isVerbose bool, cer
 		// We can use a pattern of "pre-*.txt" to get an extension like: /tmp/pre-123456.txt
 		tmpFile, err := ioutil.TempFile(os.TempDir(), "vamp-")
 		if err != nil {
-			log.Fatal("Can not create temporary file", err)
+			logging.Error("Can not create temporary file: %v\n", err)
+			return nil
 		}
 		// Remember to clean up the file afterwards
 		defer os.Remove(tmpFile.Name())
 		err_write := ioutil.WriteFile(tmpFile.Name(), []byte(cert), 0644)
 		if err_write != nil {
-			log.Fatal("Can not write temporary file", err_write)
+			logging.Error("Can not write temporary file: %v\n", err_write)
+			return nil
 		}
 		// fmt.Printf("load cert from file: %v\n", tmpFile.Name())
 		resty.SetRootCertificate(tmpFile.Name())
@@ -139,11 +143,20 @@ func NewRestClient(url string, token string, version string, isVerbose bool, cer
 	// default timeout of golang is very long
 	resty.SetTimeout(defaultTimeout)
 	logging.Info("Rest client base url: %v\n", url)
-	return &restClient{
-		url:     url,
-		token:   token,
-		version: version,
-		certs:   cert,
+
+	var tokenStoreImp TokenStore
+	if tokenStore != nil {
+		tokenStoreImp = *tokenStore
+	} else {
+		tokenStoreImp = &InMemoryTokenStore{}
+	}
+	tokenStoreImp.Store(token, time.Now().Unix()+10)
+	return &RestClient{
+		URL:          url,
+		RefreshToken: token,
+		Version:      version,
+		Certs:        cert,
+		TokenStore:   &tokenStoreImp,
 	}
 }
 
@@ -194,12 +207,39 @@ func ResourceTypeConversion(resource string) string {
 
 }
 
-func (s *restClient) Login(username string, password string) (string, error) {
-	(*s).username = username
-	(*s).password = password
-	url := (*s).url + "/oauth/access_token"
-	// fmt.Printf("user login with username: %v password: %v\n", username, password)
-	body := "username=" + username + "&password=" + password + "&client_id=frontend&client_secret=&grant_type=password"
+func (s *RestClient) getAccessToken() string {
+	activeToken := ""
+	(*s.TokenStore).RemoveExpired()
+	for token, timeout := range (*s.TokenStore).Tokens() {
+		// it should have at least 10 seconds to expire
+		if time.Now().Unix() < timeout-10 {
+			activeToken = token
+		}
+	}
+	if activeToken == "" {
+		logging.Info("Access token is expired - refreshing...")
+		token, error := s.RefreshTokens()
+		if error == nil {
+			return token
+		}
+		logging.Error("Refresh Token Error: %v\n", error)
+	}
+	return activeToken
+}
+
+func (s *RestClient) parseTokenResponse(resp *authSuccess) string {
+	token := resp.AccessToken
+	s.RefreshToken = resp.RefreshToken
+	expiresIn := resp.ExpiresIn
+	if expiresIn != 0 {
+		expirationTime := time.Now().Unix() + expiresIn
+		(*s.TokenStore).Store(token, expirationTime)
+	}
+	return s.RefreshToken
+}
+
+func (s *RestClient) auth(body string) (string, error) {
+	url := s.URL + "/oauth/access_token"
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
 		SetHeader("Accept", "application/json").
@@ -216,12 +256,23 @@ func (s *restClient) Login(username string, password string) (string, error) {
 		if resp.IsError() {
 			return "", errors.New(string(resp.Body()))
 		}
-		(*s).token = resp.Result().(*authSuccess).AccessToken
-		return (*s).token, nil
+		refreshToken := s.parseTokenResponse(resp.Result().(*authSuccess))
+		return refreshToken, nil
 	}
 
-	return "", errors.New("Token retrievel failed")
+	return "", errors.New("Authentication failed")
+}
 
+func (s *RestClient) Login(username string, password string) (string, error) {
+	s.Username = username
+	s.Password = password
+	body := "username=" + username + "&password=" + password + "&client_id=frontend&client_secret=&grant_type=password"
+	return s.auth(body)
+}
+
+func (s *RestClient) RefreshTokens() (string, error) {
+	body := "client_id=frontend&client_secret=&grant_type=refresh_token&refresh_token=" + s.RefreshToken
+	return s.auth(body)
 }
 
 func getUrlForResource(base string, version string, resourceName string, subCommand string, name string, values map[string]string) (string, error) {
@@ -289,15 +340,15 @@ func fixResourceName(resourceName string) string {
 
 }
 
-func (s *restClient) Create(resourceName string, name string, source string, sourceType string, values map[string]string) (bool, error) {
+func (s *RestClient) Create(resourceName string, name string, source string, sourceType string, values map[string]string) (bool, error) {
 	return (*s).Apply(resourceName, name, source, sourceType, values, false)
 }
 
-func (s *restClient) Update(resourceName string, name string, source string, sourceType string, values map[string]string) (bool, error) {
+func (s *RestClient) Update(resourceName string, name string, source string, sourceType string, values map[string]string) (bool, error) {
 	return (*s).Apply(resourceName, name, source, sourceType, values, true)
 }
 
-func (s *restClient) Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error) {
+func (s *RestClient) Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error) {
 
 	if sourceType == "yaml" {
 		json, err := yaml.YAMLToJSON([]byte(source))
@@ -315,10 +366,10 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 	}
 
 	if version == "" {
-		version = (*s).version
+		version = s.Version
 	}
 
-	url, _ := getUrlForResource((*s).url, version, resourceName, "", name, values)
+	url, _ := getUrlForResource(s.URL, version, resourceName, "", name, values)
 	logging.Info("Requesting url: %v\n", url)
 	var resp *resty.Response
 	var err error
@@ -326,7 +377,7 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 		resp, err = resty.R().
 			SetHeader("Content-Type", "application/json").
 			SetHeader("Accept", "application/json").
-			SetAuthToken((*s).token).
+			SetAuthToken(s.getAccessToken()).
 			SetBody(body).
 			SetResult(&successResponse{}).
 			SetError(&errorResponse{}).
@@ -335,7 +386,7 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 		resp, err = resty.R().
 			SetHeader("Content-Type", "application/json").
 			SetHeader("Accept", "application/json").
-			SetAuthToken((*s).token).
+			SetAuthToken(s.getAccessToken()).
 			SetBody(body).
 			SetResult(&successResponse{}).
 			SetError(&errorResponse{}).
@@ -353,13 +404,13 @@ func (s *restClient) Apply(resourceName string, name string, source string, sour
 
 }
 
-func (s *restClient) Delete(resourceName string, name string, values map[string]string) (bool, error) {
-	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "", name, values)
+func (s *RestClient) Delete(resourceName string, name string, values map[string]string) (bool, error) {
+	url, _ := getUrlForResource(s.URL, s.Version, resourceName, "", name, values)
 
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
+		SetAuthToken(s.getAccessToken()).
 		SetResult(&successResponse{}).
 		SetError(&errorResponse{}).
 		Delete(url)
@@ -375,13 +426,13 @@ func (s *restClient) Delete(resourceName string, name string, values map[string]
 
 }
 
-func (s *restClient) GetSpec(resourceName string, name string, outputFormat string, values map[string]string) (string, error) {
-	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "", name, values)
+func (s *RestClient) GetSpec(resourceName string, name string, outputFormat string, values map[string]string) (string, error) {
+	url, _ := getUrlForResource(s.URL, s.Version, resourceName, "", name, values)
 
 	resp, getResourceError := resty.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
+		SetAuthToken(s.getAccessToken()).
 		SetError(&errorResponse{}).
 		Get(url)
 
@@ -423,13 +474,13 @@ func (s *restClient) GetSpec(resourceName string, name string, outputFormat stri
 
 }
 
-func (s *restClient) Get(resourceName string, name string, outputFormat string, values map[string]string) (string, error) {
-	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "", name, values)
+func (s *RestClient) Get(resourceName string, name string, outputFormat string, values map[string]string) (string, error) {
+	url, _ := getUrlForResource(s.URL, s.Version, resourceName, "", name, values)
 
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
+		SetAuthToken(s.getAccessToken()).
 		// SetResult(&successResponse{}). On get Success will be parsed manually
 		SetError(&errorResponse{}).
 		Get(url)
@@ -460,13 +511,13 @@ func (s *restClient) Get(resourceName string, name string, outputFormat string, 
 
 }
 
-func (s *restClient) List(resourceName string, outputFormat string, values map[string]string, simple bool) (string, error) {
-	url, _ := getUrlForResource((*s).url, (*s).version, resourceName, "list", "", values)
+func (s *RestClient) List(resourceName string, outputFormat string, values map[string]string, simple bool) (string, error) {
+	url, _ := getUrlForResource(s.URL, s.Version, resourceName, "list", "", values)
 
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
+		SetAuthToken(s.getAccessToken()).
 		// SetResult(&successResponse{}). On Success list output will be parsed
 		SetError(&errorResponse{}).
 		Get(url)
@@ -516,8 +567,8 @@ func (s *restClient) List(resourceName string, outputFormat string, values map[s
 
 }
 
-func (s *restClient) UpdateUserPermission(username string, permission string, values map[string]string) (bool, error) {
-	url, _ := getUrlForResource((*s).url, (*s).version, "user-access-permission", "", "", values)
+func (s *RestClient) UpdateUserPermission(username string, permission string, values map[string]string) (bool, error) {
+	url, _ := getUrlForResource(s.URL, s.Version, "user-access-permission", "", "", values)
 	url += "&user_name=" + username
 
 	permissionBody := models.Permission{
@@ -530,7 +581,7 @@ func (s *restClient) UpdateUserPermission(username string, permission string, va
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
+		SetAuthToken(s.getAccessToken()).
 		SetBody(permissionBody).
 		SetResult(&successResponse{}).
 		SetError(&errorResponse{}).
@@ -547,13 +598,13 @@ func (s *restClient) UpdateUserPermission(username string, permission string, va
 
 }
 
-func (s *restClient) RemovePermissionFromUser(username string, values map[string]string) (bool, error) {
-	url, _ := getUrlForResource((*s).url, (*s).version, "user-access-permission", "", "", values)
+func (s *RestClient) RemovePermissionFromUser(username string, values map[string]string) (bool, error) {
+	url, _ := getUrlForResource(s.URL, s.Version, "user-access-permission", "", "", values)
 	url += "&user_name=" + username
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
+		SetAuthToken(s.getAccessToken()).
 		SetResult(&authSuccess{}).
 		SetError(&errorResponse{}).
 		Delete(url)
@@ -569,13 +620,13 @@ func (s *restClient) RemovePermissionFromUser(username string, values map[string
 
 }
 
-func (s *restClient) AddRoleToUser(username string, rolename string, values map[string]string) (bool, error) {
-	url, _ := getUrlForResource((*s).url, (*s).version, "user-access-role", "", "", values)
+func (s *RestClient) AddRoleToUser(username string, rolename string, values map[string]string) (bool, error) {
+	url, _ := getUrlForResource(s.URL, s.Version, "user-access-role", "", "", values)
 	url += "&user_name=" + username + "&role_name=" + rolename
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
+		SetAuthToken(s.getAccessToken()).
 		SetResult(&successResponse{}).
 		SetError(&errorResponse{}).
 		Post(url)
@@ -591,13 +642,13 @@ func (s *restClient) AddRoleToUser(username string, rolename string, values map[
 
 }
 
-func (s *restClient) RemoveRoleFromUser(username string, rolename string, values map[string]string) (bool, error) {
-	url, _ := getUrlForResource((*s).url, (*s).version, "user-access-role", "", "", values)
+func (s *RestClient) RemoveRoleFromUser(username string, rolename string, values map[string]string) (bool, error) {
+	url, _ := getUrlForResource(s.URL, s.Version, "user-access-role", "", "", values)
 	url += "&user_name=" + username + "&role_name=" + rolename
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "application/json").
-		SetAuthToken((*s).token).
+		SetAuthToken(s.getAccessToken()).
 		SetResult(&authSuccess{}).
 		SetError(&errorResponse{}).
 		Delete(url)
@@ -617,13 +668,13 @@ func (s *restClient) RemoveRoleFromUser(username string, rolename string, values
 Ping is different from other calls
 It just runs a get to the root folder and doesn't check anything
 */
-func (s *restClient) Ping() (bool, error) {
-	url := (*s).url + "/"
+func (s *RestClient) Ping() (bool, error) {
+	url := s.URL + "/"
 	resty.SetTimeout(5 * time.Second)
 	resp, err := resty.R().
 		SetHeader("Content-Type", "application/json").
 		SetHeader("Accept", "text/plain, application/json").
-		// Should be reachable without a token SetAuthToken((*s).token).
+		// Should be reachable without a token SetAuthToken(s.Token).
 		Get(url)
 
 	if err != nil {
@@ -650,12 +701,12 @@ func getVersionFromResource(source []byte) (string, error) {
 
 }
 
-func (s *restClient) ReadNotifications(notifications chan<- models.Notification) error {
+func (s *RestClient) ReadNotifications(notifications chan<- models.Notification) error {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	u, urlParseError := url.Parse(s.url + "/api/" + s.version + "/notifications?access_token=" + s.token)
+	u, urlParseError := url.Parse(s.URL + "/api/" + s.Version + "/notifications?access_token=" + s.getAccessToken())
 	if urlParseError != nil {
 		return urlParseError
 	}
@@ -663,7 +714,7 @@ func (s *restClient) ReadNotifications(notifications chan<- models.Notification)
 	logging.Info("connecting to %s", u.String())
 	dialer := websocket.DefaultDialer
 	roots := x509.NewCertPool()
-	ok := roots.AppendCertsFromPEM([]byte(s.certs))
+	ok := roots.AppendCertsFromPEM([]byte(s.Certs))
 	if !ok {
 		return errors.New("failed to parse root certificate")
 	}

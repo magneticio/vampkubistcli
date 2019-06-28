@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/magneticio/vampkubistcli/client"
 	"github.com/magneticio/vampkubistcli/logging"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -38,6 +39,7 @@ type config struct {
 	Cluster        string `yaml:"cluster,omitempty" json:"cluster,omitempty"`
 	VirtualCluster string `yaml:"virtualcluster,omitempty" json:"virtualcluster,omitempty"`
 	APIVersion     string `yaml:"apiversion,omitempty" json:"apiversion,omitempty"`
+	TokenStorePath string `yaml:"tokenstorepath,omitempty" json:"tokenstorepath,omitempty"`
 }
 
 var cfgFile string
@@ -59,8 +61,10 @@ var Hosts []string
 
 var kubeConfigPath string
 
+var TokenStore client.TokenStore
+
 // version should be in format d.d.d where d is a decimal number
-const Version string = "v0.0.33"
+const Version string = "v0.0.35"
 
 var AppName string = InitAppName()
 
@@ -230,4 +234,15 @@ func initConfig() {
 	}
 
 	ReadConfig()
+
+	if Config.TokenStorePath == "" {
+		tmpfile, tempFileError := ioutil.TempFile("", "tokenstore")
+		if tempFileError != nil {
+			logging.Error("Token Store file can not be read due to error: %v\n", tempFileError)
+		}
+		Config.TokenStorePath = tmpfile.Name()
+	}
+	TokenStore = &client.FileBackedTokenStore{
+		Path: Config.TokenStorePath,
+	}
 }

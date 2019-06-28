@@ -93,7 +93,7 @@ Example:
 		}
 		if Token != "" {
 			Config.Token = Token
-			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
+			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
 			isPong, err := restClient.Ping() // TODO: use an authorized endpoint to check token works
 			if !isPong {
 				return err
@@ -114,7 +114,7 @@ Example:
 					return errors.New("Password is required")
 				}
 			}
-			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert)
+			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
 			token, err := restClient.Login(Username, Password)
 			if err != nil {
 				return err
