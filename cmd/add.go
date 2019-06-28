@@ -65,7 +65,8 @@ var addCmd = &cobra.Command{
 				return createError
 			}
 			fmt.Printf("User created.\n")
-			token, loginError := restClient.Login(Username, temporarayPassword)
+			restClientForAddedUser := client.NewRestClient(Config.Url, "", Config.APIVersion, logging.Verbose, Config.Cert, nil)
+			token, loginError := restClientForAddedUser.Login(Username, temporarayPassword)
 			if loginError != nil {
 				return loginError
 			}
