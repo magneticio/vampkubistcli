@@ -17,15 +17,14 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/magneticio/vampkubistcli/config"
 	"github.com/spf13/cobra"
 )
 
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:           "version",
-	Short:         config.AddAppName("Print the version number of $AppName"),
-	Long:          config.AddAppName(`All software has versions. This is $AppName's`),
+	Short:         AddAppName("Print the version number of $AppName"),
+	Long:          AddAppName(`All software has versions. This is $AppName's`),
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Run: func(cmd *cobra.Command, args []string) {

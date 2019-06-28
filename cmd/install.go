@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/kubernetes"
 	"github.com/magneticio/vampkubistcli/models"
 	"github.com/magneticio/vampkubistcli/util"
@@ -35,7 +34,7 @@ var certFileName string
 var installCmd = &cobra.Command{
 	Use:   "install",
 	Short: "Install Vamp Management in your cluster",
-	Long: config.AddAppName(`
+	Long: AddAppName(`
 Example:
 $AppName install --configuration installconfig.yml --certificate-output-path ./certiticate.crt
 
@@ -69,12 +68,12 @@ Install command is reentrant, it is possible to update the cluster with re-runni
 		if convertErr != nil {
 			return convertErr
 		}
-		var cfg models.VampConfig
-		unmarshallError := json.Unmarshal([]byte(configJson), &cfg)
+		var config models.VampConfig
+		unmarshallError := json.Unmarshal([]byte(configJson), &config)
 		if unmarshallError != nil {
 			return unmarshallError
 		}
-		validatedConfig, configError := kubeclient.VampConfigValidateAndSetupDefaults(&cfg)
+		validatedConfig, configError := kubeclient.VampConfigValidateAndSetupDefaults(&config)
 		if configError != nil {
 			return configError
 		}
@@ -89,7 +88,7 @@ Install command is reentrant, it is possible to update the cluster with re-runni
 		}
 		fmt.Printf("Vamp Service Installed.\n")
 		fmt.Printf("Login with:\n")
-		fmt.Printf("%v login --url %v --user root --cert %v\n", config.AppName, url, certFileName)
+		fmt.Printf("%v login --url %v --user root --cert %v\n", AppName, url, certFileName)
 		return nil
 	},
 }

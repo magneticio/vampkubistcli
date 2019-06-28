@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/magneticio/vampkubistcli/client"
-	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +30,7 @@ var Detailed bool
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "lists resources",
-	Long: config.AddAppName(`To list a resource type
+	Long: AddAppName(`To list a resource type
 Run as $AppName list resourceType
 
 Example:
@@ -45,11 +44,11 @@ Example:
 		} else {
 			return errors.New("Not Enough Arguments")
 		}
-		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
 		values := make(map[string]string)
-		values["project"] = config.Config.Project
-		values["cluster"] = config.Config.Cluster
-		values["virtual_cluster"] = config.Config.VirtualCluster
+		values["project"] = Config.Project
+		values["cluster"] = Config.Cluster
+		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
 		result, err := restClient.List(Type, OutputType, values, !Detailed)
 		if err == nil {

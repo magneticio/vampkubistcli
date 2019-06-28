@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/magneticio/vampkubistcli/client"
-	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	"github.com/magneticio/vampkubistcli/util"
@@ -33,7 +32,7 @@ var Init bool
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Creates a resource",
-	Long: config.AddAppName(`To create a resource
+	Long: AddAppName(`To create a resource
 Run as $AppName create resourceType ResourceName
 
 Example:
@@ -48,46 +47,46 @@ Example:
 		}
 		Type = args[0]
 		Name = args[1]
-		source := SourceString
+		Source := SourceString
 		if Init {
-			source = "{}"
+			Source = "{}"
 			SourceFileType = "json"
 		}
-		if source == "" {
+		if Source == "" {
 			b, err := util.UseSourceUrl(SourceFile) // just pass the file name
 			if err != nil {
 				return err
 			}
-			source = string(b)
+			Source = string(b)
 		}
 		// This is a specific operation for vamp_service
 		if client.ResourceTypeConversion(Type) == "vamp_service" && len(Hosts) > 0 {
-			sourceJson, err := util.Convert(SourceFileType, "json", source)
+			SourceJson, err := util.Convert(SourceFileType, "json", Source)
 			if err != nil {
 				return err
 			}
 			var vampService models.VampService
-			err_json := json.Unmarshal([]byte(sourceJson), &vampService)
+			err_json := json.Unmarshal([]byte(SourceJson), &vampService)
 			if err_json != nil {
 				return err_json
 			}
 			vampService.Hosts = append(Hosts, vampService.Hosts...)
-			sourceRaw, err := json.Marshal(vampService)
+			SourceRaw, err := json.Marshal(vampService)
 			if err != nil {
 				return err
 			}
-			source = string(sourceRaw)
+			Source = string(SourceRaw)
 
 			SourceFileType = "json"
 		}
 
-		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
 		values := make(map[string]string)
-		values["project"] = config.Config.Project
-		values["cluster"] = config.Config.Cluster
-		values["virtual_cluster"] = config.Config.VirtualCluster
+		values["project"] = Config.Project
+		values["cluster"] = Config.Cluster
+		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		isCreated, createError := restClient.Create(Type, Name, source, SourceFileType, values)
+		isCreated, createError := restClient.Create(Type, Name, Source, SourceFileType, values)
 		if !isCreated {
 			return createError
 		}
@@ -103,5 +102,7 @@ func init() {
 	createCmd.Flags().StringVarP(&SourceFile, "file", "f", "", "Source from file")
 	createCmd.Flags().StringVarP(&SourceFileType, "input", "i", "yaml", "Source file type yaml or json")
 	createCmd.Flags().BoolVarP(&Init, "init", "", false, "initialize as empty source")
+
 	createCmd.Flags().StringSliceVarP(&Hosts, "host", "", []string{}, "host to add to vamp service, Comma separated lists are supported")
+
 }

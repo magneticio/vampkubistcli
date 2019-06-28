@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/magneticio/vampkubistcli/client"
-	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/spf13/cobra"
 )
@@ -34,7 +33,7 @@ var Kind string
 var grantCmd = &cobra.Command{
 	Use:   "grant",
 	Short: "Grant a role or permission to a user for an object",
-	Long: config.AddAppName(`Usage:
+	Long: AddAppName(`Usage:
 $AppName grant --user user1 --role admin -p default
 $AppName grant --user user1 --permission rwda -p project -c cluster -r virtualcluster -a application --kind deployment --name deploymentname
 Permissions follow the format:
@@ -46,7 +45,7 @@ Permissions follow the format:
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
 		values := make(map[string]string)
 		values["project"] = Project
 		values["cluster"] = Cluster

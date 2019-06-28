@@ -15,7 +15,6 @@
 package cmd
 
 import (
-	"github.com/magneticio/vampkubistcli/config"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +22,7 @@ import (
 var setCmd = &cobra.Command{
 	Use:   "set",
 	Short: "Set global project, cluster and virtual cluster",
-	Long: config.AddAppName(`When you need to use the command line client for longer periods,
+	Long: AddAppName(`When you need to use the command line client for longer periods,
   it is cumbersome to set project, cluster and virtualcluster in every command.
   You can set these variables with a set command
   and it is stored in global configuration.
@@ -35,7 +34,7 @@ var setCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	Run: func(cmd *cobra.Command, args []string) {
-		config.Config.WriteConfigFile()
+		WriteConfigFile()
 	},
 }
 

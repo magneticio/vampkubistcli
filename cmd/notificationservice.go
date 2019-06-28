@@ -24,7 +24,6 @@ import (
 
 	"github.com/0xAX/notificator"
 	"github.com/magneticio/vampkubistcli/client"
-	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	"github.com/spf13/cobra"
@@ -60,7 +59,7 @@ var notificationserviceCmd = &cobra.Command{
 			}
 			iconPath = tmpFile.Name()
 		}
-		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
 		notifications := make(chan models.Notification, 10)
 		notify := notificator.New(notificator.Options{
 			DefaultIcon: iconPath,

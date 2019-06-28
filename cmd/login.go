@@ -20,7 +20,6 @@ import (
 	"syscall"
 
 	"github.com/magneticio/vampkubistcli/client"
-	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
@@ -34,7 +33,7 @@ var Cert string
 
 var initial bool
 
-var WelcomeText = config.AddAppName(`
+var WelcomeText = AddAppName(`
   Welcome to $AppName
   It is recommeded to update your password with
   $AppName passwd
@@ -45,11 +44,11 @@ var WelcomeText = config.AddAppName(`
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "login to a vamp service",
-	Long: config.AddAppName(`Login to a vamp service:
+	Long: AddAppName(`Login to a vamp service:
 Example:
   Logging in with using username and password:
   $AppName login --url https://1.2.3.4:8888 --user username --password password
-  Logging in with an existing access token:
+  Logging in with an existing token:
   $AppName login --url https://1.2.3.4:8888 --token dXNlcjE6ZnJvbnRlbmQ6MTU0NzU2MDc5ODcyMzo5OHJhcFRydEloZXBEVW1PV0F6UQ==
 
   It is also possible to pass certificate with cert parameter
@@ -70,31 +69,31 @@ Example:
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if Url != "" {
-			config.Config.Url = Url
+			Config.Url = Url
 		}
-		if config.Config.Url == "" {
+		if Config.Url == "" {
 			return errors.New("A Vamp Service url should be provided by url flag")
 		}
-		certString := Cert
+		CertString := Cert
 		if Cert != "" {
-			certError := util.VerifyCertForHost(config.Config.Url, Cert)
+			certError := util.VerifyCertForHost(Config.Url, Cert)
 			if certError != nil {
 				b, err := util.UseSourceUrl(Cert)
 				if err != nil {
 					fmt.Printf("Warning: %v\n", err)
 					b = Cert
 				}
-				certVerifyError := util.VerifyCertForHost(config.Config.Url, b)
+				certVerifyError := util.VerifyCertForHost(Config.Url, b)
 				if certVerifyError != nil {
 					return certVerifyError
 				}
-				certString = string(b)
+				CertString = string(b)
 			}
-			config.Config.Cert = certString
+			Config.Cert = CertString
 		}
 		if Token != "" {
-			config.Config.AccessToken = Token
-			restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
+			Config.Token = Token
+			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
 			isPong, err := restClient.Ping() // TODO: use an authorized endpoint to check token works
 			if !isPong {
 				return err
@@ -115,18 +114,16 @@ Example:
 					return errors.New("Password is required")
 				}
 			}
-			restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
-			err := restClient.Login(Username, Password)
+			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
+			token, err := restClient.Login(Username, Password)
 			if err != nil {
 				return err
 			}
-			config.Config.RefreshToken = restClient.RefreshToken()
-			config.Config.AccessToken = restClient.AccessToken()
-			config.Config.ExpirationTime = restClient.ExpirationTime()
+			Config.Token = token
 		}
-		config.Config.Username = Username
+		Config.Username = Username
 		fmt.Println("Login Successful.")
-		writeConfigError := config.Config.WriteConfigFile()
+		writeConfigError := WriteConfigFile()
 		if writeConfigError != nil {
 			return writeConfigError
 		}

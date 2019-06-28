@@ -205,7 +205,7 @@ func InstallVampService(config *models.VampConfig, configPath string) (string, [
 }
 
 func CheckAndWaitForService(url string, cert []byte) error {
-	vampClient := client.NewRestClient(url, "", false, string(cert))
+	vampClient := client.NewRestClient(url, "", "", false, string(cert), nil)
 	count := 1
 	operation := func() error {
 		fmt.Printf("Pinging the service trial %v\n", count)
@@ -575,10 +575,6 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 											Key: "password",
 										},
 									},
-								},
-								{
-									Name:  "OAUTH_TOKEN_EXPIRATION",
-									Value: config.OauthTokenExpiration,
 								},
 							},
 						},

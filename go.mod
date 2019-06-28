@@ -28,12 +28,9 @@ require (
 	github.com/spf13/viper v1.3.2
 	github.com/stretchr/testify v1.2.2
 	github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0
-	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
-	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980 // indirect
+	golang.org/x/crypto v0.0.0-20190422183909-d864b10871cd
+	golang.org/x/net v0.0.0-20190420063019-afa5a82059c6 // indirect
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a // indirect
-	golang.org/x/sys v0.0.0-20190614084037-d442b75600c5 // indirect
-	golang.org/x/text v0.3.2 // indirect
-	golang.org/x/tools v0.0.0-20190614205625-5aca471b1d59 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/resty.v1 v1.12.0
 	gopkg.in/yaml.v2 v2.2.2

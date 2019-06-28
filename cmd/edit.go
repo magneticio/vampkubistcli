@@ -22,7 +22,6 @@ import (
 	"os/exec"
 
 	"github.com/magneticio/vampkubistcli/client"
-	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
@@ -32,7 +31,7 @@ import (
 var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Edits a resource",
-	Long: config.AddAppName(`To edit a resource
+	Long: AddAppName(`To edit a resource
 Run as $AppName edit resourceType ResourceName
 
 Example:
@@ -46,11 +45,11 @@ Example:
 		}
 		Type = args[0]
 		Name = args[1]
-		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
 		values := make(map[string]string)
-		values["project"] = config.Config.Project
-		values["cluster"] = config.Config.Cluster
-		values["virtual_cluster"] = config.Config.VirtualCluster
+		values["project"] = Config.Project
+		values["cluster"] = Config.Cluster
+		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
 		spec, getSpecError := restClient.GetSpec(Type, Name, SourceFileType, values)
 		if getSpecError != nil {
@@ -89,8 +88,8 @@ Example:
 		if readTempFileError != nil {
 			return readTempFileError
 		}
-		source := string(b)
-		isUpdated, updateError := restClient.Update(Type, Name, source, SourceFileType, values)
+		Source := string(b)
+		isUpdated, updateError := restClient.Update(Type, Name, Source, SourceFileType, values)
 		if !isUpdated {
 			return updateError
 		}

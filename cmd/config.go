@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
 )
@@ -28,7 +27,7 @@ import (
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Set, Get , Edit configuration of client",
-	Long: config.AddAppName(`To get all configuration parameters:
+	Long: AddAppName(`To get all configuration parameters:
   $AppName config get
 To set configuration parameters:
   $AppName config set -p myproject -c mycluster`),
@@ -40,16 +39,16 @@ To set configuration parameters:
 		}
 		function := args[0]
 		if function == "set" {
-			writeConfigError := config.Config.WriteConfigFile()
+			writeConfigError := WriteConfigFile()
 			if writeConfigError != nil {
 				return writeConfigError
 			}
 		} else if function == "get" {
-			sourceRaw, marshalError := json.Marshal(config.Config)
+			SourceRaw, marshalError := json.Marshal(Config)
 			if marshalError != nil {
 				return marshalError
 			}
-			result, convertError := util.Convert("json", OutputType, string(sourceRaw))
+			result, convertError := util.Convert("json", OutputType, string(SourceRaw))
 			if convertError != nil {
 				return convertError
 			}

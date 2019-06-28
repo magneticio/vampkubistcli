@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/magneticio/vampkubistcli/client"
-	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
@@ -34,7 +33,7 @@ var NumberOfTrialLimit int
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "Get a resource as yaml or json",
-	Long: config.AddAppName(`To get a resource
+	Long: AddAppName(`To get a resource
 Run as $AppName get resourceType ResourceName
 Get show resource as yaml by defualt
 By adding -o json, output can be converted to json
@@ -55,11 +54,12 @@ Json path example with wait
 		}
 		Type = args[0]
 		Name = args[1]
-		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
+		// fmt.Println("get called for type " + Type + " with name " + Name)
+		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
 		values := make(map[string]string)
-		values["project"] = config.Config.Project
-		values["cluster"] = config.Config.Cluster
-		values["virtual_cluster"] = config.Config.VirtualCluster
+		values["project"] = Config.Project
+		values["cluster"] = Config.Cluster
+		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
 		first := true
 		var result string

@@ -18,7 +18,6 @@ import (
 	"fmt"
 
 	"github.com/magneticio/vampkubistcli/client"
-	"github.com/magneticio/vampkubistcli/config"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/util"
 	"github.com/spf13/cobra"
@@ -28,7 +27,7 @@ import (
 var passwdCmd = &cobra.Command{
 	Use:   "passwd",
 	Short: "Update password",
-	Long: config.AddAppName(`Update password
+	Long: AddAppName(`Update password
     For the current user:
     $AppName passwd
     For a different user
@@ -36,7 +35,7 @@ var passwdCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		Type = "user"
+		Type := "user"
 		passwd, passwdError := util.GetParameterFromTerminalAsSecret(
 			"Enter your password (password will not be visible):",
 			"Enter your password again (password will not be visible):",
@@ -44,18 +43,18 @@ var passwdCmd = &cobra.Command{
 		if passwdError != nil {
 			return passwdError
 		}
-		sourceFileType := "json"
+		SourceFileType := "json"
 		if Username == "" {
-			Username = Username
+			Username = Config.Username
 		}
-		source := "{\"userName\":\"" + Username + "\",\"password\":\"" + passwd + "\"}"
-		restClient := client.ClientFromConfig(&config.Config, logging.Verbose)
+		Source := "{\"userName\":\"" + Username + "\",\"password\":\"" + passwd + "\"}"
+		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
 		values := make(map[string]string)
-		values["project"] = config.Config.Project
-		values["cluster"] = config.Config.Cluster
-		values["virtual_cluster"] = config.Config.VirtualCluster
+		values["project"] = Config.Project
+		values["cluster"] = Config.Cluster
+		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		_, updateError := restClient.Update(Type, Username, source, sourceFileType, values)
+		_, updateError := restClient.Update(Type, Username, Source, SourceFileType, values)
 		if updateError != nil {
 			return updateError
 		}
