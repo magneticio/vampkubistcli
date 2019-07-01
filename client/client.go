@@ -152,13 +152,14 @@ func NewRestClient(url string, token string, version string, isVerbose bool, cer
 		tokenStoreImp = &InMemoryTokenStore{}
 	}
 	/*
-	  This a bit tricky, user can start with a access token or a refresh token
-	  If it is an access token,
-	  user has 30 seconds to use it starting from client creation.
-	  If it is an refresh token,
-	  access token will fail and user will get a new access token
+			  This a bit tricky, user can start with a access token or a refresh token
+			  If it is an access token,
+			  user has 30 seconds to use it starting from client creation.
+			  If it is an refresh token,
+			  access token will fail and user will get a new access token
+		    TODO: this feature doesn't work right now.
+		    tokenStoreImp.Store(token, time.Now().Unix()+30)
 	*/
-	tokenStoreImp.Store(token, time.Now().Unix()+30)
 	return &RestClient{
 		URL:          url,
 		RefreshToken: token,
@@ -267,6 +268,7 @@ func (s *RestClient) auth(body string) (string, error) {
 		if resp.IsError() {
 			return "", errors.New(string(resp.Body()))
 		}
+		(*s.TokenStore).Clean()
 		refreshToken := s.parseTokenResponse(resp.Result().(*authSuccess))
 		return refreshToken, nil
 	}

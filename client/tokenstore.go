@@ -18,6 +18,7 @@ import (
 	"io/ioutil"
 	"time"
 
+	"github.com/magneticio/vampkubistcli/logging"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -26,6 +27,7 @@ type TokenStore interface {
 	Get(token string) (int64, bool)
 	Tokens() map[string]int64
 	RemoveExpired() error
+	Clean() error
 }
 
 type FileBackedTokenStore struct {
@@ -36,16 +38,29 @@ func (ts *FileBackedTokenStore) Store(token string, timeout int64) error {
 	data, err := ioutil.ReadFile(ts.Path)
 	var tokenMap map[string]int64
 	if err != nil {
-		return err
+		logging.Info("Token file can not be opened: %v\n", err)
 	}
 	unmarshalError := yaml.Unmarshal(data, &tokenMap)
 	if unmarshalError != nil {
-		return unmarshalError
+		logging.Info("Token file can not be read: %v\n", unmarshalError)
 	}
 	if tokenMap == nil {
 		tokenMap = make(map[string]int64)
 	}
 	tokenMap[token] = timeout
+	bs, marshalError := yaml.Marshal(tokenMap)
+	if marshalError != nil {
+		return marshalError
+	}
+	writeFileError := ioutil.WriteFile(ts.Path, bs, 0644)
+	if writeFileError != nil {
+		return writeFileError
+	}
+	return nil
+}
+
+func (ts *FileBackedTokenStore) Clean() error {
+	tokenMap := make(map[string]int64)
 	bs, marshalError := yaml.Marshal(tokenMap)
 	if marshalError != nil {
 		return marshalError
@@ -156,5 +171,10 @@ func (ts *InMemoryTokenStore) RemoveExpired() error {
 			delete(ts.tokenMap, token)
 		}
 	}
+	return nil
+}
+
+func (ts *InMemoryTokenStore) Clean() error {
+	ts.tokenMap = make(map[string]int64)
 	return nil
 }
