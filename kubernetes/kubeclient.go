@@ -74,6 +74,10 @@ func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.Vamp
 		config.Mode = DefaultVampConfig.Mode
 		fmt.Printf("Vamp Mode set to default value: %v\n", config.Mode)
 	}
+	if config.AccessTokenExpiration == "" {
+		config.AccessTokenExpiration = DefaultVampConfig.AccessTokenExpiration
+		fmt.Printf("Access token expiration set to default value: %v\n", config.AccessTokenExpiration)
+	}
 	return config, nil
 }
 
