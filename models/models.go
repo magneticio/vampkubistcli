@@ -1,14 +1,15 @@
 package models
 
 type VampConfig struct {
-	RootPassword string `yaml:"rootPassword,omitempty" json:"rootPassword,omitempty"`
-	DatabaseUrl  string `yaml:"databaseUrl,omitempty" json:"databaseUrl,omitempty"`
-	DatabaseName string `yaml:"databaseName,omitempty" json:"databaseName,omitempty"`
-	ImageName    string `yaml:"imageName,omitempty" json:"imageName,omitempty"`
-	RepoUsername string `yaml:"repoUsername,omitempty" json:"repoUsername,omitempty"`
-	RepoPassword string `yaml:"repoPassword,omitempty" json:"repoPassword,omitempty"`
-	ImageTag     string `yaml:"imageTag,omitempty" json:"imageTag,omitempty"`
-	Mode         string `yaml:"mode,omitempty" json:"mode,omitempty"`
+	RootPassword          string `yaml:"rootPassword,omitempty" json:"rootPassword,omitempty"`
+	DatabaseUrl           string `yaml:"databaseUrl,omitempty" json:"databaseUrl,omitempty"`
+	DatabaseName          string `yaml:"databaseName,omitempty" json:"databaseName,omitempty"`
+	ImageName             string `yaml:"imageName,omitempty" json:"imageName,omitempty"`
+	RepoUsername          string `yaml:"repoUsername,omitempty" json:"repoUsername,omitempty"`
+	RepoPassword          string `yaml:"repoPassword,omitempty" json:"repoPassword,omitempty"`
+	ImageTag              string `yaml:"imageTag,omitempty" json:"imageTag,omitempty"`
+	Mode                  string `yaml:"mode,omitempty" json:"mode,omitempty"`
+	AccessTokenExpiration string `yaml:"accessTokenExpiration,omitempty" json:"accessTokenExpiration,omitempty"`
 }
 
 type ErrorResponse struct {
