@@ -490,13 +490,13 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 						{
 							Name:  "vamp",
 							Image: config.ImageName + ":" + config.ImageTag,
-							Lifecycle: &corev1.Lifecycle{
+							/* Lifecycle: &corev1.Lifecycle{
 								PreStop: &corev1.Handler{
 									Exec: &corev1.ExecAction{
 										Command: []string{"/bin/bash", "-c", "sleep 20"},
 									},
 								},
-							},
+							}, */
 							Ports: []apiv1.ContainerPort{
 								{
 									Protocol:      apiv1.ProtocolTCP,
@@ -507,30 +507,32 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 									ContainerPort: 5701,
 								},
 							},
-							ReadinessProbe: &apiv1.Probe{
-								Handler: apiv1.Handler{
-									HTTPGet: &apiv1.HTTPGetAction{
-										Path: "/ready",
-										Port: apiutil.FromInt(8889),
-									},
-								},
-								InitialDelaySeconds: 10,
-								PeriodSeconds:       6,
-								SuccessThreshold:    2,
-								TimeoutSeconds:      2,
-								FailureThreshold:    1,
-							},
-							LivenessProbe: &apiv1.Probe{
-								Handler: apiv1.Handler{
-									HTTPGet: &apiv1.HTTPGetAction{
-										Path: "/",
-										Port: apiutil.FromInt(8889),
-									},
-								},
-								InitialDelaySeconds: 90,
-								PeriodSeconds:       5,
-								TimeoutSeconds:      2,
-							},
+							/*
+															ReadinessProbe: &apiv1.Probe{
+																Handler: apiv1.Handler{
+																	HTTPGet: &apiv1.HTTPGetAction{
+																		Path: "/ready",
+																		Port: apiutil.FromInt(8889),
+																	},
+																},
+																InitialDelaySeconds: 10,
+																PeriodSeconds:       6,
+																SuccessThreshold:    2,
+																TimeoutSeconds:      2,
+																FailureThreshold:    1,
+															},
+								              LivenessProbe: &apiv1.Probe{
+																Handler: apiv1.Handler{
+																	HTTPGet: &apiv1.HTTPGetAction{
+																		Path: "/",
+																		Port: apiutil.FromInt(8889),
+																	},
+																},
+																InitialDelaySeconds: 90,
+																PeriodSeconds:       5,
+																TimeoutSeconds:      2,
+															},
+							*/
 							Env: []apiv1.EnvVar{
 								{
 									Name:  "MODE",

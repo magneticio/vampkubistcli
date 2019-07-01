@@ -141,6 +141,19 @@ func NewRestClient(url string, token string, version string, isVerbose bool, cer
 		// fmt.Printf("load cert from file: %v\n", tmpFile.Name())
 		resty.SetRootCertificate(tmpFile.Name())
 	}
+	retryCount := 5
+	// Set retry wait times that do not intersect with default ones
+	retryWaitTime := time.Duration(3) * time.Second
+	retryMaxWaitTime := time.Duration(9) * time.Second
+	resty.
+		SetRetryCount(retryCount).
+		SetRetryWaitTime(retryWaitTime).
+		SetRetryMaxWaitTime(retryMaxWaitTime).
+		AddRetryCondition(
+			func(r *resty.Response) (bool, error) {
+				return r.StatusCode() >= http.StatusBadRequest, nil
+			},
+		)
 	// default timeout of golang is very long
 	resty.SetTimeout(defaultTimeout)
 	logging.Info("Rest client base url: %v\n", url)
