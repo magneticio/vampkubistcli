@@ -835,3 +835,31 @@ func (s *RestClient) ReadNotifications(notifications chan<- models.Notification)
 		}
 	}
 }
+
+func (s *RestClient) SendExperimentMetric(experimentName string, metricName string, experimentMetric *models.ExperimentMetric, values map[string]string) error {
+	url, _ := getUrlForResource(s.URL, s.Version, "experiments", "metrics", "", values)
+	url += "&experiment_name=" + experimentName + "&metric_name=" + metricName
+	strJson, jsonMarshalError := json.Marshal(*experimentMetric)
+	if jsonMarshalError != nil {
+		return jsonMarshalError
+	}
+	body := strJson
+	resp, err := s.fallbackToRefreshToken(func() (*resty.Response, error) {
+		return resty.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Accept", "application/json").
+			SetAuthToken(s.getAccessToken()).
+			SetBody(body).
+			SetResult(&successResponse{}).
+			SetError(&errorResponse{}).
+			Put(url)
+	})
+	if err != nil {
+		return err
+	}
+
+	if resp.IsError() {
+		return errors.New(string(resp.Body()))
+	}
+	return nil
+}
