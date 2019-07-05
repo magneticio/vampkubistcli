@@ -87,8 +87,8 @@ type Notification struct {
 }
 
 type ExperimentMetric struct {
-	Timestamp         int64   `json:"timestamp,omitempty"`
-	NumberOfElements  int64   `json:"numberOfElements,omitempty"`
-	StandardDeviation float64 `json:"standardDeviation,omitempty"`
-	Average           float64 `json:"average,omitempty"`
+	Timestamp         int64   `json:"timestamp"`
+	NumberOfElements  int64   `json:"numberOfElements"`
+	StandardDeviation float64 `json:"standardDeviation"`
+	Average           float64 `json:"average"`
 }
