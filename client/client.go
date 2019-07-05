@@ -77,6 +77,8 @@ var resourceMap map[string]string = map[string]string{
 	"users":            "user",
 	"permission":       "permission",
 	"permissions":      "permission",
+	"experiment":       "experiment",
+	"experiments":      "experiment",
 }
 
 type RestClient struct {
