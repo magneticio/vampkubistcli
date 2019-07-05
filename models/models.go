@@ -85,3 +85,10 @@ type PolicyReference struct {
 type Notification struct {
 	Text string `json:"text,omitempty"`
 }
+
+type ExperimentMetric struct {
+	Timestamp         int64   `json:"timestamp,omitempty"`
+	NumberOfElements  int64   `json:"numberOfElements,omitempty"`
+	StandardDeviation float64 `json:"standardDeviation,omitempty"`
+	Average           float64 `json:"average,omitempty"`
+}
