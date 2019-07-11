@@ -411,6 +411,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 		fmt.Printf("Warning: %v\n", errVampService.Error())
 		return nil, nil, nil, errVampService
 	}
+
 	ip, getIpError := GetServiceExternalIP(clientset, ns, vampService.GetObjectMeta().GetName())
 	if getIpError != nil {
 		return nil, nil, nil, getIpError
@@ -569,6 +570,10 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 											Key: "cert",
 										},
 									},
+								},
+								{
+									Name:  "API_EXTERNAL_HOST",
+									Value: ip + ":8888",
 								},
 								{
 									Name: "ROOT_PASSWORD",
