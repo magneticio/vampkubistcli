@@ -16,6 +16,7 @@ package client
 
 import (
 	"io/ioutil"
+	"sync"
 	"time"
 
 	"github.com/magneticio/vampkubistcli/logging"
@@ -138,32 +139,47 @@ func (ts *FileBackedTokenStore) Tokens() map[string]int64 {
 
 type InMemoryTokenStore struct {
 	tokenMap map[string]int64
+	rwlock   sync.RWMutex
 }
 
 func (ts *InMemoryTokenStore) Store(token string, timeout int64) error {
+	ts.rwlock.Lock()
 	if ts.tokenMap == nil {
 		ts.tokenMap = make(map[string]int64)
 	}
 	ts.tokenMap[token] = timeout
+	ts.rwlock.Unlock()
 	return nil
 }
 
 func (ts *InMemoryTokenStore) Get(token string) (int64, bool) {
+	ts.rwlock.RLock()
 	if ts.tokenMap == nil {
+		ts.rwlock.RUnlock()
 		return 0, false
 	}
 	if timeout, ok := ts.tokenMap[token]; ok {
+		ts.rwlock.RUnlock()
 		return timeout, true
 	}
+	ts.rwlock.RUnlock()
 	return 0, false
 }
 
 func (ts *InMemoryTokenStore) Tokens() map[string]int64 {
-	return ts.tokenMap
+	ts.rwlock.RLock()
+	tokenMapCopy := make(map[string]int64)
+	for key, value := range ts.tokenMap {
+		tokenMapCopy[key] = value
+	}
+	ts.rwlock.RUnlock()
+	return tokenMapCopy
 }
 
 func (ts *InMemoryTokenStore) RemoveExpired() error {
+	ts.rwlock.Lock()
 	if ts.tokenMap == nil {
+		ts.rwlock.Unlock()
 		return nil
 	}
 	for token, timeout := range ts.tokenMap {
@@ -171,10 +187,13 @@ func (ts *InMemoryTokenStore) RemoveExpired() error {
 			delete(ts.tokenMap, token)
 		}
 	}
+	ts.rwlock.Unlock()
 	return nil
 }
 
 func (ts *InMemoryTokenStore) Clean() error {
+	ts.rwlock.Lock()
 	ts.tokenMap = make(map[string]int64)
+	ts.rwlock.Unlock()
 	return nil
 }
