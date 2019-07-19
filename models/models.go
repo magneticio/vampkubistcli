@@ -10,6 +10,8 @@ type VampConfig struct {
 	ImageTag              string `yaml:"imageTag,omitempty" json:"imageTag,omitempty"`
 	Mode                  string `yaml:"mode,omitempty" json:"mode,omitempty"`
 	AccessTokenExpiration string `yaml:"accessTokenExpiration,omitempty" json:"accessTokenExpiration,omitempty"`
+	IstioInstallerImage   string `yaml:"istioInstallerImage,omitempty" json:"istioInstallerImage,omitempty"`
+	IstioAdapterImage     string `yaml:"istioAdapterImage,omitempty" json:"istioAdapterImage,omitempty"`
 }
 
 type ErrorResponse struct {

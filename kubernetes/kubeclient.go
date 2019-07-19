@@ -39,6 +39,8 @@ var DefaultVampConfig = models.VampConfig{
 	ImageTag:              "0.7.8",
 	Mode:                  "IN_CLUSTER",
 	AccessTokenExpiration: "10m",
+	IstioAdapterImage:     "magneticio/vampkubist-istio-adapter-dev:latest",
+	IstioInstallerImage:   "magneticio/vampistioinstaller:0.1.12",
 }
 
 // This is shared between installation and credentials, it is currently not configurable
@@ -77,6 +79,14 @@ func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.Vamp
 	if config.AccessTokenExpiration == "" {
 		config.AccessTokenExpiration = DefaultVampConfig.AccessTokenExpiration
 		fmt.Printf("Access token expiration set to default value: %v\n", config.AccessTokenExpiration)
+	}
+	if config.IstioAdapterImage == "" {
+		config.IstioAdapterImage = DefaultVampConfig.IstioAdapterImage
+		fmt.Printf("Istio Adapter Image set to default value: %v\n", config.IstioAdapterImage)
+	}
+	if config.IstioInstallerImage == "" {
+		config.IstioInstallerImage = DefaultVampConfig.IstioInstallerImage
+		fmt.Printf("Istio Installer Image set to default value: %v\n", config.IstioInstallerImage)
 	}
 	return config, nil
 }
@@ -589,6 +599,14 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 								{
 									Name:  "OAUTH_TOKEN_EXPIRATION",
 									Value: config.AccessTokenExpiration,
+								},
+								{
+									Name:  "ISTIO_INSTALLER_IMAGE",
+									Value: config.IstioInstallerImage,
+								},
+								{
+									Name:  "ISTIO_ADAPTER_IMAGE",
+									Value: config.IstioAdapterImage,
 								},
 							},
 						},
