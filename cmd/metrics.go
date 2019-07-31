@@ -15,7 +15,10 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"github.com/ghodss/yaml"
 	"github.com/magneticio/vampkubistcli/kubernetes"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -47,7 +50,29 @@ Example:
 			return err
 		}
 
-		fmt.Printf("Pods metrics: %v\n", pods)
+		js, err := json.Marshal(pods)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			return err
+		}
+
+		if OutputType == "yaml" {
+			yaml, err := yaml.JSONToYAML(js)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				return err
+			}
+			fmt.Print(string(yaml))
+		} else {
+			var prettyJSON bytes.Buffer
+			error := json.Indent(&prettyJSON, js, "", "    ")
+			if error != nil {
+				fmt.Printf("Error: %v\n", err)
+				return err
+			}
+			fmt.Print(string(prettyJSON.Bytes()))
+		}
+
 		return nil
 	},
 }
@@ -57,5 +82,6 @@ func init() {
 
 	metricsCmd.Flags().StringVarP(&namespace, "namespace", "", "vamp-system", "Namespace")
 	metricsCmd.Flags().StringVarP(&kubeConfigPath, "kubeconfig", "", "", "Kube Config path")
+	metricsCmd.Flags().StringVarP(&OutputType, "output", "o", "yaml", "Output format yaml or json")
 	viper.BindEnv("kubeconfig", "KUBECONFIG")
 }
