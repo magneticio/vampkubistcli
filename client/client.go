@@ -865,3 +865,35 @@ func (s *RestClient) SendExperimentMetric(experimentName string, metricName stri
 	}
 	return nil
 }
+
+// GetSubsetMap returns a map for easy conversion of labels to subsets
+func (s *RestClient) GetSubsetMap(values map[string]string) (*models.DestinationsSubsetsMap, error) {
+	url, _ := getUrlForResource(s.URL, s.Version, "destination", "subsets/map", "", values)
+
+	resp, err := s.fallbackToRefreshToken(func() (*resty.Response, error) {
+		return resty.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Accept", "application/json").
+			SetAuthToken(s.getAccessToken()).
+			SetError(&errorResponse{}).
+			Get(url)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.IsError() {
+		return nil, getError(resp)
+	}
+
+	responseBody := resp.Body()
+
+	var destinationsSubsetsMap models.DestinationsSubsetsMap
+	unmarshalError := json.Unmarshal(responseBody, &destinationsSubsetsMap)
+	if unmarshalError != nil {
+		return nil, unmarshalError
+	}
+
+	return &destinationsSubsetsMap, nil
+}
