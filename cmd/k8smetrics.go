@@ -28,12 +28,12 @@ var namespace string
 
 // bootstrapCmd represents the bootstrap command
 var k8sMetricsCmd = &cobra.Command{
-	Use:   "k8s-metrics",
+	Use:   "k8smetrics",
 	Short: "get k8s metrics",
 	Long: AddAppName(`Get k8s pods metrics for a given namespace
 
 Example:
-    $AppName k8s-metrics
+    $AppName k8smetrics
   `),
 	SilenceUsage:  true,
 	SilenceErrors: true,
