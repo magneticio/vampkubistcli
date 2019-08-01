@@ -3,13 +3,13 @@ package kubeclient
 import (
 	"encoding/json"
 	"errors"
+	"github.com/magneticio/vampkubistcli/logging"
+	//	metricsv1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	"math"
 	"reflect"
 	"regexp"
 	"strconv"
 	"time"
-	//	"k8s.io/metrics/pkg/apis/metrics/v1beta1"
-	"github.com/magneticio/vampkubistcli/logging"
 )
 
 type PodMetricsList struct {
@@ -40,7 +40,7 @@ type PodMetricsList struct {
 }
 
 // Metrics returns list of metrics for a given namespace
-func Metrics(configPath string, namespace string, pods *PodMetricsList) error {
+func GetMetrics(configPath string, namespace string, pods *PodMetricsList) error {
 	clientset, _, err := getLocalKubeClient(configPath)
 	if err != nil {
 		return err
@@ -49,6 +49,7 @@ func Metrics(configPath string, namespace string, pods *PodMetricsList) error {
 	if err != nil {
 		return err
 	}
+	logging.Info("----raw json: %v", string(data))
 	err = json.Unmarshal(data, &pods)
 	if err != nil {
 		return err

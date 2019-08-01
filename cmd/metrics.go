@@ -27,13 +27,13 @@ import (
 var namespace string
 
 // bootstrapCmd represents the bootstrap command
-var metricsCmd = &cobra.Command{
-	Use:   "metrics",
-	Short: "get metrics",
-	Long: AddAppName(`Get pods metrics for a given namespace
+var k8sMetricsCmd = &cobra.Command{
+	Use:   "k8s-metrics",
+	Short: "get k8s metrics",
+	Long: AddAppName(`Get k8s pods metrics for a given namespace
 
 Example:
-    $AppName metrics
+    $AppName k8s-metrics
   `),
 	SilenceUsage:  true,
 	SilenceErrors: true,
@@ -43,7 +43,7 @@ Example:
 		}
 
 		var pods kubeclient.PodMetricsList
-		err := kubeclient.Metrics(kubeConfigPath, namespace, &pods)
+		err := kubeclient.GetMetrics(kubeConfigPath, namespace, &pods)
 
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
@@ -78,10 +78,10 @@ Example:
 }
 
 func init() {
-	rootCmd.AddCommand(metricsCmd)
+	rootCmd.AddCommand(k8sMetricsCmd)
 
-	metricsCmd.Flags().StringVarP(&namespace, "namespace", "", "vamp-system", "Namespace")
-	metricsCmd.Flags().StringVarP(&kubeConfigPath, "kubeconfig", "", "", "Kube Config path")
-	metricsCmd.Flags().StringVarP(&OutputType, "output", "o", "yaml", "Output format yaml or json")
+	k8sMetricsCmd.Flags().StringVarP(&namespace, "namespace", "", "vamp-system", "Namespace")
+	k8sMetricsCmd.Flags().StringVarP(&kubeConfigPath, "kubeconfig", "", "", "Kube Config path")
+	k8sMetricsCmd.Flags().StringVarP(&OutputType, "output", "o", "yaml", "Output format yaml or json")
 	viper.BindEnv("kubeconfig", "KUBECONFIG")
 }
