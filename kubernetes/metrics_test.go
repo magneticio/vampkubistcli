@@ -76,3 +76,44 @@ func TestGetProcessedMetrics(t *testing.T) {
 	}
 	t.Logf("--pods: \n%v", pods)
 }
+
+func TestGetAverageMetrics(t *testing.T) {
+	metricsJS, err := ioutil.ReadFile("metrics_test.json")
+	if err != nil {
+		t.Errorf("Cannot read metrics json file - %v", err)
+	}
+
+	podJS, err := ioutil.ReadFile("pod_test.json")
+	if err != nil {
+		t.Errorf("Cannot read pod json file - %v", err)
+	}
+
+	ts := createTestServer(func(w http.ResponseWriter, r *http.Request) {
+		t.Logf("Method: %v", r.Method)
+		t.Logf("Path: %v", r.URL.Path)
+		switch {
+		case r.URL.Path == "/apis/metrics.k8s.io/v1beta1/namespaces/vamp-system/pods":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(metricsJS)
+		case strings.HasPrefix(r.URL.Path, "/api/v1/namespaces/vamp-system/pods/"):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(podJS)
+		default:
+		}
+	})
+	defer ts.Close()
+
+	kubeclient.K8sClient = k8sClientProviderMock{Host: ts.URL}
+
+	var metrics []kubeclient.PodAverageMetrics
+
+	if metrics, err = kubeclient.GetAverageMetrics("", "vamp-system"); err != nil {
+		t.Errorf("GetAverageMetrics returned error: %v", err)
+	}
+
+	if len(metrics) == 0 {
+		t.Error("GetAverageMetrics should return data")
+	}
+
+	t.Logf("--metrics: \n%v", metrics)
+}
