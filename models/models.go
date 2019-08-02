@@ -94,3 +94,17 @@ type ExperimentMetric struct {
 	StandardDeviation float64 `json:"standardDeviation"`
 	Average           float64 `json:"average"`
 }
+
+type SubsetToPorts struct {
+	Subset string `json:"subset"`
+	Ports  []int  `json:"ports"`
+}
+
+type LabelsToPortMap struct {
+	Map map[string]SubsetToPorts `json:"map"`
+}
+
+type DestinationsSubsetsMap struct {
+	DestinationsMap map[string]LabelsToPortMap `json:"destinationsMap"`
+	Labels          []string                   `json:"labels"`
+}
