@@ -25,6 +25,7 @@ import (
 )
 
 var namespace string
+var metricsKind string
 
 // bootstrapCmd represents the bootstrap command
 var k8sMetricsCmd = &cobra.Command{
@@ -43,14 +44,26 @@ Example:
 		}
 
 		var pods kubeclient.PodMetricsList
-		err := kubeclient.GetMetricsEx(kubeConfigPath, namespace, &pods)
+		var err error
+		var avgMetrics []kubeclient.PodAverageMetrics
+		if metricsKind == "raw" {
+			err = kubeclient.GetMetricsEx(kubeConfigPath, namespace, &pods)
+		} else {
+			avgMetrics, err = kubeclient.GetAverageMetrics(kubeConfigPath, namespace)
+		}
 
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			return err
 		}
 
-		js, err := json.Marshal(pods)
+		var js []byte
+		if metricsKind == "raw" {
+			js, err = json.Marshal(pods)
+		} else {
+			js, err = json.Marshal(avgMetrics)
+		}
+
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			return err
@@ -83,5 +96,6 @@ func init() {
 	k8sMetricsCmd.Flags().StringVarP(&namespace, "namespace", "", "vamp-system", "Namespace")
 	k8sMetricsCmd.Flags().StringVarP(&kubeConfigPath, "kubeconfig", "", "", "Kube Config path")
 	k8sMetricsCmd.Flags().StringVarP(&OutputType, "output", "o", "yaml", "Output format yaml or json")
+	k8sMetricsCmd.Flags().StringVarP(&metricsKind, "kind", "k", "average", "Kind of metrics, raw or average")
 	viper.BindEnv("kubeconfig", "KUBECONFIG")
 }

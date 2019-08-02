@@ -74,7 +74,7 @@ func GetMetrics(configPath string, namespace string, pods *PodMetricsList) error
 	if err != nil {
 		return err
 	}
-	ProcessMetrics(&pods)
+	//	ProcessMetrics(&pods)
 	return nil
 }
 
@@ -85,6 +85,32 @@ func GetMetricsEx(configPath string, namespace string, pods *PodMetricsList) err
 		return err
 	}
 
+	if err := GetLabels(configPath, namespace, pods); err != nil {
+		return err
+	}
+
+	ProcessMetrics(&pods)
+
+	return nil
+}
+
+// GetMetricsEx does the same as GetMetrics plus it checks if there are labels in pods metadata and
+// if they are missing it makes additional query to K8s to get them
+func GetAverageMetrics(configPath string, namespace string) ([]PodAverageMetrics, error) {
+	var pods PodMetricsList
+
+	if err := GetMetrics(configPath, namespace, &pods); err != nil {
+		return nil, err
+	}
+
+	if err := GetLabels(configPath, namespace, &pods); err != nil {
+		return nil, err
+	}
+
+	return CalculateAverageMetrics(&pods)
+}
+
+func GetLabels(configPath string, namespace string, pods *PodMetricsList) error {
 	clientset, err := K8sClient.Get(configPath)
 	if err != nil {
 		return err
@@ -103,6 +129,42 @@ func GetMetricsEx(configPath string, namespace string, pods *PodMetricsList) err
 	}
 
 	return nil
+}
+
+type PodAverageMetrics struct {
+	Name   string
+	Labels map[string]string
+	CPU    float64
+	Memory float64
+}
+
+func CalculateAverageMetrics(pods *PodMetricsList) ([]PodAverageMetrics, error) {
+	var res = make([]PodAverageMetrics, len(pods.Items))
+	for i := 0; i < len(pods.Items); i++ {
+		res[i].Name = pods.Items[i].Metadata.Name
+		res[i].Labels = pods.Items[i].Metadata.Labels
+		var sumCPU, sumMem float64
+		for j := 0; j < len(pods.Items[i].Containers); j++ {
+			cpu, err := ConvertCPU(pods.Items[i].Containers[j].Usage.CPU)
+			logging.Info("----got cpu: %v", cpu)
+			if err == nil {
+				sumCPU += cpu
+			} else {
+				logging.Error("Conversion of CPU for %v failed - %v", pods.Items[i], err)
+				return nil, err
+			}
+			mem, err := ConvertMemory(pods.Items[i].Containers[j].Usage.Memory)
+			if err == nil {
+				sumMem += mem
+			} else {
+				logging.Error("Conversion of Memory for %v failed - %v", pods.Items[i], err)
+				return nil, err
+			}
+		}
+		res[i].CPU = sumCPU / float64(len(pods.Items[i].Containers))
+		res[i].Memory = sumMem / float64(len(pods.Items[i].Containers))
+	}
+	return res, nil
 }
 
 // ProcessMetrics converts string values for CPU and memory to float ones and stores them into dedicated fields
@@ -135,10 +197,10 @@ func ProcessMetrics(stract interface{}) {
 				switch json {
 				case "cpu":
 					cpu, err := ConvertCPU(f.String())
-					ProcessField(&v, "CPUf", cpu, err)
+					processField(&v, "CPUf", cpu, err)
 				case "memory":
 					mem, err := ConvertMemory(f.String())
-					ProcessField(&v, "MemoryF", mem, err)
+					processField(&v, "MemoryF", mem, err)
 				}
 			}
 
@@ -146,7 +208,7 @@ func ProcessMetrics(stract interface{}) {
 	}
 }
 
-func ProcessField(stract *reflect.Value, fieldName string, val float64, err error) {
+func processField(stract *reflect.Value, fieldName string, val float64, err error) {
 	if err == nil {
 		f := stract.FieldByName(fieldName)
 		if f.CanSet() {
