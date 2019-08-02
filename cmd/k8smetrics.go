@@ -17,6 +17,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/ghodss/yaml"
 	"github.com/magneticio/vampkubistcli/kubernetes"
@@ -46,14 +47,16 @@ Example:
 		var pods kubeclient.PodMetricsList
 		var err error
 		var avgMetrics []kubeclient.PodAverageMetrics
-		if metricsKind == "raw" {
-			err = kubeclient.GetMetricsEx(kubeConfigPath, namespace, &pods)
-		} else {
+		switch metricsKind {
+		case "raw":
+			err = kubeclient.GetProcessedMetrics(kubeConfigPath, namespace, &pods)
+		case "average":
 			avgMetrics, err = kubeclient.GetAverageMetrics(kubeConfigPath, namespace)
+		default:
+			return errors.New(`Bad metrics kind "` + metricsKind + `"`)
 		}
 
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
 			return err
 		}
 
@@ -65,14 +68,12 @@ Example:
 		}
 
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
 			return err
 		}
 
 		if OutputType == "yaml" {
 			yaml, err := yaml.JSONToYAML(js)
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
 				return err
 			}
 			fmt.Print(string(yaml))
@@ -80,7 +81,6 @@ Example:
 			var prettyJSON bytes.Buffer
 			error := json.Indent(&prettyJSON, js, "", "    ")
 			if error != nil {
-				fmt.Printf("Error: %v\n", err)
 				return err
 			}
 			fmt.Print(string(prettyJSON.Bytes()))

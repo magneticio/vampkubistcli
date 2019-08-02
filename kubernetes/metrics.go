@@ -59,8 +59,8 @@ func (defK8sClient) Get(configPath string) (*kubernetes.Clientset, error) {
 	return clientset, err
 }
 
-// GetMetrics returns list of metrics for a given namespace
-func GetMetrics(configPath string, namespace string, pods *PodMetricsList) error {
+// GetRawMetrics returns list of metrics for a given namespace
+func GetRawMetrics(configPath string, namespace string, pods *PodMetricsList) error {
 	clientset, err := K8sClient.Get(configPath)
 	if err != nil {
 		return err
@@ -74,14 +74,13 @@ func GetMetrics(configPath string, namespace string, pods *PodMetricsList) error
 	if err != nil {
 		return err
 	}
-	//	ProcessMetrics(&pods)
 	return nil
 }
 
-// GetMetricsEx does the same as GetMetrics plus it checks if there are labels in pods metadata and
-// if they are missing it makes additional query to K8s to get them
-func GetMetricsEx(configPath string, namespace string, pods *PodMetricsList) error {
-	if err := GetMetrics(configPath, namespace, pods); err != nil {
+// GetProcessedMetrics extracts metrics from k8s using GetRawMetrics and then populates them with labels and
+// float metrics that are converted from raw metrics' string values
+func GetProcessedMetrics(configPath string, namespace string, pods *PodMetricsList) error {
+	if err := GetRawMetrics(configPath, namespace, pods); err != nil {
 		return err
 	}
 
@@ -94,12 +93,12 @@ func GetMetricsEx(configPath string, namespace string, pods *PodMetricsList) err
 	return nil
 }
 
-// GetMetricsEx does the same as GetMetrics plus it checks if there are labels in pods metadata and
-// if they are missing it makes additional query to K8s to get them
+// GetAverageMetrics extract metrics from k8s using GetRawMetrics and then transforms them to
+// new structure with labels and average CPU and memory per pod
 func GetAverageMetrics(configPath string, namespace string) ([]PodAverageMetrics, error) {
 	var pods PodMetricsList
 
-	if err := GetMetrics(configPath, namespace, &pods); err != nil {
+	if err := GetRawMetrics(configPath, namespace, &pods); err != nil {
 		return nil, err
 	}
 
@@ -110,6 +109,7 @@ func GetAverageMetrics(configPath string, namespace string) ([]PodAverageMetrics
 	return CalculateAverageMetrics(&pods)
 }
 
+// GetLabels populates pod metrics list with labels
 func GetLabels(configPath string, namespace string, pods *PodMetricsList) error {
 	clientset, err := K8sClient.Get(configPath)
 	if err != nil {
@@ -131,6 +131,7 @@ func GetLabels(configPath string, namespace string, pods *PodMetricsList) error 
 	return nil
 }
 
+// PodAverageMetrics provides average CPU and memor as long as some pod's metadata
 type PodAverageMetrics struct {
 	Name   string
 	Labels map[string]string
@@ -146,7 +147,6 @@ func CalculateAverageMetrics(pods *PodMetricsList) ([]PodAverageMetrics, error) 
 		var sumCPU, sumMem float64
 		for j := 0; j < len(pods.Items[i].Containers); j++ {
 			cpu, err := ConvertCPU(pods.Items[i].Containers[j].Usage.CPU)
-			logging.Info("----got cpu: %v", cpu)
 			if err == nil {
 				sumCPU += cpu
 			} else {
