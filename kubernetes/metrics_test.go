@@ -1,23 +1,69 @@
 package kubeclient_test
 
 import (
-	"encoding/json"
 	kubeclient "github.com/magneticio/vampkubistcli/kubernetes"
 	"io/ioutil"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
-func TestProcessMetrics(t *testing.T) {
-	js, err := ioutil.ReadFile("metrics_test.json")
+func createTestServer(fn func(w http.ResponseWriter, r *http.Request)) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(fn))
+}
+
+type k8sClientProviderMock struct {
+	Host string
+}
+
+func (mock k8sClientProviderMock) Get(configPath string) (*kubernetes.Clientset, error) {
+	cfg := rest.Config{
+		Host: mock.Host,
+	}
+	return kubernetes.NewForConfig(&cfg)
+}
+
+func TestGetProcessedMetrics(t *testing.T) {
+	metricsJS, err := ioutil.ReadFile("metrics_test.json")
 	if err != nil {
 		t.Errorf("Cannot read metrics json file - %v", err)
 	}
-	var pods kubeclient.PodMetricsList
-	err = json.Unmarshal(js, &pods)
+
+	podJS, err := ioutil.ReadFile("pod_test.json")
 	if err != nil {
-		t.Errorf("Cannot unmarshal metrics json file - %v", err)
+		t.Errorf("Cannot read pod json file - %v", err)
 	}
-	kubeclient.ProcessMetrics(&pods)
+
+	ts := createTestServer(func(w http.ResponseWriter, r *http.Request) {
+		t.Logf("Method: %v", r.Method)
+		t.Logf("Path: %v", r.URL.Path)
+		switch {
+		case r.URL.Path == "/apis/metrics.k8s.io/v1beta1/namespaces/vamp-system/pods":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(metricsJS)
+		case strings.HasPrefix(r.URL.Path, "/api/v1/namespaces/vamp-system/pods/"):
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(podJS)
+		default:
+		}
+	})
+	defer ts.Close()
+
+	kubeclient.K8sClient = k8sClientProviderMock{Host: ts.URL}
+
+	var pods kubeclient.PodMetricsList
+
+	if err = kubeclient.GetProcessedMetrics("", "vamp-system", &pods); err != nil {
+		t.Errorf("GetProcessedMetrics returned error: %v", err)
+	}
+
+	if len(pods.Items) == 0 {
+		t.Error("GetProcessedMetrics should return data")
+	}
+
 	for _, item := range pods.Items {
 		for _, cnt := range item.Containers {
 			if cnt.Usage.CPUf == 0 {
