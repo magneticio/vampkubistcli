@@ -26,7 +26,7 @@ func (mock k8sClientProviderMock) Get(configPath string) (*kubernetes.Clientset,
 	return kubernetes.NewForConfig(&cfg)
 }
 
-func TestGetProcessedMetrics(t *testing.T) {
+func CreateMockedK8s(t *testing.T) *httptest.Server {
 	metricsJS, err := ioutil.ReadFile("metrics_test.json")
 	if err != nil {
 		t.Errorf("Cannot read metrics json file - %v", err)
@@ -50,13 +50,19 @@ func TestGetProcessedMetrics(t *testing.T) {
 		default:
 		}
 	})
-	defer ts.Close()
 
 	kubeclient.K8sClient = k8sClientProviderMock{Host: ts.URL}
 
+	return ts
+}
+
+func TestGetProcessedMetrics(t *testing.T) {
+	ts := CreateMockedK8s(t)
+	defer ts.Close()
+
 	var pods kubeclient.PodMetricsList
 
-	if err = kubeclient.GetProcessedMetrics("", "vamp-system", &pods); err != nil {
+	if err := kubeclient.GetProcessedMetrics("", "vamp-system", &pods); err != nil {
 		t.Errorf("GetProcessedMetrics returned error: %v", err)
 	}
 
@@ -78,42 +84,16 @@ func TestGetProcessedMetrics(t *testing.T) {
 }
 
 func TestGetAverageMetrics(t *testing.T) {
-	metricsJS, err := ioutil.ReadFile("metrics_test.json")
-	if err != nil {
-		t.Errorf("Cannot read metrics json file - %v", err)
-	}
-
-	podJS, err := ioutil.ReadFile("pod_test.json")
-	if err != nil {
-		t.Errorf("Cannot read pod json file - %v", err)
-	}
-
-	ts := createTestServer(func(w http.ResponseWriter, r *http.Request) {
-		t.Logf("Method: %v", r.Method)
-		t.Logf("Path: %v", r.URL.Path)
-		switch {
-		case r.URL.Path == "/apis/metrics.k8s.io/v1beta1/namespaces/vamp-system/pods":
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write(metricsJS)
-		case strings.HasPrefix(r.URL.Path, "/api/v1/namespaces/vamp-system/pods/"):
-			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write(podJS)
-		default:
-		}
-	})
+	ts := CreateMockedK8s(t)
 	defer ts.Close()
 
-	kubeclient.K8sClient = k8sClientProviderMock{Host: ts.URL}
-
-	var metrics []kubeclient.PodAverageMetrics
-
-	if metrics, err = kubeclient.GetAverageMetrics("", "vamp-system"); err != nil {
+	metrics, err := kubeclient.GetAverageMetrics("", "vamp-system")
+	switch {
+	case err != nil:
 		t.Errorf("GetAverageMetrics returned error: %v", err)
-	}
-
-	if len(metrics) == 0 {
+	case len(metrics) == 0:
 		t.Error("GetAverageMetrics should return data")
+	default:
+		t.Logf("--metrics: \n%v", metrics)
 	}
-
-	t.Logf("--metrics: \n%v", metrics)
 }
