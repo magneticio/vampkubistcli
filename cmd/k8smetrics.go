@@ -43,7 +43,7 @@ Example:
 		}
 
 		var pods kubeclient.PodMetricsList
-		err := kubeclient.GetMetrics(kubeConfigPath, namespace, &pods)
+		err := kubeclient.GetMetricsEx(kubeConfigPath, namespace, &pods)
 
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)

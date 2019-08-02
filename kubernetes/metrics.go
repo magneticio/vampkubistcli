@@ -5,6 +5,9 @@ import (
 	"errors"
 	"github.com/magneticio/vampkubistcli/logging"
 	//	metricsv1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
+	//	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"math"
 	"reflect"
 	"regexp"
@@ -20,10 +23,11 @@ type PodMetricsList struct {
 	} `json:"metadata"`
 	Items []struct {
 		Metadata struct {
-			Name              string    `json:"name"`
-			Namespace         string    `json:"namespace"`
-			SelfLink          string    `json:"selfLink"`
-			CreationTimestamp time.Time `json:"creationTimestamp"`
+			Name              string            `json:"name"`
+			Namespace         string            `json:"namespace"`
+			SelfLink          string            `json:"selfLink"`
+			CreationTimestamp time.Time         `json:"creationTimestamp"`
+			Labels            map[string]string `json:"labels,omitempty" protobuf:"bytes,11,rep,name=labels"`
 		} `json:"metadata"`
 		Timestamp  time.Time `json:"timestamp"`
 		Window     string    `json:"window"`
@@ -39,9 +43,25 @@ type PodMetricsList struct {
 	} `json:"items"`
 }
 
-// Metrics returns list of metrics for a given namespace
-func GetMetrics(configPath string, namespace string, pods *PodMetricsList) error {
+// Interface for getting k8s client
+type K8sClientProvider interface {
+	Get(configPath string) (*kubernetes.Clientset, error)
+}
+
+type defK8sClient struct{}
+
+// K8sClient provides k8s client that is used in metric methods that require interaction with k8s
+var K8sClient K8sClientProvider = defK8sClient{}
+
+// Get returns k8s client
+func (defK8sClient) Get(configPath string) (*kubernetes.Clientset, error) {
 	clientset, _, err := getLocalKubeClient(configPath)
+	return clientset, err
+}
+
+// GetMetrics returns list of metrics for a given namespace
+func GetMetrics(configPath string, namespace string, pods *PodMetricsList) error {
+	clientset, err := K8sClient.Get(configPath)
 	if err != nil {
 		return err
 	}
@@ -58,6 +78,34 @@ func GetMetrics(configPath string, namespace string, pods *PodMetricsList) error
 	return nil
 }
 
+// GetMetricsEx does the same as GetMetrics plus it checks if there are labels in pods metadata and
+// if they are missing it makes additional query to K8s to get them
+func GetMetricsEx(configPath string, namespace string, pods *PodMetricsList) error {
+	if err := GetMetrics(configPath, namespace, pods); err != nil {
+		return err
+	}
+
+	clientset, err := K8sClient.Get(configPath)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(pods.Items); i++ {
+		if len(pods.Items[i].Metadata.Labels) == 0 {
+			logging.Info("----getting labels for %v", pods.Items[i].Metadata.Name)
+			pod, err := clientset.CoreV1().Pods(namespace).Get(pods.Items[i].Metadata.Name, metav1.GetOptions{})
+			logging.Info("----got pod data: %v", pod)
+			if err != nil {
+				return err
+			}
+			pods.Items[i].Metadata.Labels = pod.Labels
+		}
+	}
+
+	return nil
+}
+
+// ProcessMetrics converts string values for CPU and memory to float ones and stores them into dedicated fields
 func ProcessMetrics(stract interface{}) {
 	if reflect.ValueOf(stract).Kind() != reflect.Ptr {
 		return
