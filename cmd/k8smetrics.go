@@ -17,7 +17,6 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/ghodss/yaml"
 	"github.com/magneticio/vampkubistcli/kubernetes"
@@ -53,7 +52,7 @@ Example:
 		case "average":
 			avgMetrics, err = kubeclient.GetAverageMetrics(kubeConfigPath, namespace)
 		default:
-			return errors.New(`Bad metrics kind "` + metricsKind + `"`)
+			return fmt.Errorf(`Bad metrics kind "%v"`, metricsKind)
 		}
 
 		if err != nil {
