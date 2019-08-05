@@ -61,6 +61,9 @@ Json path example with wait
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
+		values["destination"] = Destination
+		values["port"] = Port
+		values["subset"] = Subset
 		first := true
 		var result string
 		var getError error
@@ -101,4 +104,7 @@ func init() {
 	getCmd.Flags().StringVarP(&JsonPath, "jsonpath", "", "", "Json path to access specific parts of the object")
 	getCmd.Flags().BoolVarP(&WaitUntilAvailable, "wait", "w", false, "Wait until output is available")
 	getCmd.Flags().IntVarP(&NumberOfTrialLimit, "number-of-tries", "", 0, "Number of Tries when failed, this flag should be used with wait flag (0 is infinite)")
+	getCmd.Flags().StringVarP(&Destination, "destination", "", "", "destination name for metrics")
+	getCmd.Flags().StringVarP(&Port, "port", "", "", "port number for metrics")
+	getCmd.Flags().StringVarP(&Subset, "subset", "", "", "subset name for metrics")
 }
