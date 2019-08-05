@@ -87,13 +87,47 @@ func TestGetAverageMetrics(t *testing.T) {
 	ts := CreateMockedK8s(t, "metrics_test.json")
 	defer ts.Close()
 
-	switch metrics, err := kubeclient.GetAverageMetrics("", "vamp-system"); {
+	metrics, err := kubeclient.GetAverageMetrics("", "vamp-system")
+	switch {
 	case err != nil:
 		t.Errorf("GetAverageMetrics returned error: %v", err)
 	case len(metrics) == 0:
 		t.Error("GetAverageMetrics should return data")
 	default:
 		t.Logf("--metrics: \n%v", metrics)
+	}
+
+	found := map[string]bool{"vamp-6dc7f8cd87-47kdw": false, "mongo-2": false}
+	for _, m := range metrics {
+		if m.Name == "vamp-6dc7f8cd87-47kdw" {
+			found["vamp-6dc7f8cd87-47kdw"] = true
+			expectedCPU := 24946926e-9
+			if m.CPU != expectedCPU {
+				t.Errorf("Expected %v, got %v", expectedCPU, m.CPU)
+			}
+			expectedMem := float64(308068) * 1024
+			if m.Memory != expectedMem {
+				t.Errorf("Expected %v, got %v", expectedMem, m.Memory)
+			}
+		}
+		if m.Name == "mongo-2" {
+			found["mongo-2"] = true
+			expectedCPU := (float64(6940819e-9) + 2563134e-9) / 2
+			if m.CPU != expectedCPU {
+				t.Errorf("Expected %v, got %v", expectedCPU, m.CPU)
+			}
+			expectedMem := float64(59324+67568) * 1024 / 2
+			if m.Memory != expectedMem {
+				t.Errorf("Expected %v, got %v", expectedMem, m.Memory)
+			}
+		}
+
+	}
+
+	for k, v := range found {
+		if v != true {
+			t.Errorf("There is no %v in metrics json", k)
+		}
 	}
 }
 
