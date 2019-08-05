@@ -1,0 +1,87 @@
+{
+  "kind": "PodMetricsList",
+  "apiVersion": "metrics.k8s.io/v1beta1",
+  "metadata": {
+    "selfLink": "/apis/metrics.k8s.io/v1beta1/namespaces/vamp-system/pods"
+  },
+  "items": [
+    {
+      "metadata": {
+        "name": "mongo-0",
+        "namespace": "vamp-system",
+        "selfLink": "/apis/metrics.k8s.io/v1beta1/namespaces/vamp-system/pods/mongo-0",
+        "creationTimestamp": "2019-08-01T11:45:02Z"
+      },
+      "timestamp": "2019-08-01T11:44:34Z",
+      "window": "30s",
+      "containers": [
+        {
+          "name": "mongo",
+          "usage": {
+            "cpu": "0",
+            "memory": "bad value"
+          }
+        },
+        {
+          "name": "mongo-sidecar",
+          "usage": {
+            "cpu": "bad value",
+            "memory": "67900Ki"
+          }
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "name": "mongo-1",
+        "namespace": "vamp-system",
+        "selfLink": "/apis/metrics.k8s.io/v1beta1/namespaces/vamp-system/pods/mongo-1",
+        "creationTimestamp": "2019-08-01T11:45:02Z"
+      },
+      "timestamp": "2019-08-01T11:44:37Z",
+      "window": "30s",
+      "containers": [
+        {
+          "name": "mongo-sidecar",
+          "usage": {
+            "cpu": "2187220n",
+            "memory": "69016Ki"
+          }
+        },
+        {
+          "name": "mongo",
+          "usage": {
+            "cpu": "6313026n",
+            "memory": "60840Ki"
+          }
+        }
+      ]
+    },
+    {
+      "metadata": {
+        "name": "mongo-2",
+        "namespace": "vamp-system",
+        "selfLink": "/apis/metrics.k8s.io/v1beta1/namespaces/vamp-system/pods/mongo-2",
+        "creationTimestamp": "2019-08-01T11:45:02Z"
+      },
+      "timestamp": "2019-08-01T11:44:36Z",
+      "window": "30s",
+      "containers": [
+        {
+          "name": "mongo",
+          "usage": {
+            "cpu": "6940819n",
+            "memory": "59324Ki"
+          }
+        },
+        {
+          "name": "mongo-sidecar",
+          "usage": {
+            "cpu": "2563134n",
+            "memory": "67568Ki"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -116,7 +116,7 @@ func GetLabels(configPath string, namespace string, pods *PodMetricsList) error 
 		return err
 	}
 
-	for i := 0; i < len(pods.Items); i++ {
+	for i := range pods.Items {
 		if len(pods.Items[i].Metadata.Labels) == 0 {
 			logging.Info("----getting labels for %v", pods.Items[i].Metadata.Name)
 			pod, err := clientset.CoreV1().Pods(namespace).Get(pods.Items[i].Metadata.Name, metav1.GetOptions{})
@@ -141,39 +141,40 @@ type PodAverageMetrics struct {
 
 func CalculateAverageMetrics(pods *PodMetricsList) ([]PodAverageMetrics, error) {
 	var res = make([]PodAverageMetrics, len(pods.Items))
-	for i := 0; i < len(pods.Items); i++ {
+	for i := range pods.Items {
 		res[i].Name = pods.Items[i].Metadata.Name
 		res[i].Labels = pods.Items[i].Metadata.Labels
 		var sumCPU, sumMem float64
-		for j := 0; j < len(pods.Items[i].Containers); j++ {
+		var cntCPU, cntMem int
+		for j := range pods.Items[i].Containers {
 			cpu, err := ConvertCPU(pods.Items[i].Containers[j].Usage.CPU)
 			if err == nil {
 				sumCPU += cpu
+				cntCPU++
 			} else {
 				logging.Error("Conversion of CPU for %v failed - %v", pods.Items[i], err)
-				return nil, err
 			}
 			mem, err := ConvertMemory(pods.Items[i].Containers[j].Usage.Memory)
 			if err == nil {
 				sumMem += mem
+				cntMem++
 			} else {
 				logging.Error("Conversion of Memory for %v failed - %v", pods.Items[i], err)
-				return nil, err
 			}
 		}
-		res[i].CPU = sumCPU / float64(len(pods.Items[i].Containers))
-		res[i].Memory = sumMem / float64(len(pods.Items[i].Containers))
+		res[i].CPU = sumCPU / float64(cntCPU)
+		res[i].Memory = sumMem / float64(cntMem)
 	}
 	return res, nil
 }
 
 // ProcessMetrics converts string values for CPU and memory to float ones and stores them into dedicated fields
-func ProcessMetrics(stract interface{}) {
-	if reflect.ValueOf(stract).Kind() != reflect.Ptr {
+func ProcessMetrics(m interface{}) {
+	if reflect.ValueOf(m).Kind() != reflect.Ptr {
 		return
 	}
 
-	v := reflect.ValueOf(stract)
+	v := reflect.ValueOf(m)
 	for v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
@@ -207,9 +208,9 @@ func ProcessMetrics(stract interface{}) {
 	}
 }
 
-func processField(stract *reflect.Value, fieldName string, val float64, err error) {
+func processField(s *reflect.Value, fieldName string, val float64, err error) {
 	if err == nil {
-		f := stract.FieldByName(fieldName)
+		f := s.FieldByName(fieldName)
 		if f.CanSet() {
 			f.SetFloat(val)
 		} else {

@@ -26,8 +26,8 @@ func (mock k8sClientProviderMock) Get(configPath string) (*kubernetes.Clientset,
 	return kubernetes.NewForConfig(&cfg)
 }
 
-func CreateMockedK8s(t *testing.T) *httptest.Server {
-	metricsJS, err := ioutil.ReadFile("metrics_test.json")
+func CreateMockedK8s(t *testing.T, metricsFileName string) *httptest.Server {
+	metricsJS, err := ioutil.ReadFile(metricsFileName)
 	if err != nil {
 		t.Errorf("Cannot read metrics json file - %v", err)
 	}
@@ -57,7 +57,7 @@ func CreateMockedK8s(t *testing.T) *httptest.Server {
 }
 
 func TestGetProcessedMetrics(t *testing.T) {
-	ts := CreateMockedK8s(t)
+	ts := CreateMockedK8s(t, "metrics_test.json")
 	defer ts.Close()
 
 	var pods kubeclient.PodMetricsList
@@ -84,7 +84,7 @@ func TestGetProcessedMetrics(t *testing.T) {
 }
 
 func TestGetAverageMetrics(t *testing.T) {
-	ts := CreateMockedK8s(t)
+	ts := CreateMockedK8s(t, "metrics_test.json")
 	defer ts.Close()
 
 	switch metrics, err := kubeclient.GetAverageMetrics("", "vamp-system"); {
@@ -94,5 +94,39 @@ func TestGetAverageMetrics(t *testing.T) {
 		t.Error("GetAverageMetrics should return data")
 	default:
 		t.Logf("--metrics: \n%v", metrics)
+	}
+}
+
+func TestGetAverageBadMetrics(t *testing.T) {
+	ts := CreateMockedK8s(t, "metrics_test_bad.json")
+	defer ts.Close()
+
+	metrics, err := kubeclient.GetAverageMetrics("", "vamp-system")
+
+	switch {
+	case err != nil:
+		t.Errorf("GetAverageMetrics returned error: %v", err)
+	case len(metrics) == 0:
+		t.Error("GetAverageMetrics should return data")
+	default:
+		t.Logf("--metrics: \n%v", metrics)
+	}
+
+	found := false
+	badPodName := "mongo-0"
+	for i := range metrics {
+		if metrics[i].Name == badPodName {
+			found = true
+			if metrics[i].CPU != 0 {
+				t.Errorf("CPU of %v should be 0 instead of %v", metrics[i].Name, metrics[i].CPU)
+			}
+			memExpectedVal := float64(67900) * 1024
+			if metrics[i].Memory != memExpectedVal {
+				t.Errorf("Memory of %v should be %v instead of %v", memExpectedVal, metrics[i].Name, metrics[i].Memory)
+			}
+		}
+	}
+	if !found {
+		t.Errorf(`Metrics json file doesn't contain data of "%v" pod`, badPodName)
 	}
 }
