@@ -48,6 +48,9 @@ var Project string
 var Cluster string
 var VirtualCluster string
 var Application string
+var Destination string
+var Port string
+var Subset string
 var Token string
 var APIVersion string
 
@@ -64,7 +67,7 @@ var kubeConfigPath string
 var TokenStore client.TokenStore
 
 // version should be in format d.d.d where d is a decimal number
-const Version string = "v0.0.44"
+const Version string = "v0.0.45"
 
 var AppName string = InitAppName()
 

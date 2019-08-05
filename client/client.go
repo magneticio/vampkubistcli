@@ -362,7 +362,12 @@ func getUrlForResource(base string, version string, resourceName string, subComm
 
 	for key, value := range values {
 		if value != "" {
-			queryParams = queryParams + "&" + key + "_name=" + value
+			if key == "port" {
+				queryParams = queryParams + "&" + key + "_number=" + value
+			} else {
+				queryParams = queryParams + "&" + key + "_name=" + value
+			}
+
 		}
 	}
 

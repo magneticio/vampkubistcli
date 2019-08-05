@@ -27,11 +27,8 @@ import (
 )
 
 var Api string
-var Subset string
-var Port string
 var Period string
 var Step string
-var Destination string
 var SubsetLabels map[string]string
 var ReleaseType string
 
