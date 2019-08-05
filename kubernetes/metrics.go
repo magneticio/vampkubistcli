@@ -183,8 +183,7 @@ func ProcessMetrics(stract interface{}) {
 	}
 
 	for i := 0; i < v.NumField(); i++ {
-		f := v.Field(i)
-		switch f.Kind() {
+		switch f := v.Field(i); f.Kind() {
 		case reflect.Struct:
 			ProcessMetrics(f.Addr().Interface())
 		case reflect.Slice:

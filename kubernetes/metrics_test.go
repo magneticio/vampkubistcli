@@ -87,8 +87,7 @@ func TestGetAverageMetrics(t *testing.T) {
 	ts := CreateMockedK8s(t)
 	defer ts.Close()
 
-	metrics, err := kubeclient.GetAverageMetrics("", "vamp-system")
-	switch {
+	switch metrics, err := kubeclient.GetAverageMetrics("", "vamp-system"); {
 	case err != nil:
 		t.Errorf("GetAverageMetrics returned error: %v", err)
 	case len(metrics) == 0:
