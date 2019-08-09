@@ -85,9 +85,10 @@ var pushMetricCmd = &cobra.Command{
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
 		values["destination"] = Destination
+		values["experiment"] = Experiment
 		values["port"] = Port
 		values["subset"] = Subset
-		isUpdated, updateError := restClient.Update(Type, Name, Source, SourceFileType, values)
+		isUpdated, updateError := restClient.PushMetricValue(Name, Source, SourceFileType, values)
 		if !isUpdated {
 			return updateError
 		}
@@ -103,6 +104,7 @@ func init() {
 	pushMetricCmd.Flags().StringVarP(&SourceFile, "file", "f", "", "Source from file")
 	pushMetricCmd.Flags().StringVarP(&SourceFileType, "input", "i", "yaml", "Source file type yaml or json")
 	pushMetricCmd.Flags().StringVarP(&Destination, "destination", "", "", "destination name for metrics")
+	pushMetricCmd.Flags().StringVarP(&Experiment, "experiment", "", "", "experiment name for metrics")
 	pushMetricCmd.Flags().StringVarP(&Port, "port", "", "", "port number for metrics")
 	pushMetricCmd.Flags().StringVarP(&Subset, "subset", "", "", "subset name for metrics")
 }

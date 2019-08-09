@@ -49,6 +49,7 @@ var Cluster string
 var VirtualCluster string
 var Application string
 var Destination string
+var Experiment string
 var Port string
 var Subset string
 var Token string

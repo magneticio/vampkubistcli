@@ -327,7 +327,13 @@ func getUrlForResource(base string, version string, resourceName string, subComm
 		subPath = "/" + subCommand
 	}
 	if name != "" {
-		namedParameter = "&" + resourceName + "_name=" + name
+
+		if resourceName == "metrics/value" {
+			namedParameter = "&metric_name=" + name
+		} else {
+			namedParameter = "&" + resourceName + "_name=" + name
+		}
+
 	}
 
 	project := values["project"]
@@ -357,6 +363,7 @@ func getUrlForResource(base string, version string, resourceName string, subComm
 			"&" + "virtual_cluster_name=" + virtualCluster +
 			namedParameter
 		return url, nil
+
 	}
 	var queryParams = ""
 
@@ -395,6 +402,10 @@ func (s *RestClient) Create(resourceName string, name string, source string, sou
 
 func (s *RestClient) Update(resourceName string, name string, source string, sourceType string, values map[string]string) (bool, error) {
 	return (*s).Apply(resourceName, name, source, sourceType, values, true)
+}
+
+func (s *RestClient) PushMetricValue(name string, source string, sourceType string, values map[string]string) (bool, error) {
+	return (*s).Apply("metrics/value", name, source, sourceType, values, true)
 }
 
 func (s *RestClient) Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error) {
