@@ -86,6 +86,10 @@ Example:
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
+		values["destination"] = Destination
+		values["experiment"] = Experiment
+		values["port"] = Port
+		values["subset"] = Subset
 		isCreated, createError := restClient.Create(Type, Name, Source, SourceFileType, values)
 		if !isCreated {
 			return createError
@@ -102,7 +106,10 @@ func init() {
 	createCmd.Flags().StringVarP(&SourceFile, "file", "f", "", "Source from file")
 	createCmd.Flags().StringVarP(&SourceFileType, "input", "i", "yaml", "Source file type yaml or json")
 	createCmd.Flags().BoolVarP(&Init, "init", "", false, "initialize as empty source")
-
+	createCmd.Flags().StringVarP(&Destination, "destination", "", "", "destination name for metrics")
+	createCmd.Flags().StringVarP(&Experiment, "experiment", "", "", "experiment name for metrics")
+	createCmd.Flags().StringVarP(&Port, "port", "", "", "port number for metrics")
+	createCmd.Flags().StringVarP(&Subset, "subset", "", "", "subset name for metrics")
 	createCmd.Flags().StringSliceVarP(&Hosts, "host", "", []string{}, "host to add to vamp service, Comma separated lists are supported")
 
 }

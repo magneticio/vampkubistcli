@@ -48,6 +48,11 @@ Example:
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
+		values["destination"] = Destination
+		values["experiment"] = Experiment
+		values["port"] = Port
+		values["subset"] = Subset
+
 		isDeleted, deleteError := restClient.Delete(Type, Name, values)
 		if !isDeleted {
 			return deleteError
@@ -59,5 +64,10 @@ Example:
 
 func init() {
 	rootCmd.AddCommand(deleteCmd)
+
+	deleteCmd.Flags().StringVarP(&Destination, "destination", "", "", "destination name for metrics")
+	deleteCmd.Flags().StringVarP(&Experiment, "experiment", "", "", "experiment name for metrics")
+	deleteCmd.Flags().StringVarP(&Port, "port", "", "", "port number for metrics")
+	deleteCmd.Flags().StringVarP(&Subset, "subset", "", "", "subset name for metrics")
 
 }

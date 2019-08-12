@@ -62,6 +62,7 @@ Json path example with wait
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
 		values["destination"] = Destination
+		values["experiment"] = Experiment
 		values["port"] = Port
 		values["subset"] = Subset
 		first := true
@@ -105,6 +106,7 @@ func init() {
 	getCmd.Flags().BoolVarP(&WaitUntilAvailable, "wait", "w", false, "Wait until output is available")
 	getCmd.Flags().IntVarP(&NumberOfTrialLimit, "number-of-tries", "", 0, "Number of Tries when failed, this flag should be used with wait flag (0 is infinite)")
 	getCmd.Flags().StringVarP(&Destination, "destination", "", "", "destination name for metrics")
+	getCmd.Flags().StringVarP(&Experiment, "experiment", "", "", "experiment name for metrics")
 	getCmd.Flags().StringVarP(&Port, "port", "", "", "port number for metrics")
 	getCmd.Flags().StringVarP(&Subset, "subset", "", "", "subset name for metrics")
 }
