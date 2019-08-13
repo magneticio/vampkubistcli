@@ -88,7 +88,7 @@ var pushMetricCmd = &cobra.Command{
 		values["experiment"] = Experiment
 		values["port"] = Port
 		values["subset"] = Subset
-		isUpdated, updateError := restClient.PushMetricValue(Name, Source, SourceFileType, values)
+		isUpdated, updateError := restClient.PushMetricValueInternal(Name, Source, SourceFileType, values)
 		if !isUpdated {
 			return updateError
 		}

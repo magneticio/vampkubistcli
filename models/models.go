@@ -95,6 +95,22 @@ type ExperimentMetric struct {
 	Average           float64 `json:"average"`
 }
 
+type MetricValue struct {
+	Timestamp         int64   `yaml:"timestamp" json:"timestamp"`
+	NumberOfElements  int64   `yaml:"numberOfElements" json:"numberOfElements"`
+	StandardDeviation float64 `yaml:"standardDeviation" json:"standardDeviation"`
+	Average           float64 `yaml:"average" json:"average"`
+	Sum               float64 `yaml:"sum" json:"sum"`
+	Mediam            float64 `yaml:"median" json:"median"`
+	Min               float64 `yaml:"min" json:"min"`
+	Max               float64 `yaml:"max" json:"max"`
+	Rate              float64 `yaml:"rate" json:"rate"`
+	P999              float64 `yaml:"p999" json:"p999"`
+	P99               float64 `yaml:"p99" json:"p99"`
+	P95               float64 `yaml:"p95" json:"p95"`
+	P75               float64 `yaml:"p75" json:"p75"`
+}
+
 type SubsetToPorts struct {
 	Subset string `json:"subset"`
 	Ports  []int  `json:"ports"`

@@ -8,6 +8,7 @@ import (
 
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/magneticio/vampkubistcli/logging"
+	"github.com/magneticio/vampkubistcli/models"
 	"gopkg.in/resty.v1"
 )
 
@@ -73,6 +74,8 @@ func TestClientListErrorMessage(t *testing.T) {
 				_, _ = w.Write([]byte(`{"message": "ERROR MESSAGE"}`))
 			default:
 				t.Logf("Unhandled Path: %v", r.URL.Path)
+				w.WriteHeader(http.StatusAccepted)
+				_, _ = w.Write([]byte(`{"message": "This is unexpected"}`))
 			}
 		}
 	})
@@ -93,4 +96,56 @@ func TestClientListErrorMessage(t *testing.T) {
 	result, err := restClient.List(Type, OutputType, values, !Detailed)
 	assertEqual(t, "", result)
 	assertEqual(t, "ERROR MESSAGE", err.Error())
+}
+
+func TestClientPushMetricsModel(t *testing.T) {
+	ts := createTestServer(func(w http.ResponseWriter, r *http.Request) {
+		t.Logf("Method: %v", r.Method)
+		t.Logf("Path: %v", r.URL.Path)
+		if r.Method == resty.MethodPut {
+			switch r.URL.Path {
+			case "/api/v1/metrics/values":
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusAccepted)
+				_, _ = w.Write([]byte(`{"message": "Metric is being updated"}`))
+			default:
+				t.Logf("Unhandled Path: %v", r.URL.Path)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte(`{"message": "Url is incorrect"}`))
+			}
+		}
+	})
+	defer ts.Close()
+	Token := "Test-Token"
+	Cert := ""
+	Version := "v1"
+	Verbose := false
+	restClient := client.NewRestClient(ts.URL, Token, Version, Verbose, Cert, nil)
+	values := make(map[string]string)
+	values["project"] = "project"
+	values["cluster"] = "cluster"
+	values["virtual_cluster"] = "virtualcluster"
+	values["destination"] = "destination"
+	values["experiment"] = "experiment"
+
+	metric := models.MetricValue{
+		Timestamp:         1,
+		NumberOfElements:  10,
+		StandardDeviation: 0.3,
+		Average:           0.9,
+		Mediam:            0.6,
+		Sum:               9,
+		Min:               0.2,
+		Max:               1,
+		Rate:              0.3,
+		P999:              0.1,
+		P99:               0.2,
+		P95:               0.6,
+		P75:               0.9,
+	}
+
+	result, err := restClient.PushMetricValue("latency", &metric, values)
+	assertEqual(t, true, result)
+	assertEqual(t, nil, err)
 }
