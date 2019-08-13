@@ -47,6 +47,9 @@ var DefaultVampConfig = models.VampConfig{
 // TODO: add it to VampConfig when it is configurable
 const InstallationNamespace = "vamp-system"
 
+// VampClusterRoleBindingName contains name of ClusterRoleBinding for Vamp
+const VampClusterRoleBindingName = InstallationNamespace + "-sa-cluster-admin-binding"
+
 func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.VampConfig, error) {
 	if config.RootPassword == "" {
 		// This is enforced
@@ -128,7 +131,7 @@ func getLocalKubeClient(configPath string) (*kubernetes.Clientset, string, error
 This method installs namespace, cluster role binding and image pull secret
 TODO: differenciate between already exists and other error types
 */
-func SetupVampCredentials(clientset *kubernetes.Clientset, ns string) error {
+func SetupVampCredentials(clientset *kubernetes.Clientset, ns string, rbName string) error {
 	nsSpec := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
 	_, namespaceCreationError := clientset.CoreV1().Namespaces().Create(nsSpec)
 	if namespaceCreationError != nil {
@@ -136,8 +139,9 @@ func SetupVampCredentials(clientset *kubernetes.Clientset, ns string) error {
 		fmt.Printf("Warning: %v\n", namespaceCreationError.Error())
 	}
 	// Create Cluster Role Binding Vamp Default Service Account
+
 	clusterRoleBindingSpec := &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{Name: ns + "-sa-cluster-admin-binding"},
+		ObjectMeta: metav1.ObjectMeta{Name: rbName},
 		Subjects:   []rbacv1.Subject{rbacv1.Subject{Kind: "User", Name: "system:serviceaccount:" + ns + ":default", APIGroup: "rbac.authorization.k8s.io"}},
 		RoleRef:    rbacv1.RoleRef{Kind: "ClusterRole", Name: "cluster-admin", APIGroup: "rbac.authorization.k8s.io"},
 	}
@@ -150,6 +154,18 @@ func SetupVampCredentials(clientset *kubernetes.Clientset, ns string) error {
 	return nil
 }
 
+func RemoveVampCredentials(clientset *kubernetes.Clientset, ns string, rbName string) error {
+	if err := clientset.CoreV1().Namespaces().Delete(ns, nil); err != nil {
+		fmt.Printf("Canot delete Vamp namespace %v - %v", ns, err)
+		return err
+	}
+	if err := clientset.RbacV1().ClusterRoleBindings().Delete(rbName, nil); err != nil {
+		fmt.Printf("Canot delete role bindings %v - %v", ns, err)
+		return err
+	}
+	return nil
+}
+
 func BootstrapVampService(configPath string) (string, string, string, error) {
 	// create the clientset
 	clientset, host, err := getLocalKubeClient(configPath)
@@ -158,7 +174,7 @@ func BootstrapVampService(configPath string) (string, string, string, error) {
 		return "", "", "", err
 	}
 	ns := InstallationNamespace
-	errSetup := SetupVampCredentials(clientset, ns)
+	errSetup := SetupVampCredentials(clientset, ns, VampClusterRoleBindingName)
 	if errSetup != nil {
 		fmt.Printf("Warning: %v\n", errSetup.Error())
 		return host, "", "", errSetup
@@ -217,6 +233,14 @@ func InstallVampService(config *models.VampConfig, configPath string) (string, [
 	// this waits until service is accessible and cerficate is valid
 	CheckAndWaitForService(*url, cert)
 	return *url, cert, key, nil
+}
+
+func UninstallVampService(configPath string) error {
+	clientset, _, err := getLocalKubeClient(configPath)
+	if err != nil {
+		return err
+	}
+	return RemoveVampCredentials(clientset, InstallationNamespace, VampClusterRoleBindingName)
 }
 
 func CheckAndWaitForService(url string, cert []byte) error {
