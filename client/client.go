@@ -404,8 +404,18 @@ func (s *RestClient) Update(resourceName string, name string, source string, sou
 	return (*s).Apply(resourceName, name, source, sourceType, values, true)
 }
 
-func (s *RestClient) PushMetricValue(name string, source string, sourceType string, values map[string]string) (bool, error) {
+func (s *RestClient) PushMetricValueInternal(name string, source string, sourceType string, values map[string]string) (bool, error) {
 	return (*s).Apply("metrics/value", name, source, sourceType, values, true)
+}
+
+func (s *RestClient) PushMetricValue(name string, metricValue *models.MetricValue, values map[string]string) (bool, error) {
+	strJson, jsonMarshalError := json.Marshal(*metricValue)
+	if jsonMarshalError != nil {
+		return false, jsonMarshalError
+	}
+	body := string(strJson)
+
+	return (*s).PushMetricValueInternal(name, body, "json", values)
 }
 
 func (s *RestClient) Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error) {
