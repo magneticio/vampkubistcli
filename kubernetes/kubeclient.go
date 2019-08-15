@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/retry"
+
 	// Initialize all known client auth plugins.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -314,7 +315,7 @@ func InstallMongoDB(clientset *kubernetes.Clientset, ns string) error {
 					Containers: []apiv1.Container{
 						{
 							Name:  "mongo",
-							Image: "mongo",
+							Image: "mongo:4.0",
 							Command: []string{
 								"mongod",
 								"--replSet",
