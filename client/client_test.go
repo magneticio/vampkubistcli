@@ -134,7 +134,7 @@ func TestClientPushMetricsModel(t *testing.T) {
 		NumberOfElements:  10,
 		StandardDeviation: 0.3,
 		Average:           0.9,
-		Mediam:            0.6,
+		Median:            0.6,
 		Sum:               9,
 		Min:               0.2,
 		Max:               1,

@@ -101,7 +101,7 @@ type MetricValue struct {
 	StandardDeviation float64 `yaml:"standardDeviation" json:"standardDeviation"`
 	Average           float64 `yaml:"average" json:"average"`
 	Sum               float64 `yaml:"sum" json:"sum"`
-	Mediam            float64 `yaml:"median" json:"median"`
+	Median            float64 `yaml:"median" json:"median"`
 	Min               float64 `yaml:"min" json:"min"`
 	Max               float64 `yaml:"max" json:"max"`
 	Rate              float64 `yaml:"rate" json:"rate"`
