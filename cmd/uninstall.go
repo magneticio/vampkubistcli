@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// installCmd represents the install command
+// uninstallCmd represents the install command
 var uninstallCmd = &cobra.Command{
 	Use:   "uninstall",
 	Short: "Uninstall Vamp Management in your cluster",
