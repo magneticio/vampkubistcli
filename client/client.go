@@ -501,8 +501,9 @@ func (s *RestClient) Delete(resourceName string, name string, values map[string]
 
 }
 
-func (s *RestClient) UpdatePassword(userName string, password string, source string, values map[string]string) error {
+func (s *RestClient) UpdatePassword(userName string, password string, values map[string]string) error {
 	url, _ := getUrlForResource(s.URL, s.Version, "user", "update_password", userName, values)
+	source := "{\"userName\":\"" + userName + "\",\"password\":\"" + password + "\"}"
 	body := []byte(source)
 	resp, err := s.fallbackToRefreshToken(func() (*resty.Response, error) {
 		return resty.R().
