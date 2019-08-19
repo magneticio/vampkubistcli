@@ -35,7 +35,6 @@ var passwdCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		Type := "user"
 		passwd, passwdError := util.GetParameterFromTerminalAsSecret(
 			"Enter your password (password will not be visible):",
 			"Enter your password again (password will not be visible):",
@@ -43,7 +42,6 @@ var passwdCmd = &cobra.Command{
 		if passwdError != nil {
 			return passwdError
 		}
-		SourceFileType := "json"
 		if Username == "" {
 			Username = Config.Username
 		}
@@ -54,7 +52,7 @@ var passwdCmd = &cobra.Command{
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		_, updateError := restClient.Update(Type, Username, Source, SourceFileType, values)
+		updateError := restClient.UpdatePassword(Username, passwd, Source, values)
 		if updateError != nil {
 			return updateError
 		}

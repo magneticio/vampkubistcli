@@ -501,6 +501,30 @@ func (s *RestClient) Delete(resourceName string, name string, values map[string]
 
 }
 
+func (s *RestClient) UpdatePassword(userName string, password string, source string, values map[string]string) error {
+	url, _ := getUrlForResource(s.URL, s.Version, "user", "update_password", userName, values)
+	body := []byte(source)
+	resp, err := s.fallbackToRefreshToken(func() (*resty.Response, error) {
+		return resty.R().
+			SetHeader("Content-Type", "application/json").
+			SetHeader("Accept", "application/json").
+			SetAuthToken(s.getAccessToken()).
+			SetBody(body).
+			SetResult(&successResponse{}).
+			SetError(&errorResponse{}).
+			Put(url)
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if resp.IsError() {
+		return getError(resp)
+	}
+	return nil
+}
+
 func (s *RestClient) GetSpec(resourceName string, name string, outputFormat string, values map[string]string) (string, error) {
 	url, _ := getUrlForResource(s.URL, s.Version, resourceName, "", name, values)
 
