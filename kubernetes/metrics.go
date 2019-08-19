@@ -15,6 +15,29 @@ import (
 	"time"
 )
 
+// PodAverageMetrics provides average CPU and memor as long as some pod's metadata
+type PodAverageMetrics struct {
+	Name   string
+	Labels map[string]string
+	CPU    float64
+	Memory float64
+}
+
+// ContainerMetrics contains container's CPU and Memory metrics
+type ContainerMetrics struct {
+	Name   string
+	CPU    float64
+	Memory float64
+}
+
+// PodContainersMetrics contains container's metrics for pod
+type PodContainersMetrics struct {
+	Name              string
+	Labels            map[string]string
+	ContainersMetrics []ContainerMetrics
+}
+
+// PodMetricsList describes metrics format that is returned back from K8s
 type PodMetricsList struct {
 	Kind       string `json:"kind"`
 	APIVersion string `json:"apiVersion"`
@@ -43,7 +66,7 @@ type PodMetricsList struct {
 	} `json:"items"`
 }
 
-// Interface for getting k8s client
+// K8sClientProvider provides interface for getting k8s client
 type K8sClientProvider interface {
 	Get(configPath string) (*kubernetes.Clientset, error)
 }
@@ -93,6 +116,44 @@ func GetProcessedMetrics(configPath string, namespace string, pods *PodMetricsLi
 	return nil
 }
 
+// GetSimpleMetrics extracts metrics from k8s using GetRawMetrics and then transform them to
+// new structure with labels and float metrics that are converted from raw metrics' string values
+func GetSimpleMetrics(configPath string, namespace string) ([]PodContainersMetrics, error) {
+	var pods PodMetricsList
+
+	if err := GetRawMetrics(configPath, namespace, &pods); err != nil {
+		return nil, err
+	}
+
+	if err := GetLabels(configPath, namespace, &pods); err != nil {
+		return nil, err
+	}
+
+	var res = make([]PodContainersMetrics, len(pods.Items))
+
+	for i := range pods.Items {
+		res[i].Name = pods.Items[i].Metadata.Name
+		res[i].Labels = pods.Items[i].Metadata.Labels
+		res[i].ContainersMetrics = make([]ContainerMetrics, len(pods.Items[i].Containers))
+		for j := range pods.Items[i].Containers {
+			res[i].ContainersMetrics[j].Name = pods.Items[i].Containers[j].Name
+			cpu, err := ConvertCPU(pods.Items[i].Containers[j].Usage.CPU)
+			if err == nil {
+				res[i].ContainersMetrics[j].CPU = cpu
+			} else {
+				logging.Error("Conversion of CPU for %v failed - %v", pods.Items[i], err)
+			}
+			mem, err := ConvertMemory(pods.Items[i].Containers[j].Usage.Memory)
+			if err == nil {
+				res[i].ContainersMetrics[j].Memory = mem
+			} else {
+				logging.Error("Conversion of Memory for %v failed - %v", pods.Items[i], err)
+			}
+		}
+	}
+	return res, nil
+}
+
 // GetAverageMetrics extract metrics from k8s using GetRawMetrics and then transforms them to
 // new structure with labels and average CPU and memory per pod
 func GetAverageMetrics(configPath string, namespace string) ([]PodAverageMetrics, error) {
@@ -131,14 +192,7 @@ func GetLabels(configPath string, namespace string, pods *PodMetricsList) error 
 	return nil
 }
 
-// PodAverageMetrics provides average CPU and memor as long as some pod's metadata
-type PodAverageMetrics struct {
-	Name   string
-	Labels map[string]string
-	CPU    float64
-	Memory float64
-}
-
+// CalculateAverageMetrics calculates average CPU and Memory for all containers in pod
 func CalculateAverageMetrics(pods *PodMetricsList) ([]PodAverageMetrics, error) {
 	var res = make([]PodAverageMetrics, len(pods.Items))
 	for i := range pods.Items {

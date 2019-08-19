@@ -46,11 +46,14 @@ Example:
 		var pods kubeclient.PodMetricsList
 		var err error
 		var avgMetrics []kubeclient.PodAverageMetrics
+		var podMetrics []kubeclient.PodContainersMetrics
 		switch metricsKind {
-		case "raw":
+		case "processed":
 			err = kubeclient.GetProcessedMetrics(kubeConfigPath, namespace, &pods)
 		case "average":
 			avgMetrics, err = kubeclient.GetAverageMetrics(kubeConfigPath, namespace)
+		case "simple":
+			podMetrics, err = kubeclient.GetSimpleMetrics(kubeConfigPath, namespace)
 		default:
 			return fmt.Errorf(`Bad metrics kind "%v"`, metricsKind)
 		}
@@ -60,10 +63,16 @@ Example:
 		}
 
 		var js []byte
-		if metricsKind == "raw" {
+
+		switch metricsKind {
+		case "processed":
 			js, err = json.Marshal(pods)
-		} else {
+		case "average":
 			js, err = json.Marshal(avgMetrics)
+		case "simple":
+			js, err = json.Marshal(podMetrics)
+		default:
+			return fmt.Errorf(`Bad metrics kind "%v"`, metricsKind)
 		}
 
 		if err != nil {
@@ -95,6 +104,6 @@ func init() {
 	k8sMetricsCmd.Flags().StringVarP(&namespace, "namespace", "", "vamp-system", "Namespace")
 	k8sMetricsCmd.Flags().StringVarP(&kubeConfigPath, "kubeconfig", "", "", "Kube Config path")
 	k8sMetricsCmd.Flags().StringVarP(&OutputType, "output", "o", "yaml", "Output format yaml or json")
-	k8sMetricsCmd.Flags().StringVarP(&metricsKind, "kind", "k", "average", "Kind of metrics, raw or average")
+	k8sMetricsCmd.Flags().StringVarP(&metricsKind, "kind", "k", "simple", "Kind of metrics, simple, processed or average")
 	viper.BindEnv("kubeconfig", "KUBECONFIG")
 }
