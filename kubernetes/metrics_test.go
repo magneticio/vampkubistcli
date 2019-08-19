@@ -83,6 +83,55 @@ func TestGetProcessedMetrics(t *testing.T) {
 	t.Logf("--pods: \n%v", pods)
 }
 
+func TestGetSimpleMetrics(t *testing.T) {
+	ts := CreateMockedK8s(t, "metrics_test.json")
+	defer ts.Close()
+
+	metrics, err := kubeclient.GetSimpleMetrics("", "vamp-system")
+
+	if err != nil {
+		t.Errorf("GetSimpleMetrics returned error: %v", err)
+	}
+
+	if len(metrics) == 0 {
+		t.Error("GetSimpleMetrics should return data")
+	}
+
+	for _, pod := range metrics {
+		if pod.Name == "" {
+			t.Errorf("Name should not be empty in %v", pod)
+		}
+		if len(pod.Labels) == 0 {
+			t.Errorf("Labels should not be empty in %v", pod)
+		}
+		for _, cnt := range pod.ContainersMetrics {
+			if cnt.CPU == 0 {
+				t.Errorf("CPU should not be zero in %v", cnt)
+			}
+			if cnt.Memory == 0 {
+				t.Errorf("Memory should not be zero in %v", cnt)
+			}
+		}
+	}
+
+	if metrics[2].Name != "mongo-0" {
+		t.Errorf("Pod name isn't correct in %v", metrics[2])
+	}
+	if len(metrics[2].ContainersMetrics) != 2 {
+		t.Errorf("Containers number isn't correct in %v", metrics[2])
+	}
+	if metrics[2].ContainersMetrics[0].Name != "mongo" {
+		t.Errorf("Container name isn't correct in %v", metrics[2])
+	}
+	if metrics[2].ContainersMetrics[0].CPU != 7261378e-9 {
+		t.Errorf("CPU value isn't correct in %v", metrics[2])
+	}
+	if metrics[2].ContainersMetrics[1].Memory != 67900*1024 {
+		t.Errorf("Memory value isn't correct in %v", metrics[2])
+	}
+	t.Logf("--pods: \n%v", metrics)
+}
+
 func TestGetAverageMetrics(t *testing.T) {
 	ts := CreateMockedK8s(t, "metrics_test.json")
 	defer ts.Close()
