@@ -45,14 +45,13 @@ var passwdCmd = &cobra.Command{
 		if Username == "" {
 			Username = Config.Username
 		}
-		Source := "{\"userName\":\"" + Username + "\",\"password\":\"" + passwd + "\"}"
 		restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
 		values := make(map[string]string)
 		values["project"] = Config.Project
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
-		updateError := restClient.UpdatePassword(Username, passwd, Source, values)
+		updateError := restClient.UpdatePassword(Username, passwd, values)
 		if updateError != nil {
 			return updateError
 		}

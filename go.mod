@@ -3,25 +3,23 @@ module github.com/magneticio/vampkubistcli
 go 1.12
 
 require (
-	4d63.com/gochecknoglobals v0.0.0-20190306162314-7c3491d2b6ec // indirect
 	github.com/0xAX/notificator v0.0.0-20181105090803-d81462e38c21
-	github.com/Azure/go-autorest/autorest v0.1.0 // indirect
+	github.com/Azure/go-autorest v11.1.0+incompatible // indirect
+	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
-	github.com/gen2brain/beeep v0.0.0-20190317152856-aa3d7c1499fd
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/google/btree v1.0.0 // indirect
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/gophercloud/gophercloud v0.0.0-20190422143055-fe6299556848 // indirect
-	github.com/gordonklaus/ineffassign v0.0.0-20190601041439-ed7b1b5ee0f8 // indirect
 	github.com/gorilla/websocket v1.4.0
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
 	github.com/imdario/mergo v0.3.7
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.6 // indirect
 	github.com/magneticio/forklift v0.1.15
-	github.com/mibk/dupl v1.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
@@ -40,7 +38,5 @@ require (
 	k8s.io/apimachinery v0.0.0-20190221213512-86fb29eff628
 	k8s.io/client-go v10.0.0+incompatible
 	k8s.io/klog v0.3.0 // indirect
-	mvdan.cc/interfacer v0.0.0-20180901003855-c20040233aed // indirect
-	mvdan.cc/lint v0.0.0-20170908181259-adc824a0674b // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
