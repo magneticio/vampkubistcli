@@ -3,16 +3,19 @@ package kubeclient
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/magneticio/vampkubistcli/logging"
+
 	//	metricsv1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	//	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"math"
 	"reflect"
 	"regexp"
 	"strconv"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 // PodAverageMetrics provides average CPU and memor as long as some pod's metadata
@@ -92,7 +95,7 @@ func GetRawMetrics(configPath string, namespace string, pods *PodMetricsList) er
 	if err != nil {
 		return err
 	}
-	logging.Info("----raw json: %v", string(data))
+	// TODO: decide how to log these logging.Info("----raw json: %v", string(data))
 	err = json.Unmarshal(data, &pods)
 	if err != nil {
 		return err
@@ -179,9 +182,9 @@ func GetLabels(configPath string, namespace string, pods *PodMetricsList) error 
 
 	for i := range pods.Items {
 		if len(pods.Items[i].Metadata.Labels) == 0 {
-			logging.Info("----getting labels for %v", pods.Items[i].Metadata.Name)
+			// TODO: decide how to log these logging.Info("----getting labels for %v", pods.Items[i].Metadata.Name)
 			pod, err := clientset.CoreV1().Pods(namespace).Get(pods.Items[i].Metadata.Name, metav1.GetOptions{})
-			logging.Info("----got pod data: %v", pod)
+			// TODO: decide how to log these logging.Info("----got pod data: %v", pod)
 			if err != nil {
 				return err
 			}
