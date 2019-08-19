@@ -112,8 +112,8 @@ type MetricValue struct {
 }
 
 type SubsetToPorts struct {
-	Subset string `json:"subset"`
-	Ports  []int  `json:"ports"`
+	Subset string                         `json:"subset"`
+	Ports  []DestinationPortSpecification `json:"ports"`
 }
 
 type LabelsToPortMap struct {
@@ -123,4 +123,11 @@ type LabelsToPortMap struct {
 type DestinationsSubsetsMap struct {
 	DestinationsMap map[string]LabelsToPortMap `json:"destinationsMap"`
 	Labels          []string                   `json:"labels"`
+}
+
+type DestinationPortSpecification struct {
+	Name       *string `json:"name"`
+	Port       int     `json:"port"`
+	TargetPort int     `json:"targetPort"`
+	Protocol   string  `json:"protocol"`
 }
