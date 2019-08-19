@@ -23,6 +23,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 
 	// Initialize all known client auth plugins.
@@ -47,6 +48,8 @@ var DefaultVampConfig = models.VampConfig{
 // This is shared between installation and credentials, it is currently not configurable
 // TODO: add it to VampConfig when it is configurable
 const InstallationNamespace = "vamp-system"
+
+var IsKubeClientInCluster = false
 
 // VampClusterRoleBindingName contains name of ClusterRoleBinding for Vamp
 const VampClusterRoleBindingName = InstallationNamespace + "-sa-cluster-admin-binding"
@@ -114,6 +117,19 @@ Builds and returns ClientSet by using local KubeConfig
 It also returns hostname since it is needed.
 */
 func getLocalKubeClient(configPath string) (*kubernetes.Clientset, string, error) {
+	if IsKubeClientInCluster {
+		// creates the in-cluster config
+		config, err := rest.InClusterConfig()
+		if err != nil {
+			return nil, "", errors.New(fmt.Sprintf("Kube Client can not be created due to %v", err.Error()))
+		}
+		// create the clientset
+		clientset, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			return nil, "", err
+		}
+		return clientset, config.Host, nil
+	}
 	kubeconfigpath := GetKubeConfigPath(configPath)
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfigpath)
