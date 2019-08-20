@@ -117,7 +117,8 @@ type SubsetToPorts struct {
 }
 
 type LabelsToPortMap struct {
-	Map map[string]SubsetToPorts `json:"map"`
+	DestinationName string                   `json:"destinationName"`
+	Map             map[string]SubsetToPorts `json:"map"`
 }
 
 type DestinationsSubsetsMap struct {
