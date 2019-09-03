@@ -738,6 +738,10 @@ func GetServiceExternalIP(clientset *kubernetes.Clientset, ns string, name strin
 			if ip != "" {
 				return nil
 			}
+			ip = ingress[0].Hostname
+			if ip != "" {
+				return nil
+			}
 		}
 		return errors.New("IP is not available yet.")
 	}
