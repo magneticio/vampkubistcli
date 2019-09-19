@@ -240,6 +240,7 @@ func (s *RestClient) getAccessToken() string {
 		if time.Now().Unix() < timeout-10 {
 			if timeout > latest {
 				activeToken = token
+				latest = timeout
 			}
 		}
 	}
