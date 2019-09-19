@@ -115,11 +115,11 @@ Example:
 				}
 			}
 			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
-			token, err := restClient.Login(Username, Password)
+			refreshToken, _, err := restClient.Login(Username, Password)
 			if err != nil {
 				return err
 			}
-			Config.Token = token
+			Config.Token = refreshToken
 		}
 		Config.Username = Username
 		fmt.Println("Login Successful.")
