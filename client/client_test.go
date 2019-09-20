@@ -42,7 +42,7 @@ func TestClientAuthToken(t *testing.T) {
 			switch r.URL.Path {
 			case "/oauth/access_token":
 				w.Header().Set("Content-Type", "application/json")
-				_, _ = w.Write([]byte(`{"token_type": "Bearer","access_token": "Test-Access-Token","expires_in": 3599,"refresh_token": "Test-Access-Token"}`))
+				_, _ = w.Write([]byte(`{"token_type": "Bearer","access_token": "Test-Access-Token","expires_in": 3599,"refresh_token": "Test-Refresh-Token"}`))
 			default:
 				t.Logf("Unhandled Path: %v", r.URL.Path)
 			}
@@ -56,10 +56,10 @@ func TestClientAuthToken(t *testing.T) {
 	Password := "pass"
 	Version := "v1"
 	restClient := client.NewRestClient(ts.URL, Token, Version, logging.Verbose, Cert, nil)
-	token, err := restClient.Login(Username, Password)
+	refreshToken, _, err := restClient.Login(Username, Password)
 
 	assertError(t, err)
-	assertEqual(t, "Test-Access-Token", token)
+	assertEqual(t, "Test-Refresh-Token", refreshToken)
 }
 
 func TestClientListErrorMessage(t *testing.T) {

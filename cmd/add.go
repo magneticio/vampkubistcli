@@ -66,12 +66,12 @@ var addCmd = &cobra.Command{
 			}
 			fmt.Printf("User created.\n")
 			restClientForAddedUser := client.NewRestClient(Config.Url, "", Config.APIVersion, logging.Verbose, Config.Cert, nil)
-			token, loginError := restClientForAddedUser.Login(Username, temporarayPassword)
+			refreshToken, _, loginError := restClientForAddedUser.Login(Username, temporarayPassword)
 			if loginError != nil {
 				return loginError
 			}
 			fmt.Printf("User can login with:\n")
-			fmt.Printf("%v login --url %v --user %v --initial --token %v --cert <<EOF \"%v\"\nEOF\n", AppName, Config.Url, Username, token, Config.Cert)
+			fmt.Printf("%v login --url %v --user %v --initial --token %v --cert <<EOF \"%v\"\nEOF\n", AppName, Config.Url, Username, refreshToken, Config.Cert)
 
 			// Write the file is called after printing the output to handle avoid file write errors blocking user creation
 			if userConfigFilePath != "" {
@@ -79,7 +79,7 @@ var addCmd = &cobra.Command{
 					Url:      Config.Url,
 					Cert:     Config.Cert,
 					Username: Username,
-					Token:    token,
+					Token:    refreshToken,
 				}
 				writeConfigError := writeConfigToFile(userConfig, userConfigFilePath)
 				if writeConfigError != nil {

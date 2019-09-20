@@ -240,21 +240,22 @@ func (s *RestClient) getAccessToken() string {
 		if time.Now().Unix() < timeout-10 {
 			if timeout > latest {
 				activeToken = token
+				latest = timeout
 			}
 		}
 	}
 	if activeToken == "" {
 		logging.Info("Access token is expired - refreshing...")
-		token, error := s.RefreshTokens()
+		_, accessToken, error := s.RefreshTokens()
 		if error == nil {
-			return token
+			return accessToken
 		}
 		logging.Error("Refresh Token Error: %v\n", error)
 	}
 	return activeToken
 }
 
-func (s *RestClient) parseTokenResponse(resp *authSuccess) string {
+func (s *RestClient) parseTokenResponse(resp *authSuccess) (string, string) {
 	token := resp.AccessToken
 	s.RefreshToken = resp.RefreshToken
 	expiresIn := resp.ExpiresIn
@@ -262,12 +263,13 @@ func (s *RestClient) parseTokenResponse(resp *authSuccess) string {
 		expirationTime := time.Now().Unix() + expiresIn
 		(*s.TokenStore).Store(token, expirationTime)
 	}
-	return s.RefreshToken
+	return s.RefreshToken, token
 }
 
-func (s *RestClient) auth(body string) (string, error) {
+func (s *RestClient) auth(body string) (refreshToken string, accessToken string, err error) {
 	url := s.URL + "/oauth/access_token"
-	resp, err := resty.R().
+	var resp *resty.Response
+	resp, err = resty.R().
 		SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8").
 		SetHeader("Accept", "application/json").
 		SetBody([]byte(body)).
@@ -276,29 +278,29 @@ func (s *RestClient) auth(body string) (string, error) {
 		Post(url)
 
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if resp != nil {
 		if resp.IsError() {
-			return "", errors.New(string(resp.Body()))
+			return "", "", errors.New(string(resp.Body()))
 		}
 		(*s.TokenStore).Clean()
-		refreshToken := s.parseTokenResponse(resp.Result().(*authSuccess))
-		return refreshToken, nil
+		refreshToken, accessToken := s.parseTokenResponse(resp.Result().(*authSuccess))
+		return refreshToken, accessToken, nil
 	}
 
-	return "", errors.New("Authentication failed")
+	return "", "", errors.New("Authentication failed")
 }
 
-func (s *RestClient) Login(username string, password string) (string, error) {
+func (s *RestClient) Login(username string, password string) (refreshToken string, accessToken string, err error) {
 	s.Username = username
 	s.Password = password
 	body := "username=" + username + "&password=" + password + "&client_id=frontend&client_secret=&grant_type=password"
 	return s.auth(body)
 }
 
-func (s *RestClient) RefreshTokens() (string, error) {
+func (s *RestClient) RefreshTokens() (refreshToken string, accessToken string, err error) {
 	body := "client_id=frontend&client_secret=&grant_type=refresh_token&refresh_token=" + s.RefreshToken
 	return s.auth(body)
 }
@@ -308,7 +310,7 @@ func (s *RestClient) fallbackToRefreshToken(f func() (*resty.Response, error)) (
 	if err == nil && resp.IsError() {
 		if resp.StatusCode() == http.StatusUnauthorized {
 			logging.Info("Got StatusUnauthorized: ( %v ), refreshing token...", http.StatusUnauthorized)
-			if _, refreshTokensErr := s.RefreshTokens(); refreshTokensErr != nil {
+			if _, _, refreshTokensErr := s.RefreshTokens(); refreshTokensErr != nil {
 				logging.Error("Cannot refresh token - %v\n", refreshTokensErr)
 				return nil, refreshTokensErr
 			}
