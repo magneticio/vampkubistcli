@@ -153,7 +153,7 @@ func NewRestClient(url string, token string, version string, isVerbose bool, cer
 		SetRetryMaxWaitTime(retryMaxWaitTime).
 		AddRetryCondition(
 			func(r *resty.Response) (bool, error) {
-				return r.StatusCode() >= http.StatusBadRequest, nil
+				return r.StatusCode() >= http.StatusInternalServerError, nil
 			},
 		)
 	// default timeout of golang is very long
