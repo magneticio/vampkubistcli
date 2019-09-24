@@ -589,7 +589,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 								TimeoutSeconds:      2,
 							},
 							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{"cpu": resource.Quantity{Format: "100m"}},
+								Requests: corev1.ResourceList{"cpu": *resource.NewScaledQuantity(100, resource.Milli)},
 							},
 							Env: []apiv1.EnvVar{
 								{
