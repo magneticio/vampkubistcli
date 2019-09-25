@@ -13,6 +13,7 @@ import (
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -21,9 +22,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	apiutil "k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 
 	// Initialize all known client auth plugins.
@@ -43,6 +44,9 @@ var DefaultVampConfig = models.VampConfig{
 	AccessTokenExpiration: "10m",
 	IstioAdapterImage:     "magneticio/vampkubist-istio-adapter-dev:latest",
 	IstioInstallerImage:   "magneticio/vampistioinstaller:0.1.12",
+	MinReplicas:           int32Ptr(1),
+	MaxReplicas:           6,
+	// Default value for TargetCPUUtilizationPercentage is nil - k8s will apply default policy
 }
 
 // This is shared between installation and credentials, it is currently not configurable
@@ -94,6 +98,33 @@ func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.Vamp
 	if config.IstioInstallerImage == "" {
 		config.IstioInstallerImage = DefaultVampConfig.IstioInstallerImage
 		fmt.Printf("Istio Installer Image set to default value: %v\n", config.IstioInstallerImage)
+	}
+	if config.MinReplicas != nil && *config.MinReplicas <= 0 {
+		config.MinReplicas = DefaultVampConfig.MinReplicas
+		fmt.Printf("MinReplicas set to default value %v\n", func() interface{} {
+			if config.MinReplicas != nil {
+				return *config.MinReplicas
+			}
+			return "K8s default value"
+		}())
+	}
+	if config.MaxReplicas <= 0 {
+		config.MaxReplicas = DefaultVampConfig.MaxReplicas
+		fmt.Printf("MaxReplicas set to default %v\n", config.MaxReplicas)
+	}
+	// MaxReplicas cannot be smaller than MinReplicas
+	if config.MinReplicas != nil && config.MaxReplicas < *config.MinReplicas {
+		config.MaxReplicas = *config.MinReplicas
+		fmt.Printf("MaxReplicas set to %v\n", config.MaxReplicas)
+	}
+	if config.TargetCPUUtilizationPercentage != nil && *config.TargetCPUUtilizationPercentage <= 0 {
+		config.TargetCPUUtilizationPercentage = DefaultVampConfig.TargetCPUUtilizationPercentage
+		fmt.Printf("TargetCPUUtilizationPercentage set to default %v\n", func() interface{} {
+			if config.TargetCPUUtilizationPercentage != nil {
+				return *config.TargetCPUUtilizationPercentage
+			}
+			return "K8s default policy"
+		}())
 	}
 	return config, nil
 }
@@ -583,6 +614,9 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 								PeriodSeconds:       5,
 								TimeoutSeconds:      2,
 							},
+							Resources: corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{"cpu": *resource.NewScaledQuantity(100, resource.Milli)},
+							},
 							Env: []apiv1.EnvVar{
 								{
 									Name:  "MODE",
@@ -663,11 +697,52 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 	}
 	errDeployment := CreateOrUpdateDeployment(clientset, ns, vampDeployment)
 	if errDeployment != nil {
-		fmt.Printf("Warning: %v\n", errDeployment.Error())
+		fmt.Printf("Warning: error during deployment - %v\n", errDeployment.Error())
 		return nil, nil, nil, errDeployment
 	}
+
+	errHPA := CreateOrUpdateHPA(clientset, config)
+	if errHPA != nil {
+		fmt.Printf("Warning: error during hpa creation - %v\n", errHPA.Error())
+		return nil, nil, nil, errHPA
+	}
+
 	url := "https://" + ip + ":8888"
 	return &url, crt, key, nil
+}
+
+func CreateOrUpdateHPA(clientset *kubernetes.Clientset, config *models.VampConfig) error {
+	hpa := &autoscalingv1.HorizontalPodAutoscaler{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "vamp",
+			Labels: map[string]string{
+				"app":        "vamp",
+				"deployment": "vamp",
+			},
+		},
+		Spec: autoscalingv1.HorizontalPodAutoscalerSpec{
+			ScaleTargetRef: autoscalingv1.CrossVersionObjectReference{
+				Kind:       "Deployment",
+				Name:       "vamp",
+				APIVersion: "extensions/v1beta1",
+			},
+			MinReplicas:                    config.MinReplicas,
+			MaxReplicas:                    config.MaxReplicas,
+			TargetCPUUtilizationPercentage: config.TargetCPUUtilizationPercentage,
+		},
+	}
+	_, err := clientset.Autoscaling().HorizontalPodAutoscalers(InstallationNamespace).Create(hpa)
+	if err != nil {
+		fmt.Printf("Warning: %v\n", err)
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			_, updateErr := clientset.Autoscaling().HorizontalPodAutoscalers(InstallationNamespace).Update(hpa)
+			return updateErr
+		})
+		if err != nil {
+			panic(fmt.Errorf("Updating HPA failed: %v", err))
+		}
+	}
+	return err
 }
 
 func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ns string, deployment *appsv1.Deployment) error {
