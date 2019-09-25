@@ -675,7 +675,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 		return nil, nil, nil, errDeployment
 	}
 
-	errHPA := CreateHPA(clientset, config)
+	errHPA := CreateOrUpdateHPA(clientset, config)
 	if errHPA != nil {
 		fmt.Printf("Warning: error during hpa creation - %v\n", errHPA.Error())
 		return nil, nil, nil, errHPA
@@ -685,7 +685,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 	return &url, crt, key, nil
 }
 
-func CreateHPA(clientset *kubernetes.Clientset, config *models.VampConfig) error {
+func CreateOrUpdateHPA(clientset *kubernetes.Clientset, config *models.VampConfig) error {
 	hpa := &autoscalingv1.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "vamp",
@@ -706,6 +706,16 @@ func CreateHPA(clientset *kubernetes.Clientset, config *models.VampConfig) error
 		},
 	}
 	_, err := clientset.Autoscaling().HorizontalPodAutoscalers(InstallationNamespace).Create(hpa)
+	if err != nil {
+		fmt.Printf("Warning: got error while creating HPA - %v\nUpdating HPA...\n", err)
+		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			_, updateErr := clientset.Autoscaling().HorizontalPodAutoscalers(InstallationNamespace).Update(hpa)
+			return updateErr
+		})
+		if err != nil {
+			panic(fmt.Errorf("Updating HPA failed: %v", err))
+		}
+	}
 	return err
 }
 
