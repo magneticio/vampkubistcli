@@ -44,6 +44,9 @@ var DefaultVampConfig = models.VampConfig{
 	AccessTokenExpiration: "10m",
 	IstioAdapterImage:     "magneticio/vampkubist-istio-adapter-dev:latest",
 	IstioInstallerImage:   "magneticio/vampistioinstaller:0.1.12",
+	MinReplicas:           int32Ptr(1),
+	MaxReplicas:           6,
+	// Default value for TargetCPUUtilizationPercentage is nil - k8s will apply default policy
 }
 
 // This is shared between installation and credentials, it is currently not configurable
@@ -96,9 +99,32 @@ func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.Vamp
 		config.IstioInstallerImage = DefaultVampConfig.IstioInstallerImage
 		fmt.Printf("Istio Installer Image set to default value: %v\n", config.IstioInstallerImage)
 	}
-	if config.MaxReplicas == 0 {
-		config.MaxReplicas = 6
+	if config.MinReplicas != nil && *config.MinReplicas <= 0 {
+		config.MinReplicas = DefaultVampConfig.MinReplicas
+		fmt.Printf("MinReplicas set to default value %v\n", func() interface{} {
+			if config.MinReplicas != nil {
+				return *config.MinReplicas
+			}
+			return "K8s default value"
+		}())
+	}
+	if config.MaxReplicas <= 0 {
+		config.MaxReplicas = DefaultVampConfig.MaxReplicas
+		fmt.Printf("MaxReplicas set to default %v\n", config.MaxReplicas)
+	}
+	// MaxReplicas cannot be smaller than MinReplicas
+	if config.MinReplicas != nil && config.MaxReplicas < *config.MinReplicas {
+		config.MaxReplicas = *config.MinReplicas
 		fmt.Printf("MaxReplicas set to %v\n", config.MaxReplicas)
+	}
+	if config.TargetCPUUtilizationPercentage != nil && *config.TargetCPUUtilizationPercentage <= 0 {
+		config.TargetCPUUtilizationPercentage = DefaultVampConfig.TargetCPUUtilizationPercentage
+		fmt.Printf("TargetCPUUtilizationPercentage set to default %v\n", func() interface{} {
+			if config.TargetCPUUtilizationPercentage != nil {
+				return *config.TargetCPUUtilizationPercentage
+			}
+			return "K8s default policy"
+		}())
 	}
 	return config, nil
 }
