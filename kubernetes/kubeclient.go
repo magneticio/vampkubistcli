@@ -707,7 +707,7 @@ func CreateOrUpdateHPA(clientset *kubernetes.Clientset, config *models.VampConfi
 	}
 	_, err := clientset.Autoscaling().HorizontalPodAutoscalers(InstallationNamespace).Create(hpa)
 	if err != nil {
-		fmt.Printf("Warning: got error while creating HPA - %v\nUpdating HPA...\n", err)
+		fmt.Printf("Warning: %v\n", err)
 		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			_, updateErr := clientset.Autoscaling().HorizontalPodAutoscalers(InstallationNamespace).Update(hpa)
 			return updateErr
