@@ -39,11 +39,11 @@ import (
 var DefaultVampConfig = models.VampConfig{
 	DatabaseName:          "vamp",
 	ImageName:             "magneticio/vampkubist",
-	ImageTag:              "0.7.8",
+	ImageTag:              "0.7.13",
 	Mode:                  "IN_CLUSTER",
 	AccessTokenExpiration: "10m",
 	IstioAdapterImage:     "magneticio/vampkubist-istio-adapter-dev:latest",
-	IstioInstallerImage:   "magneticio/vampistioinstaller:0.1.12",
+	IstioInstallerImage:   "magneticio/vampistioinstaller-dev:latest",
 	MinReplicas:           int32Ptr(1),
 	MaxReplicas:           6,
 	// Default value for TargetCPUUtilizationPercentage is nil - k8s will apply default policy
