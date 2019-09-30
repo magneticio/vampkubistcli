@@ -1,20 +1,21 @@
 package models
 
 type VampConfig struct {
-	RootPassword                   string `yaml:"rootPassword,omitempty" json:"rootPassword,omitempty"`
-	DatabaseUrl                    string `yaml:"databaseUrl,omitempty" json:"databaseUrl,omitempty"`
-	DatabaseName                   string `yaml:"databaseName,omitempty" json:"databaseName,omitempty"`
-	ImageName                      string `yaml:"imageName,omitempty" json:"imageName,omitempty"`
-	RepoUsername                   string `yaml:"repoUsername,omitempty" json:"repoUsername,omitempty"`
-	RepoPassword                   string `yaml:"repoPassword,omitempty" json:"repoPassword,omitempty"`
-	ImageTag                       string `yaml:"imageTag,omitempty" json:"imageTag,omitempty"`
-	Mode                           string `yaml:"mode,omitempty" json:"mode,omitempty"`
-	AccessTokenExpiration          string `yaml:"accessTokenExpiration,omitempty" json:"accessTokenExpiration,omitempty"`
-	IstioInstallerImage            string `yaml:"istioInstallerImage,omitempty" json:"istioInstallerImage,omitempty"`
-	IstioAdapterImage              string `yaml:"istioAdapterImage,omitempty" json:"istioAdapterImage,omitempty"`
-	MinReplicas                    *int32 `yaml:"minReplicas,omitempty" json:"minReplicas,omitempty"`
-	MaxReplicas                    int32  `yaml:"maxReplicas,omitempty" json:"maxReplicas,omitempty"`
-	TargetCPUUtilizationPercentage *int32 `yaml:"targetCPUUtilizationPercentage,omitempty" json:"targetCPUUtilizationPercentage,omitempty"`
+	RootPassword                      string `yaml:"rootPassword,omitempty" json:"rootPassword,omitempty"`
+	DatabaseUrl                       string `yaml:"databaseUrl,omitempty" json:"databaseUrl,omitempty"`
+	DatabaseName                      string `yaml:"databaseName,omitempty" json:"databaseName,omitempty"`
+	ImageName                         string `yaml:"imageName,omitempty" json:"imageName,omitempty"`
+	RepoUsername                      string `yaml:"repoUsername,omitempty" json:"repoUsername,omitempty"`
+	RepoPassword                      string `yaml:"repoPassword,omitempty" json:"repoPassword,omitempty"`
+	ImageTag                          string `yaml:"imageTag,omitempty" json:"imageTag,omitempty"`
+	Mode                              string `yaml:"mode,omitempty" json:"mode,omitempty"`
+	AccessTokenExpiration             string `yaml:"accessTokenExpiration,omitempty" json:"accessTokenExpiration,omitempty"`
+	IstioInstallerImage               string `yaml:"istioInstallerImage,omitempty" json:"istioInstallerImage,omitempty"`
+	IstioAdapterImage                 string `yaml:"istioAdapterImage,omitempty" json:"istioAdapterImage,omitempty"`
+	MinReplicas                       *int32 `yaml:"minReplicas,omitempty" json:"minReplicas,omitempty"`
+	MaxReplicas                       int32  `yaml:"maxReplicas,omitempty" json:"maxReplicas,omitempty"`
+	TargetCPUUtilizationPercentage    *int32 `yaml:"targetCPUUtilizationPercentage,omitempty" json:"targetCPUUtilizationPercentage,omitempty"`
+	TargetMemoryUtilizationPercentage *int32 `yaml:"targetMemoryUtilizationPercentage,omitempty" json:"targetMemoryUtilizationPercentage,omitempty"`
 }
 
 type ErrorResponse struct {

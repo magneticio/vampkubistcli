@@ -13,7 +13,7 @@ import (
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv1 "k8s.io/api/autoscaling/v1"
+	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -122,6 +122,15 @@ func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.Vamp
 		fmt.Printf("TargetCPUUtilizationPercentage set to default %v\n", func() interface{} {
 			if config.TargetCPUUtilizationPercentage != nil {
 				return *config.TargetCPUUtilizationPercentage
+			}
+			return "K8s default policy"
+		}())
+	}
+	if config.TargetMemoryUtilizationPercentage != nil && *config.TargetMemoryUtilizationPercentage <= 0 {
+		config.TargetMemoryUtilizationPercentage = DefaultVampConfig.TargetMemoryUtilizationPercentage
+		fmt.Printf("TargetMemoryUtilizationPercentage set to default %v\n", func() interface{} {
+			if config.TargetMemoryUtilizationPercentage != nil {
+				return *config.TargetMemoryUtilizationPercentage
 			}
 			return "K8s default policy"
 		}())
@@ -720,15 +729,36 @@ func CreateOrUpdateHPA(clientset *kubernetes.Clientset, config *models.VampConfi
 				"deployment": "vamp",
 			},
 		},
-		Spec: autoscalingv1.HorizontalPodAutoscalerSpec{
-			ScaleTargetRef: autoscalingv1.CrossVersionObjectReference{
+		Spec: autoscalingv2beta2.HorizontalPodAutoscalerSpec{
+			ScaleTargetRef: autoscalingv2beta2.CrossVersionObjectReference{
 				Kind:       "Deployment",
 				Name:       "vamp",
 				APIVersion: "extensions/v1beta1",
 			},
-			MinReplicas:                    config.MinReplicas,
-			MaxReplicas:                    config.MaxReplicas,
-			TargetCPUUtilizationPercentage: config.TargetCPUUtilizationPercentage,
+			MinReplicas: config.MinReplicas,
+			MaxReplicas: config.MaxReplicas,
+			Metrics: []autoscalingv2beta2.MetricSpec{
+				autoscalingv2beta2.MetricSpec{
+					Type: autoscalingv2beta2.ResourceMetricSourceType,
+					Resource: &autoscalingv2beta2.ResourceMetricSource{
+						Name: "CPU",
+						Target: autoscalingv2beta2.MetricTarget{
+							Type:               autoscalingv2beta2.UtilizationMetricType,
+							AverageUtilization: config.TargetCPUUtilizationPercentage,
+						},
+					},
+				},
+				autoscalingv2beta2.MetricSpec{
+					Type: autoscalingv2beta2.ResourceMetricSourceType,
+					Resource: &autoscalingv2beta2.ResourceMetricSource{
+						Name: "memory",
+						Target: autoscalingv2beta2.MetricTarget{
+							Type:               autoscalingv2beta2.UtilizationMetricType,
+							AverageUtilization: config.TargetMemoryUtilizationPercentage,
+						},
+					},
+				},
+			},
 		},
 	}
 	_, err := clientset.Autoscaling().HorizontalPodAutoscalers(InstallationNamespace).Create(hpa)
