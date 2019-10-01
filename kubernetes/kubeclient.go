@@ -13,7 +13,7 @@ import (
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -721,7 +721,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 }
 
 func CreateOrUpdateHPA(clientset *kubernetes.Clientset, config *models.VampConfig) error {
-	hpa := &autoscalingv2beta2.HorizontalPodAutoscaler{
+	hpa := &autoscalingv2beta1.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "vamp",
 			Labels: map[string]string{
@@ -729,43 +729,37 @@ func CreateOrUpdateHPA(clientset *kubernetes.Clientset, config *models.VampConfi
 				"deployment": "vamp",
 			},
 		},
-		Spec: autoscalingv2beta2.HorizontalPodAutoscalerSpec{
-			ScaleTargetRef: autoscalingv2beta2.CrossVersionObjectReference{
+		Spec: autoscalingv2beta1.HorizontalPodAutoscalerSpec{
+			ScaleTargetRef: autoscalingv2beta1.CrossVersionObjectReference{
 				Kind:       "Deployment",
 				Name:       "vamp",
 				APIVersion: "extensions/v1beta1",
 			},
 			MinReplicas: config.MinReplicas,
 			MaxReplicas: config.MaxReplicas,
-			Metrics: []autoscalingv2beta2.MetricSpec{
-				autoscalingv2beta2.MetricSpec{
-					Type: autoscalingv2beta2.ResourceMetricSourceType,
-					Resource: &autoscalingv2beta2.ResourceMetricSource{
-						Name: "CPU",
-						Target: autoscalingv2beta2.MetricTarget{
-							Type:               autoscalingv2beta2.UtilizationMetricType,
-							AverageUtilization: config.TargetCPUUtilizationPercentage,
-						},
+			Metrics: []autoscalingv2beta1.MetricSpec{
+				autoscalingv2beta1.MetricSpec{
+					Type: autoscalingv2beta1.ResourceMetricSourceType,
+					Resource: &autoscalingv2beta1.ResourceMetricSource{
+						Name:                     "CPU",
+						TargetAverageUtilization: config.TargetCPUUtilizationPercentage,
 					},
 				},
-				autoscalingv2beta2.MetricSpec{
-					Type: autoscalingv2beta2.ResourceMetricSourceType,
-					Resource: &autoscalingv2beta2.ResourceMetricSource{
-						Name: "memory",
-						Target: autoscalingv2beta2.MetricTarget{
-							Type:               autoscalingv2beta2.UtilizationMetricType,
-							AverageUtilization: config.TargetMemoryUtilizationPercentage,
-						},
+				autoscalingv2beta1.MetricSpec{
+					Type: autoscalingv2beta1.ResourceMetricSourceType,
+					Resource: &autoscalingv2beta1.ResourceMetricSource{
+						Name:                     "memory",
+						TargetAverageUtilization: config.TargetMemoryUtilizationPercentage,
 					},
 				},
 			},
 		},
 	}
-	_, err := clientset.AutoscalingV2beta2().HorizontalPodAutoscalers(InstallationNamespace).Create(hpa)
+	_, err := clientset.AutoscalingV2beta1().HorizontalPodAutoscalers(InstallationNamespace).Create(hpa)
 	if err != nil {
 		fmt.Printf("Warning: %v\n", err)
 		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			_, updateErr := clientset.AutoscalingV2beta2().HorizontalPodAutoscalers(InstallationNamespace).Update(hpa)
+			_, updateErr := clientset.AutoscalingV2beta1().HorizontalPodAutoscalers(InstallationNamespace).Update(hpa)
 			return updateErr
 		})
 		if err != nil {
