@@ -721,7 +721,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 }
 
 func CreateOrUpdateHPA(clientset *kubernetes.Clientset, config *models.VampConfig) error {
-	hpa := &autoscalingv1.HorizontalPodAutoscaler{
+	hpa := &autoscalingv2beta2.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "vamp",
 			Labels: map[string]string{
@@ -761,11 +761,11 @@ func CreateOrUpdateHPA(clientset *kubernetes.Clientset, config *models.VampConfi
 			},
 		},
 	}
-	_, err := clientset.Autoscaling().HorizontalPodAutoscalers(InstallationNamespace).Create(hpa)
+	_, err := clientset.AutoscalingV2beta2().HorizontalPodAutoscalers(InstallationNamespace).Create(hpa)
 	if err != nil {
 		fmt.Printf("Warning: %v\n", err)
 		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			_, updateErr := clientset.Autoscaling().HorizontalPodAutoscalers(InstallationNamespace).Update(hpa)
+			_, updateErr := clientset.AutoscalingV2beta2().HorizontalPodAutoscalers(InstallationNamespace).Update(hpa)
 			return updateErr
 		})
 		if err != nil {
