@@ -37,16 +37,17 @@ import (
 // Golang does't support struct constants
 // Default values for an installation config
 var DefaultVampConfig = models.VampConfig{
-	DatabaseName:          "vamp",
-	ImageName:             "magneticio/vampkubist",
-	ImageTag:              "0.7.13",
-	Mode:                  "IN_CLUSTER",
-	AccessTokenExpiration: "10m",
-	IstioAdapterImage:     "magneticio/vampkubist-istio-adapter-dev:latest",
-	IstioInstallerImage:   "magneticio/vampistioinstaller-dev:latest",
-	MinReplicas:           int32Ptr(1),
-	MaxReplicas:           6,
-	// Default value for TargetCPUUtilizationPercentage is nil - k8s will apply default policy
+	DatabaseName:                      "vamp",
+	ImageName:                         "magneticio/vampkubist",
+	ImageTag:                          "0.7.13",
+	Mode:                              "IN_CLUSTER",
+	AccessTokenExpiration:             "10m",
+	IstioAdapterImage:                 "magneticio/vampkubist-istio-adapter-dev:latest",
+	IstioInstallerImage:               "magneticio/vampistioinstaller-dev:latest",
+	MinReplicas:                       int32Ptr(1),
+	MaxReplicas:                       6,
+	TargetCPUUtilizationPercentage:    int32Ptr(80),
+	TargetMemoryUtilizationPercentage: int32Ptr(80),
 }
 
 // This is shared between installation and credentials, it is currently not configurable
@@ -117,7 +118,7 @@ func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.Vamp
 		config.MaxReplicas = *config.MinReplicas
 		fmt.Printf("MaxReplicas set to %v\n", config.MaxReplicas)
 	}
-	if config.TargetCPUUtilizationPercentage != nil && *config.TargetCPUUtilizationPercentage <= 0 {
+	if config.TargetCPUUtilizationPercentage == nil || (config.TargetCPUUtilizationPercentage != nil && *config.TargetCPUUtilizationPercentage <= 0) {
 		config.TargetCPUUtilizationPercentage = DefaultVampConfig.TargetCPUUtilizationPercentage
 		fmt.Printf("TargetCPUUtilizationPercentage set to default %v\n", func() interface{} {
 			if config.TargetCPUUtilizationPercentage != nil {
@@ -126,7 +127,7 @@ func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.Vamp
 			return "K8s default policy"
 		}())
 	}
-	if config.TargetMemoryUtilizationPercentage != nil && *config.TargetMemoryUtilizationPercentage <= 0 {
+	if config.TargetMemoryUtilizationPercentage == nil || (config.TargetMemoryUtilizationPercentage != nil && *config.TargetMemoryUtilizationPercentage <= 0) {
 		config.TargetMemoryUtilizationPercentage = DefaultVampConfig.TargetMemoryUtilizationPercentage
 		fmt.Printf("TargetMemoryUtilizationPercentage set to default %v\n", func() interface{} {
 			if config.TargetMemoryUtilizationPercentage != nil {
