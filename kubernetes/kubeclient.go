@@ -36,18 +36,25 @@ import (
 
 // Golang does't support struct constants
 // Default values for an installation config
+// For resources requests and limits please see https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#how-pods-with-resource-limits-are-run
+// Only either TargetCPUUtilizationPercentage or TargetCPUAverageValue should be set in defaults, same for memory. If both are set than percentage values take precedance
 var DefaultVampConfig = models.VampConfig{
-	DatabaseName:                      "vamp",
-	ImageName:                         "magneticio/vampkubist",
-	ImageTag:                          "0.7.13",
-	Mode:                              "IN_CLUSTER",
-	AccessTokenExpiration:             "10m",
-	IstioAdapterImage:                 "magneticio/vampkubist-istio-adapter-dev:latest",
-	IstioInstallerImage:               "magneticio/vampistioinstaller-dev:latest",
-	MinReplicas:                       int32Ptr(1),
-	MaxReplicas:                       6,
-	TargetCPUUtilizationPercentage:    int32Ptr(80),
-	TargetMemoryUtilizationPercentage: int32Ptr(80),
+	DatabaseName:             "vamp",
+	ImageName:                "magneticio/vampkubist",
+	ImageTag:                 "0.7.13",
+	Mode:                     "IN_CLUSTER",
+	AccessTokenExpiration:    "10m",
+	IstioAdapterImage:        "magneticio/vampkubist-istio-adapter-dev:latest",
+	IstioInstallerImage:      "magneticio/vampistioinstaller-dev:latest",
+	MinReplicas:              int32Ptr(1),
+	MaxReplicas:              6,
+	RequestCPU:               resource.NewScaledQuantity(100, resource.Milli),        // 0.1 Core
+	RequestMemory:            resource.NewQuantity(256*1024*1024, resource.BinarySI), // 256 Mi
+	LimitCPU:                 nil,
+	LimitMemory:              resource.NewQuantity(1024*1024*1024, resource.BinarySI), //1 Gi
+	TargetCPUAverageValue:    resource.NewScaledQuantity(900, resource.Milli),
+	TargetMemoryAverageValue: resource.NewQuantity(768*1024*1024, resource.BinarySI), // 768 Mi
+	//	TargetCPUUtilizationPercentage: int32Ptr(90),
 }
 
 // This is shared between installation and credentials, it is currently not configurable
@@ -118,24 +125,97 @@ func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.Vamp
 		config.MaxReplicas = *config.MinReplicas
 		fmt.Printf("MaxReplicas set to %v\n", config.MaxReplicas)
 	}
-	if config.TargetCPUUtilizationPercentage == nil || (config.TargetCPUUtilizationPercentage != nil && *config.TargetCPUUtilizationPercentage <= 0) {
+	if (config.TargetCPUAverageValue == nil && config.TargetCPUUtilizationPercentage == nil) ||
+		(config.TargetCPUUtilizationPercentage != nil && *config.TargetCPUUtilizationPercentage <= 0) {
 		config.TargetCPUUtilizationPercentage = DefaultVampConfig.TargetCPUUtilizationPercentage
 		fmt.Printf("TargetCPUUtilizationPercentage set to default %v\n", func() interface{} {
 			if config.TargetCPUUtilizationPercentage != nil {
 				return *config.TargetCPUUtilizationPercentage
 			}
-			return "K8s default policy"
+			return nil
 		}())
 	}
-	if config.TargetMemoryUtilizationPercentage == nil || (config.TargetMemoryUtilizationPercentage != nil && *config.TargetMemoryUtilizationPercentage <= 0) {
+	if (config.TargetCPUAverageValue == nil && config.TargetCPUUtilizationPercentage == nil) ||
+		(config.TargetCPUAverageValue != nil && config.TargetCPUAverageValue.CmpInt64(0) <= 0) {
+		config.TargetCPUAverageValue = DefaultVampConfig.TargetCPUAverageValue
+		fmt.Printf("TargetCPUAverageValue set to default %v\n", func() interface{} {
+			v := config.TargetCPUAverageValue
+			if v != nil {
+				return v.String()
+			}
+			return nil
+		}())
+	}
+	if config.TargetCPUAverageValue != nil && config.TargetCPUUtilizationPercentage != nil {
+		config.TargetCPUAverageValue = nil
+		fmt.Println("TargetCPUUtilizationPercentage has priority over TargetCPUAverageValue")
+	}
+	if (config.TargetMemoryAverageValue == nil && config.TargetMemoryUtilizationPercentage == nil) ||
+		(config.TargetMemoryUtilizationPercentage != nil && *config.TargetMemoryUtilizationPercentage <= 0) {
 		config.TargetMemoryUtilizationPercentage = DefaultVampConfig.TargetMemoryUtilizationPercentage
 		fmt.Printf("TargetMemoryUtilizationPercentage set to default %v\n", func() interface{} {
 			if config.TargetMemoryUtilizationPercentage != nil {
 				return *config.TargetMemoryUtilizationPercentage
 			}
-			return "K8s default policy"
+			return nil
 		}())
 	}
+	if (config.TargetMemoryAverageValue == nil && config.TargetMemoryUtilizationPercentage == nil) ||
+		(config.TargetMemoryAverageValue != nil && config.TargetMemoryAverageValue.CmpInt64(0) <= 0) {
+		config.TargetMemoryAverageValue = DefaultVampConfig.TargetMemoryAverageValue
+		fmt.Printf("TargetMemoryAverageValue set to default %v\n", func() interface{} {
+			v := config.TargetMemoryAverageValue
+			if v != nil {
+				return v.String()
+			}
+			return nil
+		}())
+	}
+	if config.TargetMemoryAverageValue != nil && config.TargetMemoryUtilizationPercentage != nil {
+		config.TargetMemoryAverageValue = nil
+		fmt.Println("TargetMemoryUtilizationPercentage has priority over TargetMemoryAverageValue")
+	}
+	if config.RequestCPU == nil || (config.RequestCPU != nil && (config.RequestCPU.Cmp(*resource.NewScaledQuantity(1, resource.Milli)) < 0)) {
+		config.RequestCPU = DefaultVampConfig.RequestCPU
+		fmt.Printf("RequestCPU set to default %v\n", func() interface{} {
+			if config.RequestCPU != nil {
+				return config.RequestCPU.String()
+			}
+			return nil
+		}())
+	}
+	if config.RequestMemory == nil || (config.RequestMemory != nil && config.RequestMemory.CmpInt64(0) <= 0) {
+		config.RequestMemory = DefaultVampConfig.RequestMemory
+		fmt.Printf("RequestMemory set to default %v\n", func() interface{} {
+			if config.RequestMemory != nil {
+				return config.RequestMemory.String()
+			}
+			return nil
+		}())
+	}
+	if config.LimitCPU == nil || (config.LimitCPU != nil &&
+		(config.LimitCPU.Cmp(*resource.NewScaledQuantity(1, resource.Milli)) < 0 ||
+			config.LimitCPU.Cmp(*resource.NewScaledQuantity(100, resource.Milli)) > 0)) {
+		config.LimitCPU = DefaultVampConfig.LimitCPU
+		fmt.Printf("LimitCPU set to default %v\n", func() interface{} {
+			if config.LimitCPU != nil {
+				return config.LimitCPU.String()
+			}
+			return nil
+		}())
+	}
+	if config.LimitMemory == nil || (config.LimitMemory != nil && config.LimitMemory.CmpInt64(0) <= 0) {
+		config.LimitMemory = DefaultVampConfig.LimitMemory
+		fmt.Printf("LimitMemory set to default %v\n", func() interface{} {
+			if config.LimitMemory != nil {
+				return config.LimitMemory.String()
+			}
+			return nil
+		}())
+	}
+
+	fmt.Printf("config: \n%+v\n", config)
+
 	return config, nil
 }
 
@@ -625,7 +705,36 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 								TimeoutSeconds:      2,
 							},
 							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{"cpu": *resource.NewScaledQuantity(100, resource.Milli)},
+								Limits: func() (res corev1.ResourceList) {
+									if config.LimitCPU != nil {
+										if res == nil {
+											res = make(corev1.ResourceList)
+										}
+										res["cpu"] = *config.LimitCPU
+									}
+									if config.LimitMemory != nil {
+										if res == nil {
+											res = make(corev1.ResourceList)
+										}
+										res["memory"] = *config.LimitMemory
+									}
+									return res
+								}(),
+								Requests: func() (res corev1.ResourceList) {
+									if config.RequestCPU != nil {
+										if res == nil {
+											res = make(corev1.ResourceList)
+										}
+										res["cpu"] = *config.RequestCPU
+									}
+									if config.RequestMemory != nil {
+										if res == nil {
+											res = make(corev1.ResourceList)
+										}
+										res["memory"] = *config.RequestMemory
+									}
+									return res
+								}(),
 							},
 							Env: []apiv1.EnvVar{
 								{
@@ -742,7 +851,8 @@ func CreateOrUpdateHPA(clientset *kubernetes.Clientset, config *models.VampConfi
 				autoscalingv2beta1.MetricSpec{
 					Type: autoscalingv2beta1.ResourceMetricSourceType,
 					Resource: &autoscalingv2beta1.ResourceMetricSource{
-						Name:                     "CPU",
+						Name:                     "cpu",
+						TargetAverageValue:       config.TargetCPUAverageValue,
 						TargetAverageUtilization: config.TargetCPUUtilizationPercentage,
 					},
 				},
@@ -750,6 +860,7 @@ func CreateOrUpdateHPA(clientset *kubernetes.Clientset, config *models.VampConfi
 					Type: autoscalingv2beta1.ResourceMetricSourceType,
 					Resource: &autoscalingv2beta1.ResourceMetricSource{
 						Name:                     "memory",
+						TargetAverageValue:       config.TargetMemoryAverageValue,
 						TargetAverageUtilization: config.TargetMemoryUtilizationPercentage,
 					},
 				},

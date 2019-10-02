@@ -1,21 +1,31 @@
 package models
 
+import (
+	"k8s.io/apimachinery/pkg/api/resource"
+)
+
 type VampConfig struct {
-	RootPassword                      string `yaml:"rootPassword,omitempty" json:"rootPassword,omitempty"`
-	DatabaseUrl                       string `yaml:"databaseUrl,omitempty" json:"databaseUrl,omitempty"`
-	DatabaseName                      string `yaml:"databaseName,omitempty" json:"databaseName,omitempty"`
-	ImageName                         string `yaml:"imageName,omitempty" json:"imageName,omitempty"`
-	RepoUsername                      string `yaml:"repoUsername,omitempty" json:"repoUsername,omitempty"`
-	RepoPassword                      string `yaml:"repoPassword,omitempty" json:"repoPassword,omitempty"`
-	ImageTag                          string `yaml:"imageTag,omitempty" json:"imageTag,omitempty"`
-	Mode                              string `yaml:"mode,omitempty" json:"mode,omitempty"`
-	AccessTokenExpiration             string `yaml:"accessTokenExpiration,omitempty" json:"accessTokenExpiration,omitempty"`
-	IstioInstallerImage               string `yaml:"istioInstallerImage,omitempty" json:"istioInstallerImage,omitempty"`
-	IstioAdapterImage                 string `yaml:"istioAdapterImage,omitempty" json:"istioAdapterImage,omitempty"`
-	MinReplicas                       *int32 `yaml:"minReplicas,omitempty" json:"minReplicas,omitempty"`
-	MaxReplicas                       int32  `yaml:"maxReplicas,omitempty" json:"maxReplicas,omitempty"`
-	TargetCPUUtilizationPercentage    *int32 `yaml:"targetCPUUtilizationPercentage,omitempty" json:"targetCPUUtilizationPercentage,omitempty"`
-	TargetMemoryUtilizationPercentage *int32 `yaml:"targetMemoryUtilizationPercentage,omitempty" json:"targetMemoryUtilizationPercentage,omitempty"`
+	RootPassword                      string             `yaml:"rootPassword,omitempty" json:"rootPassword,omitempty"`
+	DatabaseUrl                       string             `yaml:"databaseUrl,omitempty" json:"databaseUrl,omitempty"`
+	DatabaseName                      string             `yaml:"databaseName,omitempty" json:"databaseName,omitempty"`
+	ImageName                         string             `yaml:"imageName,omitempty" json:"imageName,omitempty"`
+	RepoUsername                      string             `yaml:"repoUsername,omitempty" json:"repoUsername,omitempty"`
+	RepoPassword                      string             `yaml:"repoPassword,omitempty" json:"repoPassword,omitempty"`
+	ImageTag                          string             `yaml:"imageTag,omitempty" json:"imageTag,omitempty"`
+	Mode                              string             `yaml:"mode,omitempty" json:"mode,omitempty"`
+	AccessTokenExpiration             string             `yaml:"accessTokenExpiration,omitempty" json:"accessTokenExpiration,omitempty"`
+	IstioInstallerImage               string             `yaml:"istioInstallerImage,omitempty" json:"istioInstallerImage,omitempty"`
+	IstioAdapterImage                 string             `yaml:"istioAdapterImage,omitempty" json:"istioAdapterImage,omitempty"`
+	MinReplicas                       *int32             `yaml:"minReplicas,omitempty" json:"minReplicas,omitempty"`
+	MaxReplicas                       int32              `yaml:"maxReplicas,omitempty" json:"maxReplicas,omitempty"`
+	TargetCPUUtilizationPercentage    *int32             `yaml:"targetCPUUtilizationPercentage,omitempty" json:"targetCPUUtilizationPercentage,omitempty"`
+	TargetMemoryUtilizationPercentage *int32             `yaml:"targetMemoryUtilizationPercentage,omitempty" json:"targetMemoryUtilizationPercentage,omitempty"`
+	TargetCPUAverageValue             *resource.Quantity `yaml:"targetCPUAverageValue,omitempty" json:"targetCPUAverageValue,omitempty"`
+	TargetMemoryAverageValue          *resource.Quantity `yaml:"targetMemoryAverageValue,omitempty" json:"targetMemoryAverageValue,omitempty"`
+	RequestCPU                        *resource.Quantity `yaml:"requestCPU,omitempty" json:"requestCPU,omitempty"`
+	RequestMemory                     *resource.Quantity `yaml:"requestMemory,omitempty" json:"requestMemory,omitempty"`
+	LimitCPU                          *resource.Quantity `yaml:"limitCPU,omitempty" json:"limitCPU,omitempty"`
+	LimitMemory                       *resource.Quantity `yaml:"limitMemory,omitempty" json:"limitMemory,omitempty"`
 }
 
 type ErrorResponse struct {
