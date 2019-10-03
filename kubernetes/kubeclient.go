@@ -50,7 +50,7 @@ var DefaultVampConfig = models.VampConfig{
 	MaxReplicas:              6,
 	RequestCPU:               "100m",  // resource.NewScaledQuantity(100, resource.Milli),        // 0.1 Core
 	RequestMemory:            "256Mi", //  resource.NewQuantity(256*1024*1024, resource.BinarySI),
-	LimitCPU:                 "",
+	LimitCPU:                 "1",
 	LimitMemory:              "1Gi",   // resource.NewQuantity(1024*1024*1024, resource.BinarySI),
 	TargetCPUAverageValue:    "900m",  // resource.NewScaledQuantity(900, resource.Milli),
 	TargetMemoryAverageValue: "768Mi", // resource.NewQuantity(768*1024*1024, resource.BinarySI),
