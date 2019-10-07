@@ -13,7 +13,7 @@ import (
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/models"
 	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv1 "k8s.io/api/autoscaling/v1"
+	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
 	apiv1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -36,17 +36,25 @@ import (
 
 // Golang does't support struct constants
 // Default values for an installation config
+// For resources requests and limits please see https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#how-pods-with-resource-limits-are-run
+// Only either TargetCPUUtilizationPercentage or TargetCPUAverageValue should be set in defaults, same for memory. If both are set than percentage values take precedance
 var DefaultVampConfig = models.VampConfig{
-	DatabaseName:          "vamp",
-	ImageName:             "magneticio/vampkubist",
-	ImageTag:              "0.7.13",
-	Mode:                  "IN_CLUSTER",
-	AccessTokenExpiration: "10m",
-	IstioAdapterImage:     "magneticio/vampkubist-istio-adapter-dev:latest",
-	IstioInstallerImage:   "magneticio/vampistioinstaller-dev:latest",
-	MinReplicas:           int32Ptr(1),
-	MaxReplicas:           6,
-	// Default value for TargetCPUUtilizationPercentage is nil - k8s will apply default policy
+	DatabaseName:             "vamp",
+	ImageName:                "magneticio/vampkubist",
+	ImageTag:                 "0.7.13",
+	Mode:                     "IN_CLUSTER",
+	AccessTokenExpiration:    "10m",
+	IstioAdapterImage:        "magneticio/vampkubist-istio-adapter-dev:latest",
+	IstioInstallerImage:      "magneticio/vampistioinstaller-dev:latest",
+	MinReplicas:              int32Ptr(1),
+	MaxReplicas:              6,
+	RequestCPU:               "100m",  // resource.NewScaledQuantity(100, resource.Milli),        // 0.1 Core
+	RequestMemory:            "256Mi", //  resource.NewQuantity(256*1024*1024, resource.BinarySI),
+	LimitCPU:                 "1",
+	LimitMemory:              "1Gi",   // resource.NewQuantity(1024*1024*1024, resource.BinarySI),
+	TargetCPUAverageValue:    "900m",  // resource.NewScaledQuantity(900, resource.Milli),
+	TargetMemoryAverageValue: "768Mi", // resource.NewQuantity(768*1024*1024, resource.BinarySI),
+	//	TargetCPUUtilizationPercentage: int32Ptr(90),
 }
 
 // This is shared between installation and credentials, it is currently not configurable
@@ -99,6 +107,29 @@ func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.Vamp
 		config.IstioInstallerImage = DefaultVampConfig.IstioInstallerImage
 		fmt.Printf("Istio Installer Image set to default value: %v\n", config.IstioInstallerImage)
 	}
+	k8sCfg := &K8sVampConfig{Config: config}
+	k8sCfg.ValidateMinMaxReplicas()
+	k8sCfg.ValidateTargetCPU()
+	k8sCfg.ValidateTargetMemory()
+	k8sCfg.ValidateRequestCPU()
+	k8sCfg.ValidateRequestMemory()
+	k8sCfg.ValidateLimitCPU()
+	k8sCfg.ValidateLimitMemory()
+	fmt.Printf("config: \n%+v\n", config)
+	return config, k8sCfg.ValidationError
+}
+
+type K8sVampConfig struct {
+	Config          *models.VampConfig
+	ValidationError error
+}
+
+func (cfg *K8sVampConfig) ValidateMinMaxReplicas() {
+	if cfg.ValidationError != nil {
+		return
+	}
+	config := cfg.Config
+
 	if config.MinReplicas != nil && *config.MinReplicas <= 0 {
 		config.MinReplicas = DefaultVampConfig.MinReplicas
 		fmt.Printf("MinReplicas set to default value %v\n", func() interface{} {
@@ -117,16 +148,185 @@ func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.Vamp
 		config.MaxReplicas = *config.MinReplicas
 		fmt.Printf("MaxReplicas set to %v\n", config.MaxReplicas)
 	}
-	if config.TargetCPUUtilizationPercentage != nil && *config.TargetCPUUtilizationPercentage <= 0 {
+}
+
+func (cfg *K8sVampConfig) ValidateTargetCPU() {
+	if cfg.ValidationError != nil {
+		return
+	}
+	config := cfg.Config
+
+	if (config.TargetCPUAverageValue == "" && config.TargetCPUUtilizationPercentage == nil) ||
+		(config.TargetCPUUtilizationPercentage != nil && *config.TargetCPUUtilizationPercentage <= 0) {
 		config.TargetCPUUtilizationPercentage = DefaultVampConfig.TargetCPUUtilizationPercentage
 		fmt.Printf("TargetCPUUtilizationPercentage set to default %v\n", func() interface{} {
 			if config.TargetCPUUtilizationPercentage != nil {
 				return *config.TargetCPUUtilizationPercentage
 			}
-			return "K8s default policy"
+			return nil
 		}())
 	}
-	return config, nil
+
+	validate := func(val string) bool {
+		q, err := resource.ParseQuantity(val)
+		if err != nil {
+			fmt.Printf("TargetCPUAverageValue %v is wrongly formatted: %v\n", val, err)
+			return false
+		}
+		if q.CmpInt64(0) <= 0 {
+			fmt.Printf("TargetCPUAverageValue %v shouldn't be negative or zero\n", val)
+			return false
+		}
+		return true
+	}
+
+	if (config.TargetCPUAverageValue == "" && config.TargetCPUUtilizationPercentage == nil) ||
+		(config.TargetCPUAverageValue != "" && !validate(config.TargetCPUAverageValue)) {
+		config.TargetCPUAverageValue = DefaultVampConfig.TargetCPUAverageValue
+		fmt.Printf("TargetCPUAverageValue set to default %v\n", config.TargetCPUAverageValue)
+	}
+
+	if config.TargetCPUAverageValue != "" && config.TargetCPUUtilizationPercentage != nil {
+		config.TargetCPUAverageValue = ""
+		fmt.Println("TargetCPUUtilizationPercentage has priority over TargetCPUAverageValue")
+	}
+}
+
+func (cfg *K8sVampConfig) ValidateTargetMemory() {
+	if cfg.ValidationError != nil {
+		return
+	}
+	config := cfg.Config
+
+	if (config.TargetMemoryAverageValue == "" && config.TargetMemoryUtilizationPercentage == nil) ||
+		(config.TargetMemoryUtilizationPercentage != nil && *config.TargetMemoryUtilizationPercentage <= 0) {
+		config.TargetMemoryUtilizationPercentage = DefaultVampConfig.TargetMemoryUtilizationPercentage
+		fmt.Printf("TargetMemoryUtilizationPercentage set to default %v\n", func() interface{} {
+			if config.TargetMemoryUtilizationPercentage != nil {
+				return *config.TargetMemoryUtilizationPercentage
+			}
+			return nil
+		}())
+	}
+
+	validate := func(val string) bool {
+		q, err := resource.ParseQuantity(val)
+		if err != nil {
+			fmt.Printf("TargetMemoryAverageValue %v is wrongly formatted: %v\n", val, err)
+			return false
+		}
+		if q.CmpInt64(0) <= 0 {
+			fmt.Printf("TargetMemoryAverageValue %v shouldn't be negative or zero\n", val)
+			return false
+		}
+		return true
+	}
+
+	if (config.TargetMemoryAverageValue == "" && config.TargetMemoryUtilizationPercentage == nil) ||
+		(config.TargetMemoryAverageValue != "" && !validate(config.TargetMemoryAverageValue)) {
+		config.TargetMemoryAverageValue = DefaultVampConfig.TargetMemoryAverageValue
+		fmt.Printf("TargetMemoryAverageValue set to default %v\n", config.TargetMemoryAverageValue)
+	}
+	if config.TargetMemoryAverageValue != "" && config.TargetMemoryUtilizationPercentage != nil {
+		config.TargetMemoryAverageValue = ""
+		fmt.Println("TargetMemoryUtilizationPercentage has priority over TargetMemoryAverageValue")
+	}
+}
+
+func (cfg *K8sVampConfig) ValidateRequestCPU() {
+	if cfg.ValidationError != nil {
+		return
+	}
+	config := cfg.Config
+
+	validate := func(val string) bool {
+		q, err := resource.ParseQuantity(val)
+		if err != nil {
+			fmt.Printf("RequestCPU %v is wrongly formatted - %v\n", val, err)
+			return false
+		}
+		if q.Cmp(*resource.NewScaledQuantity(1, resource.Milli)) < 0 {
+			fmt.Printf("RequestCPU %v cannot be less than 1m\n", val)
+			return false
+		}
+		return true
+	}
+	if config.RequestCPU == "" || (config.RequestCPU != "" && !validate(config.RequestCPU)) {
+		config.RequestCPU = DefaultVampConfig.RequestCPU
+		fmt.Printf("RequestCPU set to default %v\n", config.RequestCPU)
+	}
+}
+
+func (cfg *K8sVampConfig) ValidateRequestMemory() {
+	if cfg.ValidationError != nil {
+		return
+	}
+	config := cfg.Config
+
+	validate := func(val string) bool {
+		q, err := resource.ParseQuantity(val)
+		if err != nil {
+			fmt.Printf("RequestMemory %v is wrongly formatted - %v\n", val, err)
+			return false
+		}
+		if q.CmpInt64(0) <= 0 {
+			fmt.Printf("RequestMemory %v cannot be negative or zero\n", val)
+			return false
+		}
+		return true
+	}
+	if config.RequestMemory == "" || (config.RequestMemory != "" && !validate(config.RequestMemory)) {
+		config.RequestMemory = DefaultVampConfig.RequestMemory
+		fmt.Printf("RequestMemory set to default %v\n", config.RequestMemory)
+	}
+}
+
+func (cfg *K8sVampConfig) ValidateLimitCPU() {
+	if cfg.ValidationError != nil {
+		return
+	}
+	config := cfg.Config
+
+	validate := func(val string) bool {
+		q, err := resource.ParseQuantity(val)
+		if err != nil {
+			fmt.Printf("LimitCPU %v is wrongly formatted - %v\n", val, err)
+			return false
+		}
+		if q.Cmp(*resource.NewScaledQuantity(1, resource.Milli)) < 0 || q.Cmp(*resource.NewScaledQuantity(100, resource.Milli)) > 0 {
+			fmt.Printf("LimitCPU %v shouldn't be less than 1m or greater than 100m\n", val)
+			return false
+		}
+		return true
+	}
+	if config.LimitCPU == "" || (config.LimitCPU != "" && !validate(config.LimitCPU)) {
+		config.LimitCPU = DefaultVampConfig.LimitCPU
+		fmt.Printf("LimitCPU set to default %v\n", config.LimitCPU)
+	}
+}
+
+func (cfg *K8sVampConfig) ValidateLimitMemory() {
+	if cfg.ValidationError != nil {
+		return
+	}
+	config := cfg.Config
+
+	validate := func(val string) bool {
+		q, err := resource.ParseQuantity(val)
+		if err != nil {
+			fmt.Printf("LimitMemory %v is wrongly formatted - %v\n", val, err)
+			return false
+		}
+		if q.CmpInt64(0) <= 0 {
+			fmt.Printf("LimitMemory %v shouldn't be negative or zero\n", val)
+			return false
+		}
+		return true
+	}
+	if config.LimitMemory == "" || (config.LimitMemory != "" && !validate(config.LimitMemory)) {
+		config.LimitMemory = DefaultVampConfig.LimitMemory
+		fmt.Printf("LimitMemory set to default %v\n", config.LimitMemory)
+	}
 }
 
 /*
@@ -152,7 +352,7 @@ func getLocalKubeClient(configPath string) (*kubernetes.Clientset, string, error
 		// creates the in-cluster config
 		config, err := rest.InClusterConfig()
 		if err != nil {
-			return nil, "", errors.New(fmt.Sprintf("Kube Client can not be created due to %v", err.Error()))
+			return nil, "", fmt.Errorf("Kube Client can not be created due to %v", err)
 		}
 		// create the clientset
 		clientset, err := kubernetes.NewForConfig(config)
@@ -165,7 +365,7 @@ func getLocalKubeClient(configPath string) (*kubernetes.Clientset, string, error
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfigpath)
 	if err != nil {
-		return nil, "", errors.New(fmt.Sprintf("Kube Client can not be created due to %v", err.Error()))
+		return nil, "", fmt.Errorf("Kube Client can not be created due to %v", err)
 	}
 	// create the clientset
 	clientset, err := kubernetes.NewForConfig(config)
@@ -615,7 +815,36 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 								TimeoutSeconds:      2,
 							},
 							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{"cpu": *resource.NewScaledQuantity(100, resource.Milli)},
+								Limits: func() (res corev1.ResourceList) {
+									if config.LimitCPU != "" {
+										if res == nil {
+											res = make(corev1.ResourceList)
+										}
+										res["cpu"] = resource.MustParse(config.LimitCPU)
+									}
+									if config.LimitMemory != "" {
+										if res == nil {
+											res = make(corev1.ResourceList)
+										}
+										res["memory"] = resource.MustParse(config.LimitMemory)
+									}
+									return res
+								}(),
+								Requests: func() (res corev1.ResourceList) {
+									if config.RequestCPU != "" {
+										if res == nil {
+											res = make(corev1.ResourceList)
+										}
+										res["cpu"] = resource.MustParse(config.RequestCPU)
+									}
+									if config.RequestMemory != "" {
+										if res == nil {
+											res = make(corev1.ResourceList)
+										}
+										res["memory"] = resource.MustParse(config.RequestMemory)
+									}
+									return res
+								}(),
 							},
 							Env: []apiv1.EnvVar{
 								{
@@ -712,7 +941,7 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 }
 
 func CreateOrUpdateHPA(clientset *kubernetes.Clientset, config *models.VampConfig) error {
-	hpa := &autoscalingv1.HorizontalPodAutoscaler{
+	hpa := &autoscalingv2beta1.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "vamp",
 			Labels: map[string]string{
@@ -720,22 +949,51 @@ func CreateOrUpdateHPA(clientset *kubernetes.Clientset, config *models.VampConfi
 				"deployment": "vamp",
 			},
 		},
-		Spec: autoscalingv1.HorizontalPodAutoscalerSpec{
-			ScaleTargetRef: autoscalingv1.CrossVersionObjectReference{
+		Spec: autoscalingv2beta1.HorizontalPodAutoscalerSpec{
+			ScaleTargetRef: autoscalingv2beta1.CrossVersionObjectReference{
 				Kind:       "Deployment",
 				Name:       "vamp",
 				APIVersion: "extensions/v1beta1",
 			},
-			MinReplicas:                    config.MinReplicas,
-			MaxReplicas:                    config.MaxReplicas,
-			TargetCPUUtilizationPercentage: config.TargetCPUUtilizationPercentage,
+			MinReplicas: config.MinReplicas,
+			MaxReplicas: config.MaxReplicas,
+			Metrics: []autoscalingv2beta1.MetricSpec{
+				autoscalingv2beta1.MetricSpec{
+					Type: autoscalingv2beta1.ResourceMetricSourceType,
+					Resource: &autoscalingv2beta1.ResourceMetricSource{
+						Name: "cpu",
+						TargetAverageValue: func() *resource.Quantity {
+							if config.TargetCPUAverageValue == "" {
+								return nil
+							}
+							q := resource.MustParse(config.TargetCPUAverageValue)
+							return &q
+						}(),
+						TargetAverageUtilization: config.TargetCPUUtilizationPercentage,
+					},
+				},
+				autoscalingv2beta1.MetricSpec{
+					Type: autoscalingv2beta1.ResourceMetricSourceType,
+					Resource: &autoscalingv2beta1.ResourceMetricSource{
+						Name: "memory",
+						TargetAverageValue: func() *resource.Quantity {
+							if config.TargetMemoryAverageValue == "" {
+								return nil
+							}
+							q := resource.MustParse(config.TargetMemoryAverageValue)
+							return &q
+						}(),
+						TargetAverageUtilization: config.TargetMemoryUtilizationPercentage,
+					},
+				},
+			},
 		},
 	}
-	_, err := clientset.Autoscaling().HorizontalPodAutoscalers(InstallationNamespace).Create(hpa)
+	_, err := clientset.AutoscalingV2beta1().HorizontalPodAutoscalers(InstallationNamespace).Create(hpa)
 	if err != nil {
 		fmt.Printf("Warning: %v\n", err)
 		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			_, updateErr := clientset.Autoscaling().HorizontalPodAutoscalers(InstallationNamespace).Update(hpa)
+			_, updateErr := clientset.AutoscalingV2beta1().HorizontalPodAutoscalers(InstallationNamespace).Update(hpa)
 			return updateErr
 		})
 		if err != nil {
