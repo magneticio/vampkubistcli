@@ -119,6 +119,7 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 		values["cluster"] = Config.Cluster
 		values["virtual_cluster"] = Config.VirtualCluster
 		values["application"] = Application
+		values["upsert"] = "true"
 		isCreated, createError := restClient.Create(Type, VampService, Source, SourceFileType, values)
 		if !isCreated {
 			return createError
