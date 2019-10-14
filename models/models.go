@@ -22,6 +22,7 @@ type VampConfig struct {
 	RequestMemory                     string `yaml:"requestMemory,omitempty" json:"requestMemory,omitempty"`
 	LimitCPU                          string `yaml:"limitCPU,omitempty" json:"limitCPU,omitempty"`
 	LimitMemory                       string `yaml:"limitMemory,omitempty" json:"limitMemory,omitempty"`
+	EnableLogstash                    string `yaml:"enableLogstash,omitempty" json:"enableLogstash,omitempty"`
 }
 
 type ErrorResponse struct {

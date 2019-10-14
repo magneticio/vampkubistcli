@@ -54,7 +54,7 @@ var DefaultVampConfig = models.VampConfig{
 	LimitMemory:              "1Gi",   // resource.NewQuantity(1024*1024*1024, resource.BinarySI),
 	TargetCPUAverageValue:    "900m",  // resource.NewScaledQuantity(900, resource.Milli),
 	TargetMemoryAverageValue: "768Mi", // resource.NewQuantity(768*1024*1024, resource.BinarySI),
-	//	TargetCPUUtilizationPercentage: int32Ptr(90),
+	EnableLogstash:           "1",
 }
 
 // This is shared between installation and credentials, it is currently not configurable
@@ -106,6 +106,10 @@ func VampConfigValidateAndSetupDefaults(config *models.VampConfig) (*models.Vamp
 	if config.IstioInstallerImage == "" {
 		config.IstioInstallerImage = DefaultVampConfig.IstioInstallerImage
 		fmt.Printf("Istio Installer Image set to default value: %v\n", config.IstioInstallerImage)
+	}
+	if config.EnableLogstash == "" {
+		config.EnableLogstash = DefaultVampConfig.EnableLogstash
+		fmt.Printf("EnableLogstash set to default value: %v\n", config.EnableLogstash)
 	}
 	k8sCfg := &K8sVampConfig{Config: config}
 	k8sCfg.ValidateMinMaxReplicas()
@@ -911,6 +915,10 @@ func InstallVamp(clientset *kubernetes.Clientset, ns string, config *models.Vamp
 								{
 									Name:  "ISTIO_ADAPTER_IMAGE",
 									Value: config.IstioAdapterImage,
+								},
+								{
+									Name:  "ENABLE_LOGSTASH",
+									Value: config.EnableLogstash,
 								},
 							},
 						},
