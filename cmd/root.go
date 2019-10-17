@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -87,9 +88,15 @@ Application name is automacially set to the calling name
 */
 func InitAppName() string {
 	if len(os.Args) > 0 {
-		return os.Args[0]
+		return FilenameWithoutExtension(os.Args[0])
 	}
 	return "vamp"
+}
+
+// FilenameWithoutExtension extracts the last element without extension from path
+func FilenameWithoutExtension(fn string) string {
+	fn = path.Base(fn)
+	return strings.TrimSuffix(fn, path.Ext(fn))
 }
 
 // rootCmd represents the base command when called without any subcommands
