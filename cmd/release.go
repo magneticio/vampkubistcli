@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/magneticio/vampkubistcli/logging"
@@ -31,6 +32,7 @@ var Period string
 var Step string
 var SubsetLabels map[string]string
 var ReleaseType string
+var NotificationLevel string
 
 // releaseCmd represents the release command
 var releaseCmd = &cobra.Command{
@@ -51,6 +53,14 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 
 		allowedReleaseTypes := map[string]string{"time": "TimedCanaryReleasePolicy", "health": "HealthBasedCanaryReleasePolicy"}
 
+		allowedNotificationLevels := map[string]string{
+			"trace":   "TRACE",
+			"debug":   "DEBUG",
+			"info":    "INFO",
+			"warning": "WARNING",
+			"error":   "ERROR",
+		}
+
 		if ReleaseType != "" {
 
 			logging.Info("Release type is %v", allowedReleaseTypes[ReleaseType])
@@ -62,6 +72,21 @@ $AppName release shop-vamp-service --destination shop-destination --port port --
 			policies = []models.PolicyReference{models.PolicyReference{
 				Name: allowedReleaseTypes[ReleaseType],
 			}}
+
+			if NotificationLevel != "" {
+				NotificationLevel = strings.ToLower(NotificationLevel)
+				if allowedNotificationLevels[NotificationLevel] == "" {
+					return errors.New("Notification Level is not valid")
+				}
+
+				logging.Info("Notification Level is %v\n", allowedNotificationLevels[NotificationLevel])
+
+				// Only one policy is added with this command so it is safe to access 0
+				policies[0].Parameters = map[string]string{
+					"min_notify_level": allowedNotificationLevels[NotificationLevel],
+				}
+
+			}
 
 		}
 
@@ -137,7 +162,8 @@ func init() {
 	releaseCmd.Flags().StringVarP(&Period, "period", "", "", "Period of updates")
 	releaseCmd.Flags().StringVarP(&Step, "step", "", "", "Step is the percetage change at each step")
 	releaseCmd.Flags().StringVarP(&Subset, "subset", "", "", "Subset to use in the release")
-	releaseCmd.Flags().StringVarP(&ReleaseType, "type", "", "", "Type of canary release to use")
+	releaseCmd.Flags().StringVarP(&ReleaseType, "type", "", "", "Type of canary release to use eg.: time, health")
+	releaseCmd.Flags().StringVarP(&NotificationLevel, "notify", "", "", "Notification Level eg.: trace, debug, info, warning, error")
 	releaseCmd.Flags().StringToStringVarP(&SubsetLabels, "label", "l", map[string]string{}, "Subset labels, multiple labels are allowed")
 
 }
