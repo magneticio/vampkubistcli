@@ -817,7 +817,7 @@ func getVersionFromResource(source []byte) (string, error) {
 
 }
 
-func (s *RestClient) ReadNotifications(notifications chan<- models.Notification) error {
+func (s *RestClient) readNotifications(notifications chan<- models.Notification) error {
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
@@ -845,16 +845,16 @@ func (s *RestClient) ReadNotifications(notifications chan<- models.Notification)
 	defer c.Close()
 
 	done := make(chan struct{})
+	defer close(done)
 
 	go func() {
-		defer close(done)
 		for {
 			// {"text":"Initializing cluster cluster1"}
 			var notification models.Notification
 			err := c.ReadJSON(&notification)
 			if err != nil {
 				logging.Info("read: %v", err)
-				// return err
+				return
 			}
 			notifications <- notification
 			logging.Info("recv: %s", notification.Text)
@@ -891,6 +891,20 @@ func (s *RestClient) ReadNotifications(notifications chan<- models.Notification)
 			return nil
 		}
 	}
+}
+
+// ReadNotifications reads notifications from websocket
+// and sends them to the given channel
+func (s *RestClient) ReadNotifications(notifications chan<- models.Notification) error {
+	for {
+		err := s.readNotifications(notifications)
+		if err != nil {
+			logging.Info("Reconnecting.Connectiong broke due to : %v\n", err.Error())
+		} else {
+			break // if there is no error it means it is closed gracefully
+		}
+	}
+	return nil
 }
 
 func (s *RestClient) SendExperimentMetric(experimentName string, metricName string, experimentMetric *models.ExperimentMetric, values map[string]string) error {
