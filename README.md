@@ -6,7 +6,13 @@
 Vamp Kubist Command Line Client is a command line client written in golang and allows a user interface to the Vamp Kubist API. It also supports common functions that are useful to regular users.
 
 Command Line client requires a running Vamp Kubist service to function.
-Please check How to Setup Vamp Kubist on common documentation repository: https://github.com/magneticio/vampkubistdocs
+
+## Important Note:
+**Please check How to Setup and Use Vamp Kubist on common documentation repository:**
+
+https://github.com/magneticio/vampkubistdocs
+
+**This document only shows only the basic usage of the client.**
 
 ## development
 if you have golang installed, it is recommended to git clone it to $GOPATH/src/github.com/magneticio/vampkubistcli
@@ -52,11 +58,12 @@ If you don't have anything yet and automatically download an install follow comm
 This installation may not work since this is a private repository.
 Manual installation is recommended.
 
-Easy install for MacOS:
+Easy install for MacOS / Linux:
 ```shell
-base=https://github.com/magneticio/vamp/releases/download/0.0.10 &&
-  curl -L $base/vamp-$(uname -s)-$(uname -m) >/usr/local/bin/vamp &&
-  chmod +x /usr/local/bin/vamp
+KUBIST_CLI_VERSION=$(curl -s https://api.github.com/repos/magneticio/vampkubistcli/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') && \
+    base=https://github.com/magneticio/vampkubistcli/releases/download/$KUBIST_CLI_VERSION && \
+    curl -fsSL  $base/vamp-$(uname -s)-$(uname -m) > /usr/local/bin/vamp && \
+    chmod +x /usr/local/bin/vamp
 ```
 TODO: add installation for other platforms
 
@@ -284,7 +291,7 @@ If there are pending pods after some a few minutes, it is recommended to diagnos
 Again while working on the same cluster it is recommended to set it as default by:
 
 ```shell
-vamp set -c mycluster
+vamp config set -c mycluster
 ```
 
 Now it is time to deploy an example application with one version:
@@ -310,7 +317,7 @@ kubectl get ns vamp-demo -o yaml
 
 set virtual cluster for ease of use:
 ```shell
-vamp set -r vamp-demo
+vamp config set -r vamp-demo
 ```
 
 NOTE:
