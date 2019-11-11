@@ -81,6 +81,29 @@ var resourceMap map[string]string = map[string]string{
 	"experiments":      "experiment",
 }
 
+type IRestClient interface {
+	Login(username string, password string) (refreshToken string, accessToken string, err error)
+	RefreshTokens() (refreshToken string, accessToken string, err error)
+	Create(resourceName string, name string, source string, sourceType string, values map[string]string) (bool, error)
+	Update(resourceName string, name string, source string, sourceType string, values map[string]string) (bool, error)
+	PushMetricValueInternal(name string, source string, sourceType string, values map[string]string) (bool, error)
+	PushMetricValue(name string, metricValue *models.MetricValue, values map[string]string) (bool, error)
+	Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error)
+	Delete(resourceName string, name string, values map[string]string) (bool, error)
+	UpdatePassword(userName string, password string, values map[string]string) error
+	GetSpec(resourceName string, name string, outputFormat string, values map[string]string) (string, error)
+	Get(resourceName string, name string, outputFormat string, values map[string]string) (string, error)
+	List(resourceName string, outputFormat string, values map[string]string, simple bool) (string, error)
+	UpdateUserPermission(username string, permission string, values map[string]string) (bool, error)
+	RemovePermissionFromUser(username string, values map[string]string) (bool, error)
+	AddRoleToUser(username string, rolename string, values map[string]string) (bool, error)
+	RemoveRoleFromUser(username string, rolename string, values map[string]string) (bool, error)
+	Ping() (bool, error)
+	ReadNotifications(notifications chan<- models.Notification) error
+	SendExperimentMetric(experimentName string, metricName string, experimentMetric *models.ExperimentMetric, values map[string]string) error
+	GetSubsetMap(values map[string]string) (*models.DestinationsSubsetsMap, error)
+}
+
 type RestClient struct {
 	URL            string
 	Version        string
