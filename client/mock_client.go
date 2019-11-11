@@ -39,6 +39,11 @@ func (m *RestClientMock) PushMetricValue(name string, metricValue *models.Metric
 	return args.Get(0).(bool), args.Error(1)
 }
 
+func (m *RestClientMock) Apply(resourceName string, name string, source string, sourceType string, values map[string]string, update bool) (bool, error) {
+	args := m.Called(resourceName, name, source, sourceType, values, update)
+	return args.Get(0).(bool), args.Error(1)
+}
+
 func (m *RestClientMock) Delete(resourceName string, name string, values map[string]string) (bool, error) {
 	args := m.Called(resourceName, name, values)
 	return args.Get(0).(bool), args.Error(1)
