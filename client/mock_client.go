@@ -21,7 +21,7 @@ func (m *RestClientMock) RefreshTokens() (refreshToken string, accessToken strin
 
 func (m *RestClientMock) Create(resourceName string, name string, source string, sourceType string, values map[string]string) (bool, error) {
 	args := m.Called(resourceName, name, source, sourceType, values)
-	return args.Get(0).(bool), args.Error(2)
+	return args.Get(0).(bool), args.Error(1)
 }
 
 func (m *RestClientMock) Update(resourceName string, name string, source string, sourceType string, values map[string]string) (bool, error) {
