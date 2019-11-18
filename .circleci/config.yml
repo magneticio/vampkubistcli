@@ -7,7 +7,7 @@ jobs:
       - checkout
       - run: mkdir -p ./artifacts
       - run: go get golang.org/x/tools/cmd/cover
-      - run: go get github.com/mattn/goveralls
+      - run: go get github.com/mattn/goveralls@v0.0.3
       - run: ./test.sh
       - run: $GOPATH/bin/goveralls -coverprofile=coverage.out -service=circle-ci -repotoken $COVERALLS_TOKEN
       - run: ./build.sh local
