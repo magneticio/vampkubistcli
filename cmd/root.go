@@ -69,7 +69,7 @@ var kubeConfigPath string
 var TokenStore client.TokenStore
 
 // version should be in format d.d.d where d is a decimal number
-const Version string = "v0.0.57"
+const Version string = "v0.0.60"
 
 var AppName string = InitAppName()
 
