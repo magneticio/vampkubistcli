@@ -20,3 +20,5 @@ vampkubistcli
 coverage.out
 target
 vamp
+semver_version.sh
+version_env.sh
