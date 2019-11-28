@@ -5,7 +5,6 @@ go 1.12
 require (
 	github.com/0xAX/notificator v0.0.0-20181105090803-d81462e38c21
 	github.com/Azure/go-autorest v11.1.0+incompatible // indirect
-	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0
@@ -17,14 +16,14 @@ require (
 	github.com/gorilla/websocket v1.4.0
 	github.com/gregjones/httpcache v0.0.0-20190212212710-3befbb6ad0cc // indirect
 	github.com/imdario/mergo v0.3.7
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.6 // indirect
 	github.com/magneticio/forklift v0.1.15
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
-	github.com/spf13/cobra v0.0.3
+	github.com/spf13/cobra v0.0.5
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.3.2
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.3.0
