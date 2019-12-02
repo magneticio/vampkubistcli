@@ -16,7 +16,7 @@ jobs:
       - run:
           name: "Update version tag"
           command: |
-            wget https://github.com/magneticio/semver-shell/releases/download/v0.1.0/semver_version.sh
+            wget https://github.com/magneticio/semver-shell/releases/download/v0.2.0/semver_version.sh
             chmod +x semver_version.sh
             ./semver_version.sh -l go -f "./cmd/semver/version.go" -o none
       - run: ./build.sh local
