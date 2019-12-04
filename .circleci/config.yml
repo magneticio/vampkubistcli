@@ -5,16 +5,26 @@ jobs:
       - image: circleci/golang:1.12.3
     steps:
       - checkout
+      - add_ssh_keys
       - run: mkdir -p ./artifacts
       - run: go get golang.org/x/tools/cmd/cover
       - run: go get github.com/mattn/goveralls@v0.0.3
       - run: ./test.sh
       - run: $GOPATH/bin/goveralls -coverprofile=coverage.out -service=circle-ci -repotoken $COVERALLS_TOKEN
+      - run: git config user.email "${GITHUB_EMAIL}"
+      - run: git config user.name "${CIRCLE_PROJECT_USERNAME}"
+      - run:
+          name: "Update version tag"
+          command: |
+            wget https://github.com/magneticio/semver-shell/releases/download/v0.2.0/semver_version.sh
+            chmod +x semver_version.sh
+            ./semver_version.sh -l go -f "./cmd/semver/version.go" -o none
       - run: ./build.sh local
       - run: cp ./bin/* ./artifacts
       - run: cp ./bin/vamp-darwin-amd64 ./artifacts/vamp-darwin-x86_64
       - run: cp ./bin/vamp-linux-amd64 ./artifacts/vamp-linux-x86_64
       - run: go run main.go version clean > ./artifacts/version.txt
+      - run: cp ./semver_version.sh ./artifacts/semver_version.sh
       - persist_to_workspace:
             root: ./artifacts
             paths:
@@ -25,6 +35,11 @@ jobs:
     steps:
       - attach_workspace:
           at: ./artifacts
+      - checkout
+      - add_ssh_keys
+      - run: git config --global user.email "${GITHUB_EMAIL}"
+      - run: git config --global user.name ${CIRCLE_PROJECT_USERNAME}
+      - run: ./artifacts/semver_version.sh -l text -f ./artifacts/version.txt
       - run:
           name: "Publish Release on GitHub"
           command: |

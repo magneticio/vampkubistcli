@@ -22,13 +22,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/magneticio/vampkubistcli/client"
-	"github.com/magneticio/vampkubistcli/logging"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/magneticio/vampkubistcli/client"
+	"github.com/magneticio/vampkubistcli/logging"
+	semver "github.com/magneticio/vampkubistcli/semver"
 )
 
 type config struct {
@@ -69,7 +71,7 @@ var kubeConfigPath string
 var TokenStore client.TokenStore
 
 // version should be in format d.d.d where d is a decimal number
-const Version string = "v0.0.61"
+const Version string = semver.Version //"v0.0.61"
 
 var AppName string = InitAppName()
 
