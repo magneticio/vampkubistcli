@@ -12,7 +12,7 @@ jobs:
       - run: $GOPATH/bin/goveralls -coverprofile=coverage.out -service=circle-ci -repotoken $COVERALLS_TOKEN
   publish-github-release:
     docker:
-      - image: cibuilds/github:0.12
+      - image: cibuilds/golang:1.12.3
     steps:
       - checkout
       - add_ssh_keys
@@ -23,6 +23,7 @@ jobs:
             chmod +x semver_version.sh
             ./semver_version.sh -l go -f "./cmd/semver/version.go" -o none
       - run: ./build.sh local
+      - run: go get -u github.com/tcnksm/ghr
       - run: mkdir -p ./artifacts
       - run: cp ./bin/* ./artifacts
       - run: cp ./bin/vamp-darwin-amd64 ./artifacts/vamp-darwin-x86_64
