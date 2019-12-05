@@ -41,11 +41,11 @@ import (
 var DefaultVampConfig = models.VampConfig{
 	DatabaseName:             "vamp",
 	ImageName:                "magneticio/vampkubist",
-	ImageTag:                 "0.7.13",
+	ImageTag:                 "latest",
 	Mode:                     "IN_CLUSTER",
 	AccessTokenExpiration:    "10m",
-	IstioAdapterImage:        "magneticio/vampkubist-istio-adapter-dev:latest",
-	IstioInstallerImage:      "magneticio/vampistioinstaller-dev:latest",
+	IstioAdapterImage:        "magneticio/vampkubist-istio-adapter:latest",
+	IstioInstallerImage:      "magneticio/vampistioinstaller:latest",
 	MinReplicas:              int32Ptr(1),
 	MaxReplicas:              6,
 	RequestCPU:               "100m",  // resource.NewScaledQuantity(100, resource.Milli),        // 0.1 Core
