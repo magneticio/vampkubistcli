@@ -71,12 +71,12 @@ var kubeConfigPath string
 var TokenStore client.TokenStore
 
 // version should be in format d.d.d where d is a decimal number
-const Version string = semver.Version //"v0.0.61"
+const Version string = semver.Version //"v0.0.63"
 
 var AppName string = InitAppName()
 
 // Backend version is the version this client is tested with
-const BackendVersion string = "0.7.13"
+const BackendVersion string = "0.8.17"
 
 /*
 Application name can change over time so it is made parameteric

@@ -119,8 +119,12 @@ Example:
 			if err != nil {
 				return err
 			}
+
 			Config.Token = refreshToken
 		}
+
+		TokenStore.Clean()
+
 		Config.Username = Username
 		fmt.Println("Login Successful.")
 		writeConfigError := WriteConfigFile()
