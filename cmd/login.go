@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"syscall"
-
+	"io/ioutil"
 	"github.com/magneticio/vampkubistcli/client"
 	"github.com/magneticio/vampkubistcli/logging"
 	"github.com/magneticio/vampkubistcli/util"
@@ -91,6 +91,17 @@ Example:
 			}
 			Config.Cert = CertString
 		}
+
+		tmpfile, tempFileError := ioutil.TempFile("", "tokenstore")
+		if tempFileError != nil {
+			logging.Error("Token Store file can not be read due to error: %v\n", tempFileError)
+		}
+
+		Config.TokenStorePath = tmpfile.Name()
+		TokenStore = &client.FileBackedTokenStore{
+			Path: Config.TokenStorePath,
+		}
+
 		if Token != "" {
 			Config.Token = Token
 			restClient := client.NewRestClient(Config.Url, Config.Token, Config.APIVersion, logging.Verbose, Config.Cert, &TokenStore)
@@ -122,8 +133,6 @@ Example:
 
 			Config.Token = refreshToken
 		}
-
-		TokenStore.Clean()
 
 		Config.Username = Username
 		fmt.Println("Login Successful.")
